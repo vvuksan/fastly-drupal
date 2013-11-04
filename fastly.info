@@ -1,1 +1,8 @@
 name = Fastly
+description = Integration with the Fastly service
+package = Reports
+core = 7.x
+configure = admin/config/services/fastly
+;dependencies[] = 
+
+core = "7.x"
