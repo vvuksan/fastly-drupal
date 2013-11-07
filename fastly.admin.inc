@@ -13,6 +13,7 @@ function fastly_setup_form($form_state) {
     '#type' => 'textfield',
     '#title' => t('Fastly API Key'),
     '#default_value' => variable_get('fastly_api_key', ''),
+    '#required' => TRUE,
     '#description' => t('You can find it on your account settings page. If you dont have an account, please go to <a href="/?q=admin/config/services/fastly/register">registration page</a>'),
   );
 
@@ -20,6 +21,7 @@ function fastly_setup_form($form_state) {
     '#type' => 'textfield',
     '#title' => t('Service ID'),
     '#default_value' => variable_get('fastly_service_id', ''),
+    '#required' => TRUE,
     '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
   );
 
@@ -30,7 +32,7 @@ function fastly_setup_form($form_state) {
  * Register form.
  */
 function fastly_register_form($form_state) {
-  if (0  && variable_get('fastly_used_registration')) {
+  if (variable_get('fastly_used_registration')) {
     drupal_set_message(t('You already used your registration opportunity. You can <a href="https://app.fastly.com/#password_reset">reset your password</a> if you don\'t remember it.'), 'warning');
   }
   else {
@@ -85,59 +87,62 @@ function fastly_register_form($form_state) {
  * Purge form.
  */
 function fastly_purge_form($form_state) {
-  $api = fastly_get_api();
+  if (variable_get('fastly_service_id', '')  && variable_get('fastly_api_key', '')) {
+    $form['purge_url'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Purge by URL'),
+      '#description' => t('Paste one or more URLs to purge. Each in new line.'),
+    );
 
-  $form['purge_url'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Purge by URL'),
-    '#description' => t('Paste one or more URLs to purge. Each in new line.'),
-  );
+    $form['purge_url']['urls_list'] = array(
+      '#type' => 'textarea',
+    );
 
-  $form['purge_url']['urls_list'] = array(
-    '#type' => 'textarea',
-  );
+    $form['purge_url']['submit'] = array(
+      '#type' => 'button',
+      '#value' => t('Purge'),
+      '#id' => 'urls',
+      '#name' => 'urls',
+      '#executes_submit_callback' => 1,
+    );
 
-  $form['purge_url']['submit'] = array(
-    '#type' => 'button',
-    '#value' => t('Purge'),
-    '#id' => 'urls',
-    '#name' => 'urls',
-    '#executes_submit_callback' => 1,
-  );
+    $form['purge_key'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Purge by key'),
+      '#description' => t('Paste one or more keys to purge. Each in new line.'),
+    );
 
-  $form['purge_key'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Purge by key'),
-    '#description' => t('Paste one or more keys to purge. Each in new line.'),
-  );
+    $form['purge_key']['keys_list'] = array(
+      '#type' => 'textarea',
+    );
 
-  $form['purge_key']['keys_list'] = array(
-    '#type' => 'textarea',
-  );
+    $form['purge_key']['submit'] = array(
+      '#type' => 'button',
+      '#value' => t('Purge'),
+      '#id' => 'keys',
+      '#name' => 'keys',
+      '#executes_submit_callback' => 1,
+    );
 
-  $form['purge_key']['submit'] = array(
-    '#type' => 'button',
-    '#value' => t('Purge'),
-    '#id' => 'keys',
-    '#name' => 'keys',
-    '#executes_submit_callback' => 1,
-  );
+    $form['purge_all'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Purge all'),
+      '#description' => t('Purge whole service. You might not use this function too often.'),
+    );
 
-  $form['purge_all'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Purge all'),
-    '#description' => t('Purge whole service. You might not use this function too often.'),
-  );
+    $form['purge_all']['submit'] = array(
+      '#type' => 'button',
+      '#value' => t('Purge'),
+      '#id' => 'all',
+      '#name' => 'all',
+      '#executes_submit_callback' => 1,
+    );
 
-  $form['purge_all']['submit'] = array(
-    '#type' => 'button',
-    '#value' => t('Purge'),
-    '#id' => 'all',
-    '#name' => 'all',
-    '#executes_submit_callback' => 1,
-  );
-
-  return $form;
+    return $form;
+  }
+  else {
+    drupal_set_message(t('You need to set up your API key and service ID to use this form.'), 'warning');
+  }
 }
 
 /**
@@ -149,6 +154,17 @@ function fastly_register_form_validate($form, &$form_state) {
   }
   if (!valid_email_address($form_state['values']['owner_login'])) {
     form_set_error('owner_login', t('The email address is invalid.'));
+  }
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function fastly_setup_form_validate($form, &$form_state) {
+  $api = fastly_get_api($form_state['values']['fastly_api_key'], $form_state['values']['fastly_service_id']);
+
+  if (!$api->validate()) {
+    form_set_error('', t('Invalid API key or service ID.'));
   }
 }
 
@@ -178,6 +194,11 @@ function fastly_register_form_submit($form, &$form_state) {
       'ipv4' => 'eexample.com', //$_SERVER['HTTP_HOST'],
       'version' => 1,
     );
+
+    $api->api_key = $account->raw_api_key;
+
+    dsm($api);
+    dsm($account);
 
     $service = $api->createService($data);
 

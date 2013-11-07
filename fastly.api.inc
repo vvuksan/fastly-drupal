@@ -18,7 +18,21 @@ class Fastly {
     } else {
       return FALSE;
     }
+  }
 
+  public function validate() {
+    $customer = $this->query('current_customer');
+
+    if ($customer->status_message == 'OK') {
+      $customer = json_decode($customer->data);
+
+      $service = $this->query('/service/' . $this->service_id . '/details');
+
+      return ($service->status_message == 'OK');
+    }
+    else {
+      return FALSE;
+    }
   }
 
   public function getServices() {
@@ -29,7 +43,7 @@ class Fastly {
 
   public function createService($data) {
     $service = json_decode($this->query('service', $data, 'POST')->data);
-
+dsm($service);
     $this->query('service/' . $service->id . '/version/1/domain', array('name' => $data['domain']), 'POST');
     $this->query('service/' . $service->id . '/version/1/backend', $data, 'POST');
 

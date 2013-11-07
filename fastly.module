@@ -80,6 +80,13 @@ function fastly_menu() {
 /**
  * Return the API object.
  */
-function fastly_get_api() {
-  return new Fastly(variable_get('fastly_api_key', ''), variable_get('fastly_service_id', ''));
+function fastly_get_api($api_key = '', $service_id = '') {
+  if (empty($api_key)) {
+    $api_key = variable_get('fastly_api_key', '');
+  }
+  if (empty($service_id)) {
+    $api_key = variable_get('fastly_service_id', '');
+  }
+
+  return new Fastly($api_key, $service_id);
 }
