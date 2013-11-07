@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Fastly install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function fastly_uninstall() {
+  variable_del('fastly_used_registration');
+}

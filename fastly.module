@@ -34,28 +34,52 @@ function fastly_menu() {
   $items = array();
 
   $items['admin/config/services/fastly'] = array(
-    'title' => 'fastly API',
-    'description' => 'fastly Optimization',
+    'title' => 'Fastly configuration',
+    'description' => 'Fastly configuration',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_setup_form'),
     'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
     'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/services/fastly/config'] = array(
+    'title' => 'Configuration',
+    'description' => 'Fastly configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_setup_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/services/fastly/register'] = array(
+    'title' => 'Registration',
+    'description' => 'Fastly configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_register_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['admin/config/services/fastly/purge'] = array(
+    'title' => 'Purge cache',
+    'description' => 'Fastly purge cache',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_purge_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -10,
   );
 
   return $items;
 }
 
 /**
- * Settings form.
+ * Return the API object.
  */
-function fastly_setup_form($form_state) {
-  $form['fastly_api_id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Fastly API Key'),
-    '#default_value' => variable_get('fastly_api_key', 'NONE'),
-    '#description' => t('You can find it on your account settings page.'),
-    '#required' => TRUE,
-  );
-
-  return system_settings_form($form);
+function fastly_get_api() {
+  return new Fastly(variable_get('fastly_api_key', ''), variable_get('fastly_service_id', ''));
 }
