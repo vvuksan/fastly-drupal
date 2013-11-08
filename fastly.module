@@ -78,7 +78,7 @@ function fastly_menu() {
 }
 
 /**
- * Return the API object.
+ * Return the API object. The key and service id can be overriden for validation reasons.
  */
 function fastly_get_api($api_key = '', $service_id = '') {
   if (empty($api_key)) {

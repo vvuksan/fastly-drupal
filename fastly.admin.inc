@@ -197,9 +197,6 @@ function fastly_register_form_submit($form, &$form_state) {
 
     $api->api_key = $account->raw_api_key;
 
-    dsm($api);
-    dsm($account);
-
     $service = $api->createService($data);
 
     variable_set('fastly_used_registration', 1);
@@ -258,5 +255,3 @@ function fastly_purge_form_submit($form, &$form_state) {
     drupal_set_message(t('Cache successfuly purged.'));
   }
 }
-
-
