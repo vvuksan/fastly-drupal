@@ -9,6 +9,9 @@
  * Settings form.
  */
 function fastly_setup_form($form_state) {
+  $api = fastly_get_api();
+  $service_id = variable_get('fastly_service_id', '');
+
   $form['fastly_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Fastly API Key'),
@@ -20,10 +23,27 @@ function fastly_setup_form($form_state) {
   $form['fastly_service_id'] = array(
     '#type' => 'textfield',
     '#title' => t('Service ID'),
-    '#default_value' => variable_get('fastly_service_id', ''),
+    '#default_value' => $service_id,
     '#required' => TRUE,
     '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
   );
+
+  $form['fastly_ttl'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Default TTL'),
+    '#default_value' => $service_id ? $api->getSettings()->{'general.default_ttl'} : '',
+    '#required' => TRUE,
+    '#description' => t('The default time to live for cached content in seconds.'),
+  );
+
+  $form['fastly_log_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log API requests'),
+    '#default_value' => variable_get('fastly_log_enabled', 0),
+    '#description' => t('Go to <em>Site settings > Advanced settings > Site reports > Recent log messages</em> to view the log.'),
+  );
+
+  $form['#submit'][] = 'fastly_setup_form_submit';
 
   return system_settings_form($form);
 }
@@ -32,31 +52,29 @@ function fastly_setup_form($form_state) {
  * Register form.
  */
 function fastly_register_form($form_state) {
-  if (variable_get('fastly_used_registration')) {
+  if (0 && variable_get('fastly_used_registration')) {
     drupal_set_message(t('You already used your registration opportunity. You can <a href="https://app.fastly.com/#password_reset">reset your password</a> if you don\'t remember it.'), 'warning');
   }
   else {
     global $user;
 
-    $form['account_name'] = array(
+    $form['owner_first_name'] = array(
       '#type' => 'textfield',
-      '#title' => t('Account name'),
-      '#default_value' => variable_get('site_name', ''),
-      '#description' => t('The customer account name. Ex: Some Business, LLC.'),
+      '#title' => t("First Name"),
+      '#description' => t("The customer account owner's first name. Ex: John."),
       '#required' => TRUE,
     );
 
-    $form['owner_name'] = array(
+    $form['owner_last_name'] = array(
       '#type' => 'textfield',
-      '#title' => t("Owner's name"),
-      '#default_value' => $user->name,
-      '#description' => t("The customer account owner's name. Ex: John Doe."),
+      '#title' => t("Last Name"),
+      '#description' => t("The customer account owner's last name. Ex: Smith."),
       '#required' => TRUE,
     );
 
     $form['owner_login'] = array(
       '#type' => 'textfield',
-      '#title' => t("Owner's email"),
+      '#title' => t("Email"),
       '#default_value' => $user->mail,
       '#description' => t("The owner's email to be used as login. Ex: john@somebusiness.com."),
       '#required' => TRUE,
@@ -64,10 +82,46 @@ function fastly_register_form($form_state) {
 
     $form['owner_password'] = array(
       '#type' => 'password',
-      '#title' => t("Owner's password"),
+      '#title' => t("Password"),
+      '#default_value' => '',
+      '#required' => TRUE,
+    );
+
+    $form['confirm_password'] = array(
+      '#type' => 'password',
+      '#title' => t("Confirm Password"),
       '#default_value' => '',
       '#description' => t("The customer account owner's password. Please enter 4 or more characters. Ex: P@ssW0rd!1"),
       '#required' => TRUE,
+    );
+
+    $form['account_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Company Name'),
+      '#default_value' => variable_get('site_name', ''),
+      '#description' => t('The customer account name. Ex: Some Business, LLC.'),
+      '#required' => TRUE,
+    );
+
+    $form['origin_ip'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Origin Server IP'),
+      '#default_value' => '62.49.238.112',//$_SERVER['SERVER_ADDR'],
+      '#required' => TRUE,
+    );
+
+    $form['origin_host'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Origin Host'),
+        '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+        '#required' => TRUE,
+    );
+
+    $form['domain_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Domain Name'),
+        '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+        '#required' => TRUE,
     );
 
     $form['policy'] = array(
@@ -152,9 +206,16 @@ function fastly_register_form_validate($form, &$form_state) {
   if ($form_state['values']['owner_password'] && strlen($form_state['values']['owner_password']) < 4) {
     form_set_error('owner_password', t('The password must contain 4 or more characters.'));
   }
+
   if (!valid_email_address($form_state['values']['owner_login'])) {
     form_set_error('owner_login', t('The email address is invalid.'));
   }
+
+  if ($form_state['values']['owner_password'] !== $form_state['values']['confirm_password']) {
+    form_set_error('confirm_password', t('The passwords do not match.'));
+  }
+
+  fastly_help_message();
 }
 
 /**
@@ -166,6 +227,16 @@ function fastly_setup_form_validate($form, &$form_state) {
   if (!$api->validate()) {
     form_set_error('', t('Invalid API key or service ID.'));
   }
+
+  fastly_help_message();
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function fastly_setup_form_submit($form, &$form_state) {
+  $api = fastly_get_api();
+  $api->updateSettings(array('general.default_ttl' => $form_state['values']['fastly_ttl'], 'general.default_host' => 'www.eexample.com'));
 }
 
 /**
@@ -175,7 +246,7 @@ function fastly_register_form_submit($form, &$form_state) {
   $data = array(
   	'name' => $form_state['values']['account_name'],
     'owner' => array(
-  	  'name' => $form_state['values']['owner_name'],
+  	  'name' => $form_state['values']['owner_first_name'] . ' ' . $form_state['values']['owner_last_name'],
   	  'login' => $form_state['values']['owner_login'],
   	  'password' => $form_state['values']['owner_password'],
     ),
@@ -185,14 +256,18 @@ function fastly_register_form_submit($form, &$form_state) {
 
   $account = $api->signup($data);
 
-  if ($account) {
+  if (isset($account->msg)) {
+    drupal_set_message($account->msg, 'error');
+  }
+  else {
     $data = array(
       'name' => variable_get('site_name', t('Default')),
-      'domain' => 'eexample.com', //$_SERVER['HTTP_HOST'],
-      'hostname' => 'eexample.com', //$_SERVER['HTTP_HOST'],
-      'address' => 'eexample.com', //$_SERVER['HTTP_HOST'],
-      'ipv4' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+      'domain' => $form_state['values']['domain_name'],
+      'hostname' => $form_state['values']['origin_host'],
+      'address' => $form_state['values']['origin_host'],
+      'ipv4' => $form_state['values']['origin_ip'], //$_SERVER['HTTP_HOST'],
       'version' => 1,
+      'id' => 'syslog',
     );
 
     $api->api_key = $account->raw_api_key;
@@ -206,9 +281,6 @@ function fastly_register_form_submit($form, &$form_state) {
     drupal_set_message(t('Registration successful! You will receive a confirmation email very soon. Please check your inbox and verify your account by clicking the received link.'));
 
     drupal_goto('admin/config/services/fastly/purge');
-  }
-  else {
-    drupal_set_message(t('An error occured while processing registration'), 'error');
   }
 }
 
@@ -253,5 +325,14 @@ function fastly_purge_form_submit($form, &$form_state) {
 
   if (empty($error)) {
     drupal_set_message(t('Cache successfuly purged.'));
+  }
+}
+
+/**
+ * A reusable snippet. Checks for error messages and sets up an extra message with a link to Zendesk.
+ */
+function fastly_help_message() {
+  if (drupal_get_messages('error', FALSE)) {
+    drupal_set_message('<a href="https://fastly.zendesk.com">Click here</a> if you need help.', 'warning');
   }
 }

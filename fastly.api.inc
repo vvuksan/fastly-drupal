@@ -8,6 +8,7 @@ class Fastly {
     $this->api_key = $api_key;
     $this->service_id = $service_id;
     $this->host = 'https://api.fastly.com/';
+    $this->log_enabled = variable_get('fastly_log_enabled', 0);
   }
 
   /**
@@ -18,11 +19,7 @@ class Fastly {
   public function signup($data) {
     $result = $this->query('signup/and_confirm', $data, 'POST');
 
-    if ($result->status_message == 'OK') {
-      return json_decode($result->data);
-    } else {
-      return FALSE;
-    }
+    return json_decode($result->data);
   }
 
   /**
@@ -61,17 +58,44 @@ class Fastly {
   public function createService($data) {
     $service = json_decode($this->query('service', $data, 'POST')->data);
 
+    $data['service'] = $service->id;
+
     $this->query('service/' . $service->id . '/version/1/domain', array('name' => $data['domain']), 'POST');
+
+    unset($data['hostname']);
+    unset($data['domain']);
+    unset($data['address']);
+
     $this->query('service/' . $service->id . '/version/1/backend', $data, 'POST');
+    $this->query('service/' . $service->id . '/version/1/syslog', $data, 'POST');
 
     return $service;
+  }
+
+  /**
+   * Gets the settings for a version.
+   * @param int $version
+   */
+  public function getSettings($version = 1) {
+    $result = $this->query('service/' . $this->service_id . '/version/' . $version . '/settings');
+
+    return json_decode($result->data);
+  }
+
+  /**
+   * Updates the settings for a version.
+   * @param array $data
+   * @param int $version
+   */
+  public function updateSettings($data, $version = 1) {
+    $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT');
   }
 
   /**
    * Purge whole service.
    */
   public function purgeAll() {
-    $this->query('/service/' . $this->service_id . '/purge_all', array(), 'POST');
+    $this->query('service/' . $this->service_id . '/purge_all', array(), 'POST');
   }
 
   /**
@@ -85,7 +109,7 @@ class Fastly {
    * Purge cache by key.
    */
   public function purgeKey($key) {
-    $this->query('/service/' . $this->service_id . '/purge/' . $key, array(), 'POST');
+    $this->query('service/' . $this->service_id . '/purge/' . $key, array(), 'POST');
   }
 
   /**
@@ -109,6 +133,16 @@ class Fastly {
       $options['headers']['Fastly-Key'] = $this->api_key;
     }
 
-    return drupal_http_request($url, $options);
+    $options['headers']['Drupal-Referrer'] = 'Drupal';
+
+    $result = drupal_http_request($url, $options);
+
+    if ($this->log_enabled) {
+      watchdog('fastly', $result->request, array(), WATCHDOG_INFO);
+    }
+
+    dsm($result);
+
+    return $result;
   }
 }
