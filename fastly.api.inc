@@ -87,8 +87,8 @@ class Fastly {
    * @param array $data
    * @param int $version
    */
-  public function updateSettings($data, $version = 1) {
-    $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT');
+  public function updateSettings($data, $version = 1) { $headers['Accept'] = 'application/json';
+    $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT', $headers);
   }
 
   /**
@@ -99,10 +99,14 @@ class Fastly {
   }
 
   /**
-   * Purge cache by URL.
+   * Purge cache by path.
    */
-  public function purgeUrl($url) {
-    drupal_http_request($url, array('method' => 'PURGE'));
+  public function purgePath($path) {
+    global $base_url;
+
+    $path = str_replace($base_url, '', $path);
+
+    $this->query($path, array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
   }
 
   /**

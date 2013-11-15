@@ -78,6 +78,61 @@ function fastly_menu() {
 }
 
 /**
+ * Implements hook_rules_action_info().
+ */
+function fastly_rules_action_info() {
+  $actions = array();
+
+  $actions['fastly_rules_action_purge'] = array(
+      'label' => t('Purge the page.'),
+      /*'parameter' => array(
+        'url' => array(
+          'type' => 'text',
+          'default value' => '[commerce-order:order-id]',
+          'label' => t('URL to purge'),
+        ),
+      ),*/
+      'group' => t('Fastly'),
+  );
+
+  return $actions;
+}
+
+/**
+ * Rules action to purge the URL after the content is updated.
+ */
+function fastly_rules_action_purge() {
+  $node = menu_get_object();
+  $api = fastly_get_api();
+
+  if ($node->path['alias']) {
+    $api->purgePath($node->path['alias']);
+  }
+  else {
+    $api->purgePath($node->path['source']);
+  }
+}
+
+/**
+ * Implements hook_default_rules_configuration().
+ */
+function fastly_default_rules_configuration() {
+  $rule = rules_reaction_rule();
+  $rule->label = 'Purge Fastly cache when a content piece is updated.';
+  $rule->active = TRUE;
+  $rule->event('node_update')
+  //->event('taxonomy_vocabulary_update')
+  //->event('taxonomy_term_update')
+  //->event('user_update')
+  ->action('fastly_rules_action_purge');
+
+  $configs['rules_fastly_purge'] = $rule;
+
+  return $configs;
+}
+
+
+/**
  * Returns the API object. The key and service id can be overriden for validation reasons.
  */
 function fastly_get_api($api_key = '', $service_id = '') {

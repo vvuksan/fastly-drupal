@@ -304,7 +304,7 @@ function fastly_purge_form_submit($form, &$form_state) {
   	  }
   	  else {
         foreach (explode("\n", $values) as $line) {
-          $api->purgeUrl(trim($line));
+          $api->purgePath(trim($line));
     	}
   	  }
   	  break;
@@ -333,6 +333,6 @@ function fastly_purge_form_submit($form, &$form_state) {
  */
 function fastly_help_message() {
   if (drupal_get_messages('error', FALSE)) {
-    drupal_set_message('<a href="https://fastly.zendesk.com">Click here</a> if you need help.', 'warning');
+    drupal_set_message(t('<a href="https://fastly.zendesk.com">Click here</a> if you need help.'), 'warning');
   }
 }
