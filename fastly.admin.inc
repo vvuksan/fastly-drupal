@@ -11,28 +11,39 @@
 function fastly_setup_form($form_state) {
   $api = fastly_get_api();
   $service_id = variable_get('fastly_service_id', '');
+  $api_key = variable_get('fastly_api_key', '');
 
   $form['fastly_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('Fastly API Key'),
-    '#default_value' => variable_get('fastly_api_key', ''),
+    '#default_value' => $api_key,
     '#required' => TRUE,
     '#description' => t('You can find it on your account settings page. If you dont have an account, please go to <a href="/?q=admin/config/services/fastly/register">registration page</a>'),
   );
 
-  $form['fastly_service_id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Service ID'),
-    '#default_value' => $service_id,
-    '#required' => TRUE,
-    '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
-  );
+  if ($api_key) {
+    $services = array();
+
+    foreach ($api->getServices() as $service) {
+      $services[$service->id] = $service->name;
+    }
+
+    ksort($services);
+
+    $form['fastly_service_id'] = array(
+      '#type' => 'radios',
+      '#title' => t('Service'),
+      '#options' => $services,
+      '#default_value' => $service_id,
+      '#required' => TRUE,
+      '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
+    );
+  }
 
   $form['fastly_ttl'] = array(
     '#type' => 'textfield',
     '#title' => t('Default TTL'),
     '#default_value' => $service_id ? $api->getSettings()->{'general.default_ttl'} : '',
-    '#required' => TRUE,
     '#description' => t('The default time to live for cached content in seconds.'),
   );
 
@@ -41,6 +52,11 @@ function fastly_setup_form($form_state) {
     '#title' => t('Log API requests'),
     '#default_value' => variable_get('fastly_log_enabled', 0),
     '#description' => t('Go to <em>Site settings > Advanced settings > Site reports > Recent log messages</em> to view the log.'),
+  );
+
+  $form['actions']['new_service'] = array(
+    '#markup' => l('New service', 'admin/config/services/fastly/new', array('attributes' => array('class' => 'button'))),
+    '#weight' => 10,
   );
 
   $form['#submit'][] = 'fastly_setup_form_submit';
@@ -200,6 +216,39 @@ function fastly_purge_form($form_state) {
 }
 
 /**
+ * New service form.
+ */
+function fastly_new_service_form() {
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Service Name'),
+    '#default_value' => variable_get('site_name', ''),
+    '#required' => TRUE,
+  );
+
+  $form['origin_ip'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Origin Server IP'),
+    '#default_value' => '62.49.238.112',//$_SERVER['SERVER_ADDR'],
+    '#required' => TRUE,
+  );
+
+  $form['domain_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Domain Name'),
+    '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Create'),
+  );
+
+  return $form;
+}
+
+/**
  * Implements hook_form_validate().
  */
 function fastly_register_form_validate($form, &$form_state) {
@@ -222,10 +271,10 @@ function fastly_register_form_validate($form, &$form_state) {
  * Implements hook_form_validate().
  */
 function fastly_setup_form_validate($form, &$form_state) {
-  $api = fastly_get_api($form_state['values']['fastly_api_key'], $form_state['values']['fastly_service_id']);
+  $api = fastly_get_api($form_state['values']['fastly_api_key']);
 
   if (!$api->validate()) {
-    form_set_error('', t('Invalid API key or service ID.'));
+    form_set_error('', t('Invalid API key.'));
   }
 
   fastly_help_message();
@@ -287,6 +336,31 @@ function fastly_register_form_submit($form, &$form_state) {
 /**
  * Implements hook_form_submit().
  */
+function fastly_new_service_form_submit($form, &$form_state) {
+  $data = array(
+    'name' => $form_state['values']['name'],
+    'domain' => $form_state['values']['domain_name'],
+    'hostname' => $form_state['values']['domain_name'],
+    'address' => $form_state['values']['domain_name'],
+    'ipv4' => $form_state['values']['origin_ip'], //$_SERVER['HTTP_HOST'],
+    'version' => 1,
+    'id' => 'syslog',
+  );
+
+  $api = fastly_get_api();
+
+  $service = $api->createService($data);
+
+  variable_set('fastly_service_id', $service->id);
+
+  drupal_set_message(t('A new service successfuly created and set to default.'));
+
+  drupal_goto('admin/config/services/fastly');
+}
+
+/**
+ * Implements hook_form_submit().
+ */
 function fastly_purge_form_submit($form, &$form_state) {
   $method = $form_state['triggering_element']['#name'];
   $api = fastly_get_api();
@@ -326,6 +400,10 @@ function fastly_purge_form_submit($form, &$form_state) {
   if (empty($error)) {
     drupal_set_message(t('Cache successfuly purged.'));
   }
+}
+
+function fastly_new_service() {
+  dsm('fwerthjyrgrehtry');
 }
 
 /**

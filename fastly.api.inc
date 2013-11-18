@@ -26,18 +26,7 @@ class Fastly {
    * Used to validate API key and service ID. Returns FALSE if any corrupt data is passed.
    */
   public function validate() {
-    $customer = $this->query('current_customer');
-
-    if ($customer->status_message == 'OK') {
-      $customer = json_decode($customer->data);
-
-      $service = $this->query('/service/' . $this->service_id . '/details');
-
-      return ($service->status_message == 'OK');
-    }
-    else {
-      return FALSE;
-    }
+    return $this->query('current_customer')->status_message == 'OK';
   }
 
   /**

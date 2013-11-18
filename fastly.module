@@ -43,6 +43,16 @@ function fastly_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  $items['admin/config/services/fastly/new'] = array(
+    'title' => 'Create a service',
+    'description' => 'Create a service',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_new_service_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   $items['admin/config/services/fastly/config'] = array(
     'title' => 'Configuration',
     'description' => 'Fastly configuration',
@@ -84,15 +94,8 @@ function fastly_rules_action_info() {
   $actions = array();
 
   $actions['fastly_rules_action_purge'] = array(
-      'label' => t('Purge the page.'),
-      /*'parameter' => array(
-        'url' => array(
-          'type' => 'text',
-          'default value' => '[commerce-order:order-id]',
-          'label' => t('URL to purge'),
-        ),
-      ),*/
-      'group' => t('Fastly'),
+    'label' => t('Purge the page.'),
+    'group' => t('Fastly'),
   );
 
   return $actions;
