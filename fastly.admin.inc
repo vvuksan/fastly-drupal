@@ -122,21 +122,21 @@ function fastly_register_form($form_state) {
     $form['origin_ip'] = array(
       '#type' => 'textfield',
       '#title' => t('Origin Server IP'),
-      '#default_value' => '62.49.238.112',//$_SERVER['SERVER_ADDR'],
+      '#default_value' => $_SERVER['SERVER_ADDR'],
       '#required' => TRUE,
     );
 
     $form['origin_host'] = array(
         '#type' => 'textfield',
         '#title' => t('Origin Host'),
-        '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+        '#default_value' => $_SERVER['HTTP_HOST'],
         '#required' => TRUE,
     );
 
     $form['domain_name'] = array(
         '#type' => 'textfield',
         '#title' => t('Domain Name'),
-        '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+        '#default_value' => $_SERVER['HTTP_HOST'],
         '#required' => TRUE,
     );
 
