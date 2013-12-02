@@ -47,16 +47,18 @@ class Fastly {
   public function createService($data) {
     $service = json_decode($this->query('service', $data, 'POST')->data);
 
-    $data['service'] = $service->id;
+    if (isset($service->id)) {
+      $data['service'] = $service->id;
 
-    $this->query('service/' . $service->id . '/version/1/domain', array('name' => $data['domain']), 'POST');
+      $this->query('service/' . $service->id . '/version/1/domain', array('name' => $data['domain']), 'POST');
 
-    unset($data['hostname']);
-    unset($data['domain']);
-    unset($data['address']);
+      unset($data['hostname']);
+      unset($data['domain']);
+      unset($data['address']);
 
-    $this->query('service/' . $service->id . '/version/1/backend', $data, 'POST');
-    $this->query('service/' . $service->id . '/version/1/syslog', $data, 'POST');
+      $this->query('service/' . $service->id . '/version/1/backend', $data, 'POST');
+      $this->query('service/' . $service->id . '/version/1/syslog', $data, 'POST');
+    }
 
     return $service;
   }
@@ -76,7 +78,10 @@ class Fastly {
    * @param array $data
    * @param int $version
    */
-  public function updateSettings($data, $version = 1) { $headers['Accept'] = 'application/json';
+  public function updateSettings($data, $version = 1) {
+    $headers['Accept'] = 'application/json';
+    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
     $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT', $headers);
   }
 
@@ -111,7 +116,7 @@ class Fastly {
    * @param string $uri
    * @param array $data
    * @param string $method
-   * @param arrat $headers
+   * @param array $headers
    *
    * @return object
    */
@@ -133,8 +138,6 @@ class Fastly {
     if ($this->log_enabled) {
       watchdog('fastly', $result->request, array(), WATCHDOG_INFO);
     }
-
-    dsm($result);
 
     return $result;
   }

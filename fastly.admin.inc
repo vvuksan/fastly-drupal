@@ -38,6 +38,11 @@ function fastly_setup_form($form_state) {
       '#required' => TRUE,
       '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
     );
+
+    $form['actions']['new_service'] = array(
+      '#markup' => l('New service', 'admin/config/services/fastly/new', array('attributes' => array('class' => 'button'))),
+      '#weight' => 10,
+    );
   }
 
   $form['fastly_ttl'] = array(
@@ -52,11 +57,6 @@ function fastly_setup_form($form_state) {
     '#title' => t('Log API requests'),
     '#default_value' => variable_get('fastly_log_enabled', 0),
     '#description' => t('Go to <em>Site settings > Advanced settings > Site reports > Recent log messages</em> to view the log.'),
-  );
-
-  $form['actions']['new_service'] = array(
-    '#markup' => l('New service', 'admin/config/services/fastly/new', array('attributes' => array('class' => 'button'))),
-    '#weight' => 10,
   );
 
   $form['#submit'][] = 'fastly_setup_form_submit';
@@ -351,11 +351,16 @@ function fastly_new_service_form_submit($form, &$form_state) {
 
   $service = $api->createService($data);
 
-  variable_set('fastly_service_id', $service->id);
+  if (isset($service->msg)) {
+    drupal_set_message($service->detail, 'error');
+  }
+  else {
+    variable_set('fastly_service_id', $service->id);
 
-  drupal_set_message(t('A new service successfuly created and set to default.'));
+    drupal_set_message(t('A new service successfuly created and set to default.'));
 
-  drupal_goto('admin/config/services/fastly');
+    drupal_goto('admin/config/services/fastly');
+  }
 }
 
 /**
@@ -400,10 +405,6 @@ function fastly_purge_form_submit($form, &$form_state) {
   if (empty($error)) {
     drupal_set_message(t('Cache successfuly purged.'));
   }
-}
-
-function fastly_new_service() {
-  dsm('fwerthjyrgrehtry');
 }
 
 /**
