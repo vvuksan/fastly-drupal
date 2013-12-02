@@ -229,14 +229,14 @@ function fastly_new_service_form() {
   $form['origin_ip'] = array(
     '#type' => 'textfield',
     '#title' => t('Origin Server IP'),
-    '#default_value' => '62.49.238.112',//$_SERVER['SERVER_ADDR'],
+    '#default_value' => $_SERVER['SERVER_ADDR'],
     '#required' => TRUE,
   );
 
   $form['domain_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Domain Name'),
-    '#default_value' => 'eexample.com', //$_SERVER['HTTP_HOST'],
+    '#default_value' => $_SERVER['HTTP_HOST'],
     '#required' => TRUE,
   );
 
@@ -314,7 +314,7 @@ function fastly_register_form_submit($form, &$form_state) {
       'domain' => $form_state['values']['domain_name'],
       'hostname' => $form_state['values']['origin_host'],
       'address' => $form_state['values']['origin_host'],
-      'ipv4' => $form_state['values']['origin_ip'], //$_SERVER['HTTP_HOST'],
+      'ipv4' => $form_state['values']['origin_ip'],
       'version' => 1,
       'id' => 'syslog',
     );
@@ -342,7 +342,7 @@ function fastly_new_service_form_submit($form, &$form_state) {
     'domain' => $form_state['values']['domain_name'],
     'hostname' => $form_state['values']['domain_name'],
     'address' => $form_state['values']['domain_name'],
-    'ipv4' => $form_state['values']['origin_ip'], //$_SERVER['HTTP_HOST'],
+    'ipv4' => $form_state['values']['origin_ip'],
     'version' => 1,
     'id' => 'syslog',
   );
