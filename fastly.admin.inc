@@ -68,7 +68,7 @@ function fastly_setup_form($form_state) {
  * Register form.
  */
 function fastly_register_form($form_state) {
-  if (0 && variable_get('fastly_used_registration')) {
+  if (variable_get('fastly_used_registration')) {
     drupal_set_message(t('You already used your registration opportunity. You can <a href="https://app.fastly.com/#password_reset">reset your password</a> if you don\'t remember it.'), 'warning');
   }
   else {
