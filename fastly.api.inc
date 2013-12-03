@@ -7,7 +7,8 @@ class Fastly {
   public function __construct($api_key, $service_id) {
     $this->api_key = $api_key;
     $this->service_id = $service_id;
-    $this->host = 'https://api.fastly.com/';
+    //$this->host = 'https://api.fastly.com/';
+    $this->host = 'http://stg.fastly.com/';
     $this->log_enabled = variable_get('fastly_log_enabled', 0);
   }
 

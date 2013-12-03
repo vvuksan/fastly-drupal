@@ -69,7 +69,7 @@ function fastly_setup_form($form_state) {
  */
 function fastly_register_form($form_state) {
   if (variable_get('fastly_used_registration')) {
-    drupal_set_message(t('You already used your registration opportunity. You can <a href="https://app.fastly.com/#password_reset">reset your password</a> if you don\'t remember it.'), 'warning');
+    drupal_set_message(t('You are already registered. You can <a href="https://app.fastly.com/#password_reset">reset your password</a> if you don\'t remember it.'), 'warning');
   }
   else {
     global $user;
@@ -140,13 +140,17 @@ function fastly_register_form($form_state) {
         '#required' => TRUE,
     );
 
-    $form['policy'] = array(
-      '#markup' => '<p>' . t('By clicking "Sign Up" you are agreeing to the <a target="_blank" href="https://www.fastly.com/terms">Terms of Use</a> and <a target="_blank" href="https://www.fastly.com/privacy">Privacy Policy</a>.') . '</p>',
-    );
-
-    $form['submit'] = array(
+    $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Sign Up'),
+    );
+
+    $form['actions']['already_registered'] = array(
+      '#markup' => t('Already registered? ') . l('Click here to enter your account information and get started!', 'admin/config/services/fastly/config'),
+    );
+
+    $form['policy'] = array(
+      '#markup' => '<p>' . t('By clicking "Sign Up" you are agreeing to the <a target="_blank" href="https://www.fastly.com/terms">Terms of Use</a> and <a target="_blank" href="https://www.fastly.com/privacy">Privacy Policy</a>.') . '</p>',
     );
 
     return $form;

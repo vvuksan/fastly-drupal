@@ -36,10 +36,8 @@ function fastly_menu() {
   $items['admin/config/services/fastly'] = array(
     'title' => 'Fastly configuration',
     'description' => 'Fastly configuration',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('fastly_setup_form'),
+    'page callback' => 'fastly_select_page',
     'access arguments' => array('administer fastly'),
-    'file' => 'fastly.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -88,6 +86,14 @@ function fastly_menu() {
 }
 
 /**
+ * Menu callback. Redirect the user to the right page.
+ */
+function fastly_select_page() {
+  $path = variable_get('fastly_api_key', FALSE) ? 'admin/config/services/fastly/config' : 'admin/config/services/fastly/register';
+  drupal_goto($path);
+}
+
+/**
  * Implements hook_rules_action_info().
  */
 function fastly_rules_action_info() {
@@ -118,6 +124,7 @@ function fastly_rules_action_purge() {
 
 /**
  * Implements hook_default_rules_configuration().
+ * @TODO: Handle the updating of other entities. Not just nodes.
  */
 function fastly_default_rules_configuration() {
   $rule = rules_reaction_rule();

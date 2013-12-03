@@ -4,7 +4,7 @@ Fastly
 http://drupal.org/project/fastly
 
 What Is Fastly?
--------------
+---------------
 
 Fastly is a CDN (Content Delivery Network), which is to say, we speed up 
 delivery of your website and its content to your users. When your client in
@@ -33,7 +33,7 @@ We offer competitive compensation, stock options, and health benefits.
 
 
 Module Features
------------------------
+---------------
 
 1. Account Sign Up/Sign In. If you are already an authenticated Fastly user,
 You can simply enter your API key and service ID to start using Fastly
