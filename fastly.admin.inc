@@ -303,6 +303,12 @@ function fastly_register_form_submit($form, &$form_state) {
   	  'login' => $form_state['values']['owner_login'],
   	  'password' => $form_state['values']['owner_password'],
     ),
+    'domain' => $form_state['values']['domain_name'],
+    'hostname' => $form_state['values']['origin_host'],
+    'address' => $form_state['values']['origin_host'],
+    'ipv4' => $form_state['values']['origin_ip'],
+    'version' => 1,
+    'id' => 'syslog',
   );
 
   $api = fastly_get_api();
@@ -313,23 +319,9 @@ function fastly_register_form_submit($form, &$form_state) {
     drupal_set_message($account->msg, 'error');
   }
   else {
-    $data = array(
-      'name' => variable_get('site_name', t('Default')),
-      'domain' => $form_state['values']['domain_name'],
-      'hostname' => $form_state['values']['origin_host'],
-      'address' => $form_state['values']['origin_host'],
-      'ipv4' => $form_state['values']['origin_ip'],
-      'version' => 1,
-      'id' => 'syslog',
-    );
-
-    $api->api_key = $account->raw_api_key;
-
-    $service = $api->createService($data);
-
     variable_set('fastly_used_registration', 1);
-    variable_set('fastly_api_key', $account->raw_api_key);
-    variable_set('fastly_service_id', $service->id);
+    variable_set('fastly_api_key', $account->api_key);
+    variable_set('fastly_service_id', $account->service_id);
 
     drupal_set_message(t('Registration successful! You will receive a confirmation email very soon. Please check your inbox and verify your account by clicking the received link.'));
 

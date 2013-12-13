@@ -34,16 +34,16 @@ function fastly_menu() {
   $items = array();
 
   $items['admin/config/services/fastly'] = array(
-    'title' => 'Fastly configuration',
-    'description' => 'Fastly configuration',
+    'title' => t('Fastly configuration'),
+    'description' => t('Fastly configuration'),
     'page callback' => 'fastly_select_page',
     'access arguments' => array('administer fastly'),
     'type' => MENU_NORMAL_ITEM,
   );
 
   $items['admin/config/services/fastly/new'] = array(
-    'title' => 'Create a service',
-    'description' => 'Create a service',
+    'title' => t('Create a service'),
+    'description' => t('Create a service'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_new_service_form'),
     'access arguments' => array('administer fastly'),
@@ -52,18 +52,18 @@ function fastly_menu() {
   );
 
   $items['admin/config/services/fastly/config'] = array(
-    'title' => 'Configuration',
-    'description' => 'Fastly configuration',
+    'title' => t('Configuration'),
+    'description' => t('Fastly configuration'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_setup_form'),
     'access arguments' => array('administer fastly'),
     'file' => 'fastly.admin.inc',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'type' => MENU_LOCAL_TASK,
   );
 
   $items['admin/config/services/fastly/register'] = array(
-    'title' => 'Registration',
-    'description' => 'Fastly registration',
+    'title' => t('Registration'),
+    'description' => t('Fastly registration'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_register_form'),
     'access arguments' => array('administer fastly'),
@@ -72,8 +72,8 @@ function fastly_menu() {
   );
 
   $items['admin/config/services/fastly/purge'] = array(
-    'title' => 'Purge cache',
-    'description' => 'Fastly purge cache',
+    'title' => t('Purge cache'),
+    'description' => t('Fastly purge cache'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_purge_form'),
     'access arguments' => array('administer fastly'),
@@ -128,7 +128,7 @@ function fastly_rules_action_purge() {
  */
 function fastly_default_rules_configuration() {
   $rule = rules_reaction_rule();
-  $rule->label = 'Purge Fastly cache when a content piece is updated.';
+  $rule->label = t('Purge Fastly cache when a content piece is updated.');
   $rule->active = TRUE;
   $rule->event('node_update')
   //->event('taxonomy_vocabulary_update')
@@ -140,7 +140,6 @@ function fastly_default_rules_configuration() {
 
   return $configs;
 }
-
 
 /**
  * Returns the API object. The key and service id can be overriden for validation reasons.

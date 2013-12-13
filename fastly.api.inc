@@ -18,7 +18,9 @@ class Fastly {
    * @param array $data
    */
   public function signup($data) {
-    $result = $this->query('signup/and_confirm', $data, 'POST');
+    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+    $result = $this->query('plugin/drupal/signup', $data, 'POST', $headers);
 
     return json_decode($result->data);
   }
@@ -80,7 +82,6 @@ class Fastly {
    * @param int $version
    */
   public function updateSettings($data, $version = 1) {
-    $headers['Accept'] = 'application/json';
     $headers['Content-Type'] = 'application/x-www-form-urlencoded';
 
     $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT', $headers);
@@ -131,8 +132,6 @@ class Fastly {
     if ($this->api_key) {
       $options['headers']['Fastly-Key'] = $this->api_key;
     }
-
-    $options['headers']['Drupal-Referrer'] = 'Drupal';
 
     $result = drupal_http_request($url, $options);
 
