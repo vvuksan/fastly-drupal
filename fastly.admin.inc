@@ -348,7 +348,7 @@ function fastly_new_service_form_submit($form, &$form_state) {
   $service = $api->createService($data);
 
   if (isset($service->msg)) {
-    drupal_set_message($service->detail, 'error');
+    drupal_set_message($service->msg, 'error');
   }
   else {
     variable_set('fastly_service_id', $service->id);

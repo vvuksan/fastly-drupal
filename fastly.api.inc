@@ -7,8 +7,8 @@ class Fastly {
   public function __construct($api_key, $service_id) {
     $this->api_key = $api_key;
     $this->service_id = $service_id;
-    //$this->host = 'https://api.fastly.com/';
-    $this->host = 'http://stg.fastly.com/';
+    $this->host = 'https://api.fastly.com/';
+    //$this->host = 'http://stg.fastly.com/';
     $this->log_enabled = variable_get('fastly_log_enabled', 0);
   }
 
@@ -61,6 +61,7 @@ class Fastly {
 
       $this->query('service/' . $service->id . '/version/1/backend', $data, 'POST');
       $this->query('service/' . $service->id . '/version/1/syslog', $data, 'POST');
+      $this->query('service/' . $service->id . '/version/1/activate', array(), 'PUT');
     }
 
     return $service;
@@ -70,8 +71,8 @@ class Fastly {
    * Gets the settings for a version.
    * @param int $version
    */
-  public function getSettings($version = 1) {
-    $result = $this->query('service/' . $this->service_id . '/version/' . $version . '/settings');
+  public function getSettings() {
+    $result = $this->query('service/' . $this->service_id . '/version/' . $this->getActiveVersion() . '/settings');
 
     return json_decode($result->data);
   }
@@ -81,10 +82,17 @@ class Fastly {
    * @param array $data
    * @param int $version
    */
-  public function updateSettings($data, $version = 1) {
-    $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+  public function updateSettings($data) {
+    if ($this->service_id) {
+      $active_version = $this->getActiveVersion();
 
-    $this->query('service/' . $this->service_id . '/version/' . $version . '/settings', $data, 'PUT', $headers);
+      $new_version = json_decode($this->query('service/' . $this->service_id . '/version/' . $active_version . '/clone', array(), 'PUT')->data);
+
+      $headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+      $this->query('service/' . $this->service_id . '/version/' . $new_version->number . '/settings', $data, 'PUT', $headers);
+      $this->query('service/' . $this->service_id . '/version/' . $new_version->number . '/activate', array(), 'PUT');
+    }
   }
 
   /**
@@ -110,6 +118,19 @@ class Fastly {
    */
   public function purgeKey($key) {
     $this->query('service/' . $this->service_id . '/purge/' . $key, array(), 'POST');
+  }
+
+  /**
+   * Gets active version number for the current service.
+   */
+  private function getActiveVersion() {
+    $service = json_decode($this->query('service/' . $this->service_id)->data);
+
+    foreach ($service->versions as $version) {
+      if ($version->active) {
+        return $version->number;
+      }
+    }
   }
 
   /**
