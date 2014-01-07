@@ -126,10 +126,10 @@ function fastly_register_form($form_state) {
       '#required' => TRUE,
     );
 
-    $form['origin_host'] = array(
+    $form['port'] = array(
         '#type' => 'textfield',
-        '#title' => t('Origin Host'),
-        '#default_value' => $_SERVER['HTTP_HOST'],
+        '#title' => t('Origin Port'),
+        '#default_value' => '80',
         '#required' => TRUE,
     );
 
@@ -237,6 +237,13 @@ function fastly_new_service_form() {
     '#required' => TRUE,
   );
 
+  $form['port'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Origin Port'),
+    '#default_value' => '80',
+    '#required' => TRUE,
+  );
+
   $form['domain_name'] = array(
     '#type' => 'textfield',
     '#title' => t('Domain Name'),
@@ -304,8 +311,8 @@ function fastly_register_form_submit($form, &$form_state) {
   	  'password' => $form_state['values']['owner_password'],
     ),
     'domain' => $form_state['values']['domain_name'],
-    'hostname' => $form_state['values']['origin_host'],
-    'address' => $form_state['values']['origin_host'],
+    'port' => $form_state['values']['port'],
+    'address' => $form_state['values']['origin_ip'],
     'ipv4' => $form_state['values']['origin_ip'],
     'version' => 1,
     'id' => 'syslog',
@@ -336,7 +343,7 @@ function fastly_new_service_form_submit($form, &$form_state) {
   $data = array(
     'name' => $form_state['values']['name'],
     'domain' => $form_state['values']['domain_name'],
-    'hostname' => $form_state['values']['domain_name'],
+    'port' => $form_state['values']['port'],
     'address' => $form_state['values']['domain_name'],
     'ipv4' => $form_state['values']['origin_ip'],
     'version' => 1,

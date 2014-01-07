@@ -55,7 +55,6 @@ class Fastly {
 
       $this->query('service/' . $service->id . '/version/1/domain', array('name' => $data['domain']), 'POST');
 
-      unset($data['hostname']);
       unset($data['domain']);
       unset($data['address']);
 
