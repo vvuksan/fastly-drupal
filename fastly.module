@@ -10,6 +10,7 @@
  */
 function fastly_init() {
   module_load_include('inc', 'fastly', 'fastly.api');
+  drupal_add_http_header('Cache-Control', 'public');
 }
 
 /**
