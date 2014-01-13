@@ -52,6 +52,15 @@ function fastly_setup_form($form_state) {
     '#description' => t('The default time to live for cached content in seconds.'),
   );
 
+  $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+
+  $form['fastly_non_cached'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Non-cached pages'),
+    '#default_value' => variable_get('fastly_non_cached', ''),
+    '#description' => $description,
+  );
+
   $form['fastly_log_enabled'] = array(
     '#type' => 'checkbox',
     '#title' => t('Log API requests'),

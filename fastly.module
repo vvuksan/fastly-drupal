@@ -10,7 +10,15 @@
  */
 function fastly_init() {
   module_load_include('inc', 'fastly', 'fastly.api');
-  drupal_add_http_header('Cache-Control', 'public');
+
+  $non_cached_paths = drupal_strtolower(variable_get('fastly_non_cached', ''));
+
+  if ($non_cached_paths) {
+    $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+    if (!drupal_match_path($path, $non_cached_paths)) {
+      drupal_add_http_header('Cache-Control', 'public');
+    }
+  }
 }
 
 /**
