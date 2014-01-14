@@ -11,14 +11,16 @@
 function fastly_init() {
   module_load_include('inc', 'fastly', 'fastly.api');
 
-  $non_cached_paths = drupal_strtolower(variable_get('fastly_non_cached', ''));
+  $non_cached_paths = array('admin', 'admin/*', 'node/add', 'node/add/*', 'node/*/edit', 'node/*/delete', 'user/logout', 'user/register', drupal_strtolower(variable_get('fastly_non_cached', '')));
+  $non_cached_paths = implode("\n", $non_cached_paths);
 
-  if ($non_cached_paths) {
-    $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
-    if (!drupal_match_path($path, $non_cached_paths)) {
-      drupal_add_http_header('Cache-Control', 'public');
-    }
+  $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+
+  if (!drupal_match_path($path, $non_cached_paths)) {
+    drupal_add_http_header('Cache-Control', 'public');
   }
+
+  drupal_add_http_header('Vary', 'Cookie');
 }
 
 /**

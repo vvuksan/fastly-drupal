@@ -6,13 +6,6 @@
  */
 
 /**
- * Implements hook_install().
- */
-function fastly_install() {
-  variable_set('fastly_non_cached', 'admin/*');
-}
-
-/**
  * Implements hook_uninstall().
  */
 function fastly_uninstall() {
