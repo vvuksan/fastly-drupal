@@ -110,6 +110,7 @@ class Fastly {
     $path = str_replace($base_url, '', $path);
 
     $this->query($path, array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
+    $this->query(drupal_get_path_alias($path), array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
   }
 
   /**
