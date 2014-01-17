@@ -17,7 +17,7 @@ function fastly_init() {
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
 
   if (!drupal_match_path($path, $non_cached_paths)) {
-    drupal_add_http_header('Cache-Control', 'public');
+    drupal_add_http_header('Surrogate-Control', 'max-age=86400');
   }
 
   drupal_add_http_header('Vary', 'Cookie');
