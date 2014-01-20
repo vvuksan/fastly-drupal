@@ -124,7 +124,7 @@ function fastly_rules_action_info() {
 function fastly_rules_action_purge() {
   $node = menu_get_object();
   $api = fastly_get_api();
-  $api->purgePath('node/' . $node->nid);
+  $api->purgePath('node/' . $node->nid); dsm('purged!!!');
 }
 
 /**

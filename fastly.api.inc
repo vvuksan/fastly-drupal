@@ -109,6 +109,8 @@ class Fastly {
 
     $path = str_replace($base_url, '', $path);
 
+    $this->host = $base_url;
+
     $this->query($path, array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
     $this->query(drupal_get_path_alias($path), array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
   }
@@ -156,10 +158,11 @@ class Fastly {
 
     $result = drupal_http_request($url, $options);
 
-    if ($this->log_enabled) {
+    if ($this->log_enabled && isset($result->request)) {
       watchdog('fastly', $result->request, array(), WATCHDOG_INFO);
     }
-
+    dsm($this->host);
+dsm($result);
     return $result;
   }
 }
