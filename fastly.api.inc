@@ -106,13 +106,21 @@ class Fastly {
    */
   public function purgePath($path) {
     global $base_url;
-
     $path = str_replace($base_url, '', $path);
+    $this->purgeQuery($path);
+    $this->purgeQuery(drupal_get_path_alias($path));
+  }
 
-    $this->host = $base_url;
-
-    $this->query($path, array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
-    $this->query(drupal_get_path_alias($path), array(), 'PURGE', array('Host' => $_SERVER['SERVER_NAME']));
+  /**
+   * Performs an actual purge request for the given path.
+   */
+  protected function purgeQuery($path) {
+    drupal_http_request(url($path, array('absolute' => TRUE)), array(
+      'headers' => array(
+        'Host' => $_SERVER['HTTP_HOST']
+      ),
+      'method' => 'PURGE',
+    ));
   }
 
   /**
@@ -161,8 +169,7 @@ class Fastly {
     if ($this->log_enabled && isset($result->request)) {
       watchdog('fastly', $result->request, array(), WATCHDOG_INFO);
     }
-    dsm($this->host);
-dsm($result);
+
     return $result;
   }
 }

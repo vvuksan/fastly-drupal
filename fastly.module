@@ -11,12 +11,26 @@
 function fastly_init() {
   module_load_include('inc', 'fastly', 'fastly.api');
 
-  $non_cached_paths = array('admin', 'admin/*', 'node/add', 'node/add/*', 'node/*/edit', 'node/*/delete', 'user/logout', 'user/register', drupal_strtolower(variable_get('fastly_non_cached', '')));
-  $non_cached_paths = implode("\n", $non_cached_paths);
+  $no_store = array(
+    'admin',
+    'admin/*',
+    'node/add',
+    'node/add/*',
+    'node/*/edit',
+    'node/*/delete',
+    'user/logout',
+    'user/register',
+    drupal_strtolower(variable_get('fastly_non_cached', ''))
+  );
 
+  $no_store = implode("\n", $no_store);
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+  $messages = count(drupal_get_messages(NULL, FALSE));
 
-  if (!drupal_match_path($path, $non_cached_paths)) {
+  if (drupal_match_path($path, $no_store) || $messages > 0) {
+    drupal_add_http_header('Surrogate-Control', 'no-store');
+  }
+  else {
     drupal_add_http_header('Surrogate-Control', 'max-age=86400');
   }
 
@@ -100,7 +114,12 @@ function fastly_menu() {
  * Menu callback. Redirect the user to the right page.
  */
 function fastly_select_page() {
-  $path = variable_get('fastly_api_key', FALSE) ? 'admin/config/services/fastly/config' : 'admin/config/services/fastly/register';
+  if (variable_get('fastly_api_key', FALSE)) {
+    $path = 'admin/config/services/fastly/config';
+  }
+  else {
+    $path = 'admin/config/services/fastly/register';
+  }
   drupal_goto($path);
 }
 
@@ -124,7 +143,7 @@ function fastly_rules_action_info() {
 function fastly_rules_action_purge() {
   $node = menu_get_object();
   $api = fastly_get_api();
-  $api->purgePath('node/' . $node->nid); dsm('purged!!!');
+  $api->purgePath('node/' . $node->nid);
 }
 
 /**
