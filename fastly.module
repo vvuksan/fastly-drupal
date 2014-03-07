@@ -124,29 +124,6 @@ function fastly_select_page() {
 }
 
 /**
- * Implements hook_rules_action_info().
- */
-function fastly_rules_action_info() {
-  $actions = array();
-
-  $actions['fastly_rules_action_purge'] = array(
-    'label' => t('Purge the page.'),
-    'group' => t('Fastly'),
-  );
-
-  return $actions;
-}
-
-/**
- * Rules action to purge the URL after the content is updated.
- */
-function fastly_rules_action_purge() {
-  $node = menu_get_object();
-  $api = fastly_get_api();
-  $api->purgePath('node/' . $node->nid);
-}
-
-/**
  * Implements hook_default_rules_configuration().
  * @TODO: Handle the updating of other entities. Not just nodes.
  */
