@@ -20,6 +20,9 @@ function fastly_init() {
     'node/*/delete',
     'user/logout',
     'user/register',
+    'user/*/edit',  
+    'taxonomy/term/*/edit',
+    'comment/*/edit',
     drupal_strtolower(variable_get('fastly_non_cached', ''))
   );
 
