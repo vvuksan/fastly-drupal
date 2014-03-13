@@ -20,7 +20,7 @@ function fastly_default_rules_configuration() {
   
   // 1. Reaction rule to purge Fastly cache when a comment is created, updated or deleted.
   // Purges comment page, relevant node page, and front page.
-  $configs['rules_purge_fastly_cache_comment'] = rules_import('{ "rules_purge_fastly_cache_comment" : {
+  $configs['rules_fastly_purge_comment'] = rules_import('{ "rules_fastly_purge_comment" : {
       "LABEL" : "Purge Fastly cache when a comment is created, updated or deleted.",
       "PLUGIN" : "reaction rule",
       "OWNER" : "rules",
@@ -35,7 +35,7 @@ function fastly_default_rules_configuration() {
   
   // 2. Reaction rule to purge Fastly cache when a node is created, updated or deleted.
   // Purges node page and front page.
-  $configs['rules_purge_fastly_cache_node'] = rules_import('{ "rules_purge_fastly_cache_node" : {
+  $configs['rules_fastly_purge_node'] = rules_import('{ "rules_fastly_purge_node" : {
       "LABEL" : "Purge Fastly cache when a node is created, updated or deleted.",
       "PLUGIN" : "reaction rule",
       "OWNER" : "rules",
@@ -50,7 +50,7 @@ function fastly_default_rules_configuration() {
   
   // 3. Reaction rule to purge Fastly cache when user account is created, updated or deleted.
   // Purges user profile page and front page.
-  $configs['rules_purge_fastly_cache_user'] = rules_import('{ "rules_purge_fastly_cache_user" : {
+  $configs['rules_fastly_purge_user_profile'] = rules_import('{ "rules_fastly_purge_user_profile" : {
       "LABEL" : "Purge Fastly cache when user profile is created, updated or deleted.",
       "PLUGIN" : "reaction rule",
       "OWNER" : "rules",
@@ -65,7 +65,7 @@ function fastly_default_rules_configuration() {
   
   // 4. Reaction rule to purge Fastly cache when taxonomy term is updated or deleted.
   // Purges taxonomy term page.
-  $configs['rules_purge_fastly_cache_taxonomy_term'] = rules_import('{ "rules_purge_fastly_cache_taxonomy_term" : {
+  $configs['rules_fastly_purge_taxonomy_term'] = rules_import('{ "rules_fastly_purge_taxonomy_term" : {
       "LABEL" : "Purge Fastly cache when taxonomy term is updated or deleted.",
       "PLUGIN" : "reaction rule",
       "OWNER" : "rules",
