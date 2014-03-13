@@ -124,25 +124,6 @@ function fastly_select_page() {
 }
 
 /**
- * Implements hook_default_rules_configuration().
- * @TODO: Handle the updating of other entities. Not just nodes.
- */
-function fastly_default_rules_configuration() {
-  $rule = rules_reaction_rule();
-  $rule->label = t('Purge Fastly cache when a content piece is updated.');
-  $rule->active = TRUE;
-  $rule->event('node_update')
-  //->event('taxonomy_vocabulary_update')
-  //->event('taxonomy_term_update')
-  //->event('user_update')
-  ->action('fastly_rules_action_purge');
-
-  $configs['rules_fastly_purge'] = $rule;
-
-  return $configs;
-}
-
-/**
  * Returns the API object. The key and service id can be overriden for validation reasons.
  */
 function fastly_get_api($api_key = '', $service_id = '') {
