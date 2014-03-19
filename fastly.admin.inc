@@ -303,7 +303,7 @@ function fastly_setup_form_validate($form, &$form_state) {
 /**
  * Implements hook_form_submit().
  */
-function fastly_setup_form_submit($form, &$form_state) { dpm($form_state);
+function fastly_setup_form_submit($form, &$form_state) {
   $api = fastly_get_api();
   $api->updateSettings(array('general.default_ttl' => $form_state['values']['fastly_ttl']));
 }
