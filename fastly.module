@@ -20,6 +20,9 @@ function fastly_init() {
     'node/*/delete',
     'user/logout',
     'user/register',
+    'user/*/edit',  
+    'taxonomy/term/*/edit',
+    'comment/*/edit',
     drupal_strtolower(variable_get('fastly_non_cached', ''))
   );
 
@@ -121,48 +124,6 @@ function fastly_select_page() {
     $path = 'admin/config/services/fastly/register';
   }
   drupal_goto($path);
-}
-
-/**
- * Implements hook_rules_action_info().
- */
-function fastly_rules_action_info() {
-  $actions = array();
-
-  $actions['fastly_rules_action_purge'] = array(
-    'label' => t('Purge the page.'),
-    'group' => t('Fastly'),
-  );
-
-  return $actions;
-}
-
-/**
- * Rules action to purge the URL after the content is updated.
- */
-function fastly_rules_action_purge() {
-  $node = menu_get_object();
-  $api = fastly_get_api();
-  $api->purgePath('node/' . $node->nid);
-}
-
-/**
- * Implements hook_default_rules_configuration().
- * @TODO: Handle the updating of other entities. Not just nodes.
- */
-function fastly_default_rules_configuration() {
-  $rule = rules_reaction_rule();
-  $rule->label = t('Purge Fastly cache when a content piece is updated.');
-  $rule->active = TRUE;
-  $rule->event('node_update')
-  //->event('taxonomy_vocabulary_update')
-  //->event('taxonomy_term_update')
-  //->event('user_update')
-  ->action('fastly_rules_action_purge');
-
-  $configs['rules_fastly_purge'] = $rule;
-
-  return $configs;
 }
 
 /**
