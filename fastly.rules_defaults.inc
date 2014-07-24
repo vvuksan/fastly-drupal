@@ -8,17 +8,15 @@
 
 /**
  * Implements hook_default_rules_configuration().
- *
- * @return
- *   An array of rules configurations with the configuration names as keys.
  */
 function fastly_default_rules_configuration() {
-  // Define four reaction rules. These are initially purge Fastly cache for listed entity pages
-  // and front page when node, comment, user profile or taxonomy term is created, updated or
-  // deleted but the user can modify the values and add more URL(s) to be cleared as well as
-  // add a new rule which implements Purge by URL(s) action.
-
-  // 1. Reaction rule to purge Fastly cache when a comment is created, updated or deleted.
+  // Define four reaction rules. These are initially purge Fastly cache for
+  // listed entity page and front page when node, comment, user profile or
+  // taxonomy term is created, updated or deleted but the user can modify the
+  // values and add more URL(s) to be cleared as well as add a new rule which
+  // implements Purge by URL(s) action.
+  // 1. Reaction rule to purge Fastly cache when a comment is created,
+  // updated or deleted.
   // Purges comment page, relevant node page, and front page.
   if (module_exists('comment')) {
     $configs['rules_fastly_purge_comment'] = rules_import('{ "rules_fastly_purge_comment" : {
@@ -35,7 +33,8 @@ function fastly_default_rules_configuration() {
     }');
   }
 
-  // 2. Reaction rule to purge Fastly cache when a node is created, updated or deleted.
+  // 2. Reaction rule to purge Fastly cache when a node is created,
+  // updated or deleted.
   // Purges node page and front page.
   $configs['rules_fastly_purge_node'] = rules_import('{ "rules_fastly_purge_node" : {
       "LABEL" : "Purge Fastly cache when a node is created, updated or deleted.",
@@ -50,7 +49,8 @@ function fastly_default_rules_configuration() {
     }
   }');
 
-  // 3. Reaction rule to purge Fastly cache when user account is created, updated or deleted.
+  // 3. Reaction rule to purge Fastly cache when user account is created,
+  // updated or deleted.
   // Purges user profile page and front page.
   $configs['rules_fastly_purge_user_profile'] = rules_import('{ "rules_fastly_purge_user_profile" : {
       "LABEL" : "Purge Fastly cache when user profile is created, updated or deleted.",
@@ -65,7 +65,8 @@ function fastly_default_rules_configuration() {
     }
   }');
 
-  // 4. Reaction rule to purge Fastly cache when taxonomy term is updated or deleted.
+  // 4. Reaction rule to purge Fastly cache
+  // when taxonomy term is updated or deleted.
   // Purges taxonomy term page.
   if (module_exists('taxonomy')) {
     $configs['rules_fastly_purge_taxonomy_term'] = rules_import('{ "rules_fastly_purge_taxonomy_term" : {

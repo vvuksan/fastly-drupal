@@ -43,7 +43,7 @@ function fastly_rules_action_purge() {
 /**
  * Rules action to purge the specified URL(s).
  *
- * @param $urls
+ * @param array $urls
  *   Array with user-defined URLs and internal paths.
  */
 function fastly_rules_action_purge_by_urls($urls) {

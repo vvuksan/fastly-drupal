@@ -1,14 +1,22 @@
 <?php
+/**
+ * @file
+ * Contains Faslt class that handles API calls to the Fastly service.
+ */
 
 /**
  * Fastly API for Drupal.
  */
 class Fastly {
+
+  /**
+   * Construct function for the Fastly class.
+   */
   public function __construct($api_key, $service_id) {
     $this->api_key = $api_key;
     $this->service_id = $service_id;
     $this->host = 'https://api.fastly.com/';
-    //$this->host = 'http://stg.fastly.com/';
+    // $this->host = 'http://stg.fastly.com/';
     $this->log_enabled = variable_get('fastly_log_enabled', 0);
   }
 
@@ -16,6 +24,10 @@ class Fastly {
    * Registers a new customer.
    *
    * @param array $data
+   *   Data to post to Fastly for the signup request.
+   *
+   * @return array
+   *   Data returned from Fastly.s
    */
   public function signup($data) {
     $headers['Content-Type'] = 'application/x-www-form-urlencoded';
@@ -26,7 +38,10 @@ class Fastly {
   }
 
   /**
-   * Used to validate API key and service ID. Returns FALSE if any corrupt data is passed.
+   * Used to validate API key and service ID.
+   *
+   * @return bool
+   *   FALSE if any corrupt data is passed.
    */
   public function validate() {
     return $this->query('current_customer')->status_message == 'OK';
@@ -45,7 +60,10 @@ class Fastly {
    * Creates a default service for our website once we signed up.
    *
    * @param array $data
-   * @return mixed
+   *   An array of data to create the service with.
+   *
+   * @return object
+   *   Data returned from the Fastly request.
    */
   public function createService($data) {
     $service = json_decode($this->query('service', $data, 'POST')->data);
@@ -68,7 +86,6 @@ class Fastly {
 
   /**
    * Gets the settings for a version.
-   * @param int $version
    */
   public function getSettings() {
     $result = $this->query('service/' . $this->service_id . '/version/' . $this->getActiveVersion() . '/settings');
@@ -78,8 +95,9 @@ class Fastly {
 
   /**
    * Updates the settings for a version.
+   *
    * @param array $data
-   * @param int $version
+   *   An array of settings to update.
    */
   public function updateSettings($data) {
     if ($this->service_id) {
@@ -117,7 +135,7 @@ class Fastly {
   protected function purgeQuery($path) {
     drupal_http_request(url($path, array('absolute' => TRUE)), array(
       'headers' => array(
-        'Host' => $_SERVER['HTTP_HOST']
+        'Host' => $_SERVER['HTTP_HOST'],
       ),
       'method' => 'PURGE',
     ));
@@ -133,7 +151,7 @@ class Fastly {
   /**
    * Gets active version number for the current service.
    */
-  private function getActiveVersion() {
+  protected function getActiveVersion() {
     $service = json_decode($this->query('service/' . $this->service_id)->data);
 
     foreach ($service->versions as $version) {
@@ -147,13 +165,18 @@ class Fastly {
    * Performs http queries to Fastly API server.
    *
    * @param string $uri
+   *   The uri to use for the request, appended to the host.
    * @param array $data
+   *   (optional) Data to send with the request.
    * @param string $method
+   *   (optional) The method to use for the request, defaults to GET.
    * @param array $headers
+   *   (optional) An array of headers to send with the request.
    *
    * @return object
+   *   From drupal_http_request().
    */
-  private function query($uri, $data = array(), $method = 'GET', $headers = array()) {
+  protected function query($uri, $data = array(), $method = 'GET', $headers = array()) {
     $url = $this->host . $uri;
 
     $options['headers'] = $headers;

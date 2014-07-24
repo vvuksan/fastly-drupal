@@ -40,7 +40,8 @@ function fastly_setup_form($form_state) {
     );
 
     $form['actions']['new_service'] = array(
-      '#markup' => l('New service', 'admin/config/services/fastly/new', array('attributes' => array('class' => 'button'))),
+      '#markup' => l(t('New service'), 'admin/config/services/fastly/new',
+        array('attributes' => array('class' => 'button'))),
       '#weight' => 10,
     );
   }
@@ -52,7 +53,12 @@ function fastly_setup_form($form_state) {
     '#description' => t('The default time to live for cached content in seconds.'),
   );
 
-  $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+  $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.",
+    array(
+      '%blog' => 'blog',
+      '%blog-wildcard' => 'blog/*',
+      '%front' => '<front>',
+    ));
 
   $form['fastly_non_cached'] = array(
     '#type' => 'textarea',
@@ -136,17 +142,17 @@ function fastly_register_form($form_state) {
     );
 
     $form['port'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Origin Port'),
-        '#default_value' => '80',
-        '#required' => TRUE,
+      '#type' => 'textfield',
+      '#title' => t('Origin Port'),
+      '#default_value' => '80',
+      '#required' => TRUE,
     );
 
     $form['domain_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Domain Name'),
-        '#default_value' => $_SERVER['HTTP_HOST'],
-        '#required' => TRUE,
+      '#type' => 'textfield',
+      '#title' => t('Domain Name'),
+      '#default_value' => $_SERVER['HTTP_HOST'],
+      '#required' => TRUE,
     );
 
     $form['actions']['submit'] = array(
@@ -155,7 +161,7 @@ function fastly_register_form($form_state) {
     );
 
     $form['actions']['already_registered'] = array(
-      '#markup' => t('Already registered? ') . l('Click here to enter your account information and get started!', 'admin/config/services/fastly/config'),
+      '#markup' => t('Already registered?') . l(t('Click here to enter your account information and get started!'), 'admin/config/services/fastly/config'),
     );
 
     $form['policy'] = array(
@@ -313,11 +319,11 @@ function fastly_setup_form_submit($form, &$form_state) {
  */
 function fastly_register_form_submit($form, &$form_state) {
   $data = array(
-  	'name' => $form_state['values']['account_name'],
+    'name' => $form_state['values']['account_name'],
     'owner' => array(
-  	  'name' => $form_state['values']['owner_first_name'] . ' ' . $form_state['values']['owner_last_name'],
-  	  'login' => $form_state['values']['owner_login'],
-  	  'password' => $form_state['values']['owner_password'],
+      'name' => $form_state['values']['owner_first_name'] . ' ' . $form_state['values']['owner_last_name'],
+      'login' => $form_state['values']['owner_login'],
+      'password' => $form_state['values']['owner_password'],
     ),
     'domain' => $form_state['values']['domain_name'],
     'port' => $form_state['values']['port'],
@@ -383,34 +389,34 @@ function fastly_purge_form_submit($form, &$form_state) {
   $api = fastly_get_api();
 
   switch ($method) {
-  	case 'all':
-  	  $api->purgeAll();
-  	  break;
+    case 'all':
+      $api->purgeAll();
+      break;
 
-  	case 'urls':
-  	  $values = trim($form_state['values']['urls_list']);
+    case 'urls':
+      $values = trim($form_state['values']['urls_list']);
 
-  	  if (empty($values)) {
-  	    $error = (bool)drupal_set_message(t('Please input the URLs to purge.'), 'error');
-  	  }
-  	  else {
+      if (empty($values)) {
+        $error = (bool) drupal_set_message(t('Please input the URLs to purge.'), 'error');
+      }
+      else {
         foreach (explode("\n", $values) as $line) {
           $api->purgePath(trim($line));
-    	}
-  	  }
-  	  break;
+        }
+      }
+      break;
 
-  	case 'keys':
-  	  $values = trim($form_state['values']['keys_list']);
+    case 'keys':
+      $values = trim($form_state['values']['keys_list']);
 
-  	  if (empty($values)) {
-  	    $error = (bool)drupal_set_message(t('Please input the keys to purge.'), 'error');
-  	  }
-  	  else {
-  	    foreach (explode("\n", $values) as $line) {
-  	      $api->purgeKey(trim($line));
-  	    }
-  	  }
+      if (empty($values)) {
+        $error = (bool) drupal_set_message(t('Please input the keys to purge.'), 'error');
+      }
+      else {
+        foreach (explode("\n", $values) as $line) {
+          $api->purgeKey(trim($line));
+        }
+      }
       break;
   }
 
@@ -420,7 +426,10 @@ function fastly_purge_form_submit($form, &$form_state) {
 }
 
 /**
- * A reusable snippet. Checks for error messages and sets up an extra message with a link to Zendesk.
+ * A reusable snippet.
+ *
+ * Checks for error messages
+ * and sets up an extra message with a link to Zendesk.
  */
 function fastly_help_message() {
   if (drupal_get_messages('error', FALSE)) {

@@ -4,10 +4,3 @@ package = Reports
 core = 7.x
 configure = admin/config/services/fastly
 dependencies[] = rules
-
-; Information added by Drupal.org packaging script on 2014-01-20
-version = "7.x-1.x-dev"
-core = "7.x"
-project = "fastly"
-datestamp = "1390214307"
-

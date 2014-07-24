@@ -6,18 +6,18 @@ http://drupal.org/project/fastly
 What Is Fastly?
 ---------------
 
-Fastly is a CDN (Content Delivery Network), which is to say, we speed up 
+Fastly is a CDN (Content Delivery Network), which is to say, we speed up
 delivery of your website and its content to your users. When your client in
-Moscow, Montana or Vriezenveen, Netherlands clicks on your site requesting 
-a piece of information, we want them to feel your speed of delivery. No 
-waiting. We want them to get to your closest point of presence—in 
+Moscow, Montana or Vriezenveen, Netherlands clicks on your site requesting
+a piece of information, we want them to feel your speed of delivery. No
+waiting. We want them to get to your closest point of presence—in
 milliseconds—to get what they want.
 
 Founded in 2011 Fastly delivers the world's only real-time content delivery
-network. At Fastly we think slow is unacceptable. Fastly enables a 
+network. At Fastly we think slow is unacceptable. Fastly enables a
 next-generation of businesses to give their users the best online and mobile
 experience. The patent-pending Fastly Caching Software delivers static,
-dynamic and streaming content with the lowest recorded time to first byte. 
+dynamic and streaming content with the lowest recorded time to first byte.
 Our customers include (but certainly aren't limited to) Twitter, Guardian
 UK, GitHub, AddThis, Wikia, Shazam, Wanelo, and Yammer.
 
@@ -41,18 +41,18 @@ on your website. If I you are a site admin who wishes to begin using Fastly,
 you can simply sign up and configure your service within the module.
 
 2. You can utilize a logging system for issue tracking, which is based upon API
-calls and returns from the Fastly service. You have the option, within your module
-configuration to turn this logging feature on or off, so as not to flood your call
-log during times there are no issues.
+calls and returns from the Fastly service. You have the option, within your
+module configuration to turn this logging feature on or off, so as not to flood
+your call log during times there are no issues.
 
-3. Automated Purging. You will experience automatic purging every time you change
-content on your site. Otherwise, purging will occur at the timeframe (TTL) in which
-you have specified within the module.
+3. Automated Purging. You will experience automatic purging every time you
+change content on your site. Otherwise, purging will occur at the timeframe
+(TTL) in which you have specified within the module.
 
-4. Manual purging. You have the ability to set the Time To Live (TTL) for your content
-within the Fastly module. you can also take advantage of the default setting already
-provided. Also, at anytime you desire, you can click on a button within the module
-to manually purge all of thr content.
+4. Manual purging. You have the ability to set the Time To Live (TTL) for your
+content within the Fastly module. you can also take advantage of the default
+setting already provided. Also, at anytime you desire, you can click on a button
+within the module to manually purge all of thr content.
 
 
 How To Install The Module?
@@ -65,7 +65,7 @@ How To Install The Module?
 
 3. Rebuild access permissions if you are prompted to.
 
-4. Profit!  Fastly will appear in your Configuration > Web services menu section.
+4. Profit! Fastly will appear in your Configuration > Web services menu section.
 
 If you find a problem, incorrect comment, obsolete or improper code or such,
 please search for an issue about it at http://drupal.org/project/fastly/issues

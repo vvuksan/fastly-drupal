@@ -20,10 +20,10 @@ function fastly_init() {
     'node/*/delete',
     'user/logout',
     'user/register',
-    'user/*/edit',  
+    'user/*/edit',
     'taxonomy/term/*/edit',
     'comment/*/edit',
-    drupal_strtolower(variable_get('fastly_non_cached', ''))
+    drupal_strtolower(variable_get('fastly_non_cached', '')),
   );
 
   $no_store = implode("\n", $no_store);
@@ -62,16 +62,16 @@ function fastly_menu() {
   $items = array();
 
   $items['admin/config/services/fastly'] = array(
-    'title' => t('Fastly configuration'),
-    'description' => t('Fastly configuration'),
+    'title' => 'Fastly configuration',
+    'description' => 'Fastly configuration',
     'page callback' => 'fastly_select_page',
     'access arguments' => array('administer fastly'),
     'type' => MENU_NORMAL_ITEM,
   );
 
   $items['admin/config/services/fastly/new'] = array(
-    'title' => t('Create a service'),
-    'description' => t('Create a service'),
+    'title' => 'Create a service',
+    'description' => 'Create a service',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_new_service_form'),
     'access arguments' => array('administer fastly'),
@@ -80,8 +80,8 @@ function fastly_menu() {
   );
 
   $items['admin/config/services/fastly/config'] = array(
-    'title' => t('Configuration'),
-    'description' => t('Fastly configuration'),
+    'title' => 'Configuration',
+    'description' => 'Fastly configuration',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_setup_form'),
     'access arguments' => array('administer fastly'),
@@ -90,8 +90,8 @@ function fastly_menu() {
   );
 
   $items['admin/config/services/fastly/register'] = array(
-    'title' => t('Registration'),
-    'description' => t('Fastly registration'),
+    'title' => 'Registration',
+    'description' => 'Fastly registration',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_register_form'),
     'access arguments' => array('administer fastly'),
@@ -100,8 +100,8 @@ function fastly_menu() {
   );
 
   $items['admin/config/services/fastly/purge'] = array(
-    'title' => t('Purge cache'),
-    'description' => t('Fastly purge cache'),
+    'title' => 'Purge cache',
+    'description' => 'Fastly purge cache',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('fastly_purge_form'),
     'access arguments' => array('administer fastly'),
@@ -127,7 +127,9 @@ function fastly_select_page() {
 }
 
 /**
- * Returns the API object. The key and service id can be overriden for validation reasons.
+ * Returns the API object.
+ *
+ * The key and service id can be overriden for validation reasons.
  */
 function fastly_get_api($api_key = '', $service_id = '') {
   if (empty($api_key)) {
