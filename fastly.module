@@ -32,7 +32,7 @@ function fastly_exit() {
     drupal_add_http_header('Surrogate-Control', 'no-store');
   }
 
-  drupal_add_http_header('Vary', 'Cookie');
+  drupal_add_http_header('Vary', 'Cookie,fastly-ssl');
 }
 
 /**

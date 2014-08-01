@@ -70,3 +70,16 @@ How To Install The Module?
 If you find a problem, incorrect comment, obsolete or improper code or such,
 please search for an issue about it at http://drupal.org/project/fastly/issues
 If there isn't already an issue for it, please create a new one.
+
+SSL and Fastly
+--------------
+Fastly can support SSL connections.
+See http://docs.fastly.com/guides/21844521/23340542 for a list of different
+options available.
+If you are using SSL, you should add the following lines of code to your
+settings.php
+
+// Enable Faslty SSL connections.
+if (isset($_SERVER['HTTP_FASTLY_SSL']) && $_SERVER['HTTP_FASTLY_SSL']) {
+  $_SERVER['HTTPS'] = 'on';
+}
