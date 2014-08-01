@@ -137,3 +137,15 @@ function fastly_get_api($api_key = '', $service_id = '') {
 
   return new Fastly($api_key, $service_id);
 }
+/**
+ * Implements hook_expire_cache().
+ *
+ * Provides integration with the Cache Expiration (expire) module.
+ * TODO: Allow for wildcard cache purges by using Surrogate-Key headers.
+ */
+function fastly_expire_cache($urls, $wildcards, $object_type, $object) {
+  $api = fastly_get_api();
+  foreach ($urls as $url) {
+    $api->purgePath($url);
+  }
+}
