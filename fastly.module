@@ -6,35 +6,30 @@
  */
 
 /**
- * Implements hook_init().
+ * Implements hook_exit().
+ *
+ * Add cache-control headers to tell Fastly to cache content.
+ * We mimic the cache-control headers sent by Drupal core, by avoiding sending
+ * cache headers if the result is an error or if in maintenance mode.
  */
-function fastly_init() {
-  module_load_include('inc', 'fastly', 'fastly.api');
+function fastly_exit() {
 
-  $no_store = array(
-    'admin',
-    'admin/*',
-    'node/add',
-    'node/add/*',
-    'node/*/edit',
-    'node/*/delete',
-    'user/logout',
-    'user/register',
-    'user/*/edit',
-    'taxonomy/term/*/edit',
-    'comment/*/edit',
-    drupal_strtolower(variable_get('fastly_non_cached', '')),
-  );
+  // Avoid caching 404's and error pages.
+  // To do this check the status header.
+  $status = drupal_get_http_header("status");
+  $is_error = preg_match('/^(4|5)/', $status);
 
-  $no_store = implode("\n", $no_store);
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
-  $messages = count(drupal_get_messages(NULL, FALSE));
+  $no_store = drupal_strtolower(variable_get('fastly_non_cached', ''));
 
-  if (drupal_match_path($path, $no_store) || $messages > 0) {
-    drupal_add_http_header('Surrogate-Control', 'no-store');
+  if (drupal_page_is_cacheable() &&
+      !$is_error &&
+      !variable_get('maintenance_mode', 0) &&
+      !drupal_match_path($path, $no_store)) {
+    drupal_add_http_header('Surrogate-Control', 'max-age=' . variable_get('fastly_ttl', '86400'));
   }
   else {
-    drupal_add_http_header('Surrogate-Control', 'max-age=' . variable_get('fastly_ttl', '86400'));
+    drupal_add_http_header('Surrogate-Control', 'no-store');
   }
 
   drupal_add_http_header('Vary', 'Cookie');
