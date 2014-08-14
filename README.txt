@@ -93,3 +93,17 @@ You can enable this by visiting admin/config/system/expire.  You should see
 Fastly in the list of modules that support external expiration.
 Make sure you select "External expiration", and also ensure you untick "Include
 base URL in expires".
+
+Custom VCL
+----------
+Fastly gives you the ability to upload and use your own VCL file.
+This needs to be enabled by contacting Fastly support and requesting it.
+
+This module contains an example.vcl file, this is intended to be used with a
+Drupal site running on Fastly.  It contains session cookie handling logic,
+as well as excluding certain paths from being cached.
+
+If you need to edit the VCL file for whatever reason, please be aware of the
+following thing:
+* Fastly uses Varnish 2, there are some differences in syntax between 2 and 3.
+* Do not include any host information in the VCL, this is added later by Fastly.
