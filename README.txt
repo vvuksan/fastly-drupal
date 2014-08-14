@@ -46,10 +46,8 @@ module configuration to turn this logging feature on or off, so as not to flood
 your call log during times there are no issues.
 
 3. Automated Purging. Content can be automatically purged when updated/created.
-This can either be done by the Cache Expiration module (recommended) or the
-Rules module.  Explanations of both implementations are below. Otherwise,
-purging will occur at the timeframe (TTL) in which you have specified within
-the module.
+This is done through the Cache Expiration module. Otherwise, purging will occur
+at the timeframe (TTL) in which you have specified within the module.
 
 4. Manual purging. You have the ability to set the Time To Live (TTL) for your
 content within the Fastly module. you can also take advantage of the default
@@ -96,14 +94,16 @@ Fastly in the list of modules that support external expiration.
 Make sure you select "External expiration", and also ensure you untick "Include
 base URL in expires".
 
-If you have the Rules module also enabled, you will need to disable the default
-Rules provided by the Fastly module. To do this, visit
-admin/config/workflow/rules and disable the all the rules that are provided by
-the Fastly module.
+Custom VCL
+----------
+Fastly gives you the ability to upload and use your own VCL file.
+This needs to be enabled by contacting Fastly support and requesting it.
 
-Rules Module Integration
-------------------------
-If you do not wish to use the Cache Expiration module, you can use the Rules
-module for purging cache's.  Once you enable the Rules module the default Rules
-provided by the Fastly module will be active, and pages will be purged once
-they are updated.
+This module contains an example.vcl file, this is intended to be used with a
+Drupal site running on Fastly.  It contains session cookie handling logic,
+as well as excluding certain paths from being cached.
+
+If you need to edit the VCL file for whatever reason, please be aware of the
+following thing:
+* Fastly uses Varnish 2, there are some differences in syntax between 2 and 3.
+* Do not include any host information in the VCL, this is added later by Fastly.
