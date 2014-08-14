@@ -33,6 +33,25 @@ function fastly_exit() {
   }
 
   drupal_add_http_header('Vary', 'Cookie,fastly-ssl');
+
+  // Add Surrogate-Key headers based on path segments.
+  // E.g. if the current path is product/some-category/product-name
+  // we should end up with the following Surrogate-Keys:
+  // product product/some-category product/some-category/product-name
+  $path_segments = explode('/', drupal_get_path_alias());
+
+  $surrogate_keys = array();
+  $full_url = '';
+  foreach ($path_segments as $segment) {
+    if (empty($surrogate_keys)) {
+      $full_url = $segment;
+    }
+    else {
+      $full_url .= '/' . $segment;
+    }
+    $surrogate_keys[] = $full_url;
+  }
+  drupal_add_http_header('Surrogate-Key', implode(' ', $surrogate_keys));
 }
 
 /**
@@ -141,11 +160,20 @@ function fastly_get_api($api_key = '', $service_id = '') {
  * Implements hook_expire_cache().
  *
  * Provides integration with the Cache Expiration (expire) module.
- * TODO: Allow for wildcard cache purges by using Surrogate-Key headers.
  */
 function fastly_expire_cache($urls, $wildcards, $object_type, $object) {
   $api = fastly_get_api();
   foreach ($urls as $url) {
     $api->purgePath($url);
+  }
+
+  // For wildcards, we use the Surrogate-Key purging functionality.
+  // Surrogate-Key headers are set in the response based on the
+  // url path segments.
+  // @See fastly_exit().
+  foreach ($wildcards as $path => $wildcard) {
+    if ($wildcard) {
+      $api->purgeKey($path);
+    }
   }
 }
