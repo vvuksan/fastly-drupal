@@ -46,10 +46,12 @@ function fastly_setup_form($form_state) {
     );
   }
 
+  $default_ttl = $api->getSetting('general.default_ttl');
+
   $form['fastly_ttl'] = array(
     '#type' => 'textfield',
     '#title' => t('Default TTL'),
-    '#default_value' => $service_id ? $api->getSettings()->{'general.default_ttl'} : '',
+    '#default_value' => $default_ttl ? $default_ttl : '',
     '#description' => t('The default time to live for cached content in seconds.'),
   );
 

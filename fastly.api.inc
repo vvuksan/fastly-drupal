@@ -88,9 +88,22 @@ class Fastly {
    * Gets the settings for a version.
    */
   public function getSettings() {
-    $result = $this->query('service/' . $this->service_id . '/version/' . $this->getActiveVersion() . '/settings');
+    if ($active_version = $this->getActiveVersion()) {
+      $result = $this->query('service/' . $this->service_id . '/version/' . $active_version . '/settings');
+      return json_decode($result->data);
+    }
+    return NULL;
+  }
 
-    return json_decode($result->data);
+  /**
+   * Gets the settings for a version.
+   */
+  public function getSetting($setting_id) {
+    $settings = $this->getSettings();
+
+    if ($settings && isset($settings->{$setting_id})) {
+      return $settings->{$setting_id};
+    }
   }
 
   /**
@@ -154,11 +167,14 @@ class Fastly {
   protected function getActiveVersion() {
     $service = json_decode($this->query('service/' . $this->service_id)->data);
 
-    foreach ($service->versions as $version) {
-      if ($version->active) {
-        return $version->number;
+    if (is_object($service) && isset($service->versions)) {
+      foreach ($service->versions as $version) {
+        if ($version->active) {
+          return $version->number;
+        }
       }
     }
+    return NULL;
   }
 
   /**
