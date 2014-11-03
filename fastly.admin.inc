@@ -67,13 +67,6 @@ function fastly_setup_form($form_state) {
     '#description' => $description,
   );
 
-  $form['fastly_log_enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Log API requests'),
-    '#default_value' => variable_get('fastly_log_enabled', 0),
-    '#description' => t('Go to <em>Site settings > Advanced settings > Site reports > Recent log messages</em> to view the log.'),
-  );
-
   $form['#submit'][] = 'fastly_setup_form_submit';
 
   return system_settings_form($form);

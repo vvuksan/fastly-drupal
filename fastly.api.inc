@@ -17,7 +17,6 @@ class Fastly {
     $this->service_id = $service_id;
     $this->host = 'https://api.fastly.com/';
     // $this->host = 'http://stg.fastly.com/';
-    $this->log_enabled = variable_get('fastly_log_enabled', 0);
   }
 
   /**
@@ -188,10 +187,6 @@ class Fastly {
     }
 
     $result = drupal_http_request($url, $options);
-
-    if ($this->log_enabled && isset($result->request)) {
-      watchdog('fastly', $result->request, array(), WATCHDOG_INFO);
-    }
 
     return $result;
   }

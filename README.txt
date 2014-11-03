@@ -40,16 +40,11 @@ You can simply enter your API key and service ID to start using Fastly
 on your website. If I you are a site admin who wishes to begin using Fastly,
 you can simply sign up and configure your service within the module.
 
-2. You can utilize a logging system for issue tracking, which is based upon API
-calls and returns from the Fastly service. You have the option, within your
-module configuration to turn this logging feature on or off, so as not to flood
-your call log during times there are no issues.
-
-3. Automated Purging. Content can be automatically purged when updated/created.
+2. Automated Purging. Content can be automatically purged when updated/created.
 This is done through the Cache Expiration module. Otherwise, purging will occur
 at the timeframe (TTL) in which you have specified within the module.
 
-4. Manual purging. You have the ability to set the Time To Live (TTL) for your
+3. Manual purging. You have the ability to set the Time To Live (TTL) for your
 content within the Fastly module. you can also take advantage of the default
 setting already provided. Also, at anytime you desire, you can click on a button
 within the module to manually purge all of thr content.
