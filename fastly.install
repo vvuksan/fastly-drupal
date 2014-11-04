@@ -14,3 +14,14 @@ function fastly_uninstall() {
   variable_del('fastly_service_id');
   variable_del('fastly_non_cached');
 }
+
+/**
+ * Delete old variable.
+ */
+function fastly_update_7100() {
+
+  // This variable was used for "Log API requests" option.
+  variable_del('fastly_log_enabled');
+
+  return t('fastly_log_enabled variable has been deleted.');
+}
