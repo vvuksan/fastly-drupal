@@ -1,0 +1,4 @@
+administer fastly:
+  title: 'Administer Fastly'
+  description: 'Allows users to administer Fastly'
+  restrict access: true

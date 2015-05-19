@@ -1,0 +1,10 @@
+fastly.settings:
+  type: config_object
+  label: 'Fastly Settings'
+  mapping:
+    api_key:
+      type: string
+      label: 'Fastly API key'
+    service_id:
+      type: string
+      label: 'Fastly Service ID'

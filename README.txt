@@ -79,16 +79,6 @@ if (isset($_SERVER['HTTP_FASTLY_SSL']) && $_SERVER['HTTP_FASTLY_SSL']) {
   $_SERVER['HTTPS'] = 'on';
 }
 
-Expire Module Integration
--------------------------
-The Faslty module has integration with the Cache Expiration module
-(https://www.drupal.org/project/expire).
-
-You can enable this by visiting admin/config/system/expire.  You should see
-Fastly in the list of modules that support external expiration.
-Make sure you select "External expiration", and also ensure you untick "Include
-base URL in expires".
-
 Custom VCL
 ----------
 Fastly gives you the ability to upload and use your own VCL file.

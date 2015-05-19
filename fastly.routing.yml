@@ -1,0 +1,7 @@
+fastly.settings:
+  path: '/admin/config/services/fastly'
+  defaults:
+    _form: '\Drupal\fastly\Form\FastlySettingsForm'
+    _title: 'Fastly'
+  requirements:
+    _permission: 'administer fastly'

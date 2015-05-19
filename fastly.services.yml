@@ -1,0 +1,20 @@
+parameters:
+  fastly.host: 'https://api.fastly.com/'
+
+services:
+  fastly.api:
+    class: Drupal\fastly\Api
+    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly']
+  fastly.cache_tags.invalidator:
+    class: Drupal\fastly\CacheTagsInvalidator
+    arguments: ['@fastly.api']
+    tags:
+      - { name: cache_tags_invalidator}
+  fastly.cache_tags.surrogate_key_generator:
+    class: Drupal\fastly\EventSubscriber\SurrogateKeyGenerator
+    arguments: ['@logger.channel.fastly']
+    tags:
+      - { name: event_subscriber }
+  logger.channel.fastly:
+    parent: logger.channel_base
+    arguments: ['fastly']
