@@ -6,22 +6,18 @@
  */
 
 /**
- * Implements hook_exit().
+ * Implements hook_init().
  *
  * Add cache-control headers to tell Fastly to cache content.
  * We mimic the cache-control headers sent by Drupal core, by avoiding sending
  * cache headers if the result is an error or if in maintenance mode.
  */
-function fastly_exit() {
+function fastly_init() {
 
   // Avoid caching 404's and error pages.
   // To do this check the status header.
   $status = drupal_get_http_header("status");
   $is_error = preg_match('/^(4|5)/', $status);
-  
-  // For anonymous users unicode.inc and path.inc will not have been loaded.
-  include_once DRUPAL_ROOT . '/includes/unicode.inc';
-  include_once DRUPAL_ROOT . '/' . variable_get('path_inc', 'includes/path.inc');
   
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
   $no_store = drupal_strtolower(variable_get('fastly_non_cached', ''));
