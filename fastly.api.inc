@@ -134,17 +134,16 @@ class Fastly {
   /**
    * Purge cache by path.
    */
-  public function purgePath($path) {
+  public function purgePath($path) {dpm('path: ' . $path);
     global $base_url;
     $path = str_replace($base_url, '', $path);
     $this->purgeQuery($path);
-    $this->purgeQuery(drupal_get_path_alias($path));
   }
 
   /**
    * Performs an actual purge request for the given path.
    */
-  protected function purgeQuery($path) {
+  protected function purgeQuery($path) {dpm('query: ' . $path);
     drupal_http_request(url($path, array('absolute' => TRUE)), array(
       'headers' => array(
         'Host' => $_SERVER['HTTP_HOST'],
