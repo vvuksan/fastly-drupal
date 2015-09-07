@@ -144,12 +144,21 @@ class Fastly {
    * Performs an actual purge request for the given path.
    */
   protected function purgeQuery($path) {
-    drupal_http_request(url($path, array('absolute' => TRUE)), array(
+    $url = url($path, array('absolute' => TRUE));
+    $options = array(
       'headers' => array(
         'Host' => $_SERVER['HTTP_HOST'],
       ),
       'method' => 'PURGE',
-    ));
+    );
+    if (module_exists('httprl')) {
+      // We just want to execute the queue but not wait.
+      $options['blocking'] = FALSE;
+      httprl_request(array($url), $options);
+    }
+    else {
+      drupal_http_request($url, $options);
+    }
   }
 
   /**

@@ -102,3 +102,9 @@ If you need to edit the VCL file for whatever reason, please be aware of the
 following thing:
 * Fastly uses Varnish 2, there are some differences in syntax between 2 and 3.
 * Do not include any host information in the VCL, this is added later by Fastly.
+
+HTTPRL Module
+-------------
+This module supports the HTTP Parallel Request & Threading Library module
+(https://www.drupal.org/project/httprl). If installed and enabled, this module
+can issue PURGE requests without waiting for a response from Fastly.
