@@ -144,7 +144,7 @@ class Fastly {
    * Performs an actual purge request for the given path.
    */
   protected function purgeQuery($path) {
-    $url = url($path, array('absolute' => TRUE));
+    $url = url($path, array('absolute' => TRUE, 'alias' => TRUE));
     $options = array(
       'headers' => array(
         'Host' => $_SERVER['HTTP_HOST'],
