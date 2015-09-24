@@ -396,7 +396,7 @@ function fastly_purge_form_submit($form, &$form_state) {
       }
       else {
         foreach (explode("\n", $values) as $line) {
-          $api->purgePath(trim($line));
+          $api->purgeQuery(trim($line));
         }
       }
       break;

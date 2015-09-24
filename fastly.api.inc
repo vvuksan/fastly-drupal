@@ -132,25 +132,11 @@ class Fastly {
   }
 
   /**
-   * Purge cache by path.
+   * Performs an actual purge request for the given url.
    */
-  public function purgePath($path) {
-    global $base_url;
-    $path = str_replace($base_url, '', $path);
-    $this->purgeQuery($path);
-  }
-
-  /**
-   * Performs an actual purge request for the given path.
-   */
-  protected function purgeQuery($path) {
-    $url = url($path, array('absolute' => TRUE, 'alias' => TRUE));
-    $options = array(
-      'headers' => array(
-        'Host' => $_SERVER['HTTP_HOST'],
-      ),
-      'method' => 'PURGE',
-    );
+  public function purgeQuery($url) {
+    $url = url($url, array('absolute' => TRUE, 'alias' => TRUE));
+    $options = array('method' => 'PURGE');
     if (module_exists('httprl')) {
       // We just want to execute the queue but not wait.
       $options['blocking'] = FALSE;

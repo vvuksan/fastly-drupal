@@ -164,7 +164,7 @@ function fastly_get_api($api_key = '', $service_id = '') {
 function fastly_expire_cache($urls, $wildcards, $object_type, $object) {
   $api = fastly_get_api();
   foreach ($urls as $url) {
-    $api->purgePath($url);
+    $api->purgeQuery($url);
   }
 
   // For wildcards, we use the Surrogate-Key purging functionality.
