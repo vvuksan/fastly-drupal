@@ -141,6 +141,7 @@ class Fastly {
       // We just want to execute the queue but not wait.
       $options['blocking'] = FALSE;
       httprl_request(array($url), $options);
+      httprl_send_request();
     }
     else {
       drupal_http_request($url, $options);
