@@ -132,6 +132,14 @@ class Fastly {
   }
 
   /**
+   * Purge cache by path.
+   *
+   * @deprecated Use purgeQuery() instead.
+   */
+  public function purgePath($path) {
+    $this->purgeQuery($path);
+  }
+  /**
    * Performs an actual purge request for the given url.
    */
   public function purgeQuery($url) {
