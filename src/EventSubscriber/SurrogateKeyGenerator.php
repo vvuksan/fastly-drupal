@@ -44,15 +44,17 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
 
     $response = $event->getResponse();
 
-    $surrogate_key_header_value = $response->headers->get('X-Drupal-Cache-Tags');
-    if (strlen($surrogate_key_header_value) > 16384) {
-      $this->logger->notice('X-Drupal-Cache-Tags header size exceeded the 16 KB limit that Fastly supports; replaced the cache tags with hashed equivalents.');
-      $cache_tags = explode(' ', $surrogate_key_header_value);
-      $hashes = static::cacheTagsToHashes($cache_tags);
-      $surrogate_key_header_value = implode(' ', $hashes);
-    }
+    if (method_exists($response, 'getCacheableMetadata')) {
+      $surrogate_key_header_value = implode(' ', $response->getCacheableMetadata()->getCacheTags());
+      if (strlen($surrogate_key_header_value) > 16384) {
+        $this->logger->notice('X-Drupal-Cache-Tags header size exceeded the 16 KB limit that Fastly supports; replaced the cache tags with hashed equivalents.');
+        $cache_tags = explode(' ', $surrogate_key_header_value);
+        $hashes = static::cacheTagsToHashes($cache_tags);
+        $surrogate_key_header_value = implode(' ', $hashes);
+      }
 
-    $response->headers->set('Surrogate-Key', $surrogate_key_header_value);
+      $response->headers->set('Surrogate-Key', $surrogate_key_header_value);
+    }
   }
 
   /**

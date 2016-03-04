@@ -9,7 +9,7 @@ services:
     class: Drupal\fastly\CacheTagsInvalidator
     arguments: ['@fastly.api']
     tags:
-      - { name: cache_tags_invalidator}
+      - { name: cache_tags_invalidator }
   fastly.cache_tags.surrogate_key_generator:
     class: Drupal\fastly\EventSubscriber\SurrogateKeyGenerator
     arguments: ['@logger.channel.fastly']

@@ -1,8 +1,8 @@
 <?php
 /**
  * @file
- * This is the GlobalRedirect admin include which provides an interface to global redirect to change some of the default settings
- * Contains \Drupal\globalredirect\Form\GlobalredirectSettingsForm.
+ * This is the Fastly admin settings form to set specific Fastly service.
+ * Contains \Drupal\fastly\Form.
  */
 
 namespace Drupal\fastly\Form;
@@ -10,14 +10,29 @@ namespace Drupal\fastly\Form;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Fastly\Api;
-use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines a form to configure module settings.
  */
 class FastlySettingsForm extends ConfigFormBase {
+
+  /**
+   * The Fastly API.
+   *
+   * @var \Drupal\Fastly\Api
+   */
+  protected $fastlyApi;
+
+  /**
+   * Constructs a \Drupal\fastly\Form object.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The factory for configuration objects.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory) {
+    $this->fastlyApi = \Drupal::service('fastly.api');
+  }
 
   /**
    * {@inheritdoc}
@@ -49,6 +64,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#ajax' => array(
         'callback' => '::updateServices',
         'wrapper' => 'edit-service-wrapper',
+        'event' => 'change',
       ),
     );
 
@@ -57,6 +73,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'select',
       '#title' => $this->t('Service'),
       '#options' => $service_options,
+      '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
       '#required' => TRUE,
       '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
@@ -102,19 +119,16 @@ class FastlySettingsForm extends ConfigFormBase {
   }
 
   protected function getServiceOptions($api_key) {
-    if (!$this->isValidApiKey($api_key)) {
+    if (empty($this->fastlyApi->apiKey)) {
       return [];
     }
 
-    $request = \Drupal::httpClient()->createRequest('GET', 'https://api.fastly.com/'. 'service');
-    $request->addHeader('Fastly-Key', $api_key);
-    $response = \Drupal::httpClient()->send($request);
-    $services = $response->json();
-
+    $services = $this->fastlyApi->getServices();
     $service_options = [];
     foreach ($services as $service) {
-      $service_options[$service['id']] = $service['name'];
+      $service_options[$service->id] = $service->name;
     }
+
     ksort($service_options);
     return $service_options;
   }
@@ -124,18 +138,8 @@ class FastlySettingsForm extends ConfigFormBase {
       return FALSE;
     }
 
-    $request = \Drupal::httpClient()->createRequest('GET', 'https://api.fastly.com/'. 'current_customer');
-    $request->addHeader('Fastly-Key', $api_key);
-    try {
-      $response = \Drupal::httpClient()->send($request);
-      if ($response->getStatusCode() === 200) {
-        return TRUE;
-      }
-      return FALSE;
-    }
-    catch (RequestException $e) {
-      return FALSE;
-    }
+    $this->fastlyApi->setApiKey($api_key);
+    return $this->fastlyApi->validateApiKey();
   }
 
 }
