@@ -171,9 +171,7 @@ function fastly_expire_cache($urls, $wildcards, $object_type, $object) {
   // Surrogate-Key headers are set in the response based on the
   // url path segments.
   // @See fastly_exit().
-  foreach ($wildcards as $path => $wildcard) {
-    if ($wildcard) {
-      $api->purgeKey($path);
-    }
+  if ($paths = array_keys($wildcards, TRUE)) {
+    $api->purgeKeys($paths);
   }
 }
