@@ -69,6 +69,18 @@ function fastly_setup_form($form_state) {
     '#description' => $description,
   );
 
+  if (module_exists('httprl')) {
+    $form['fastly_purge_endpoint'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Purge endpoint'),
+      '#default_value' => variable_get('fastly_purge_endpoint', NULL),
+      '#description' => t('Alternative PURGE request endpoint, use your <a href="@cname-url">Fastly CNAME hostname</a> if an HTTP request to %base_url from your server would not go through Fastly.', array(
+        '%base_url' => $GLOBALS['base_url'],
+        '@cname-url' => 'https://docs.fastly.com/guides/basic-setup/adding-cname-records'
+      )),
+    );
+  }
+
   $form['#submit'][] = 'fastly_setup_form_submit';
 
   return system_settings_form($form);

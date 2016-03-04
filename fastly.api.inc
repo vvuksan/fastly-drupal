@@ -139,15 +139,32 @@ class Fastly {
   public function purgePath($path) {
     $this->purgeQuery($path);
   }
+
   /**
    * Performs an actual purge request for the given url.
    */
-  public function purgeQuery($url) {
-    $url = url($url, array('absolute' => TRUE, 'alias' => TRUE));
+  public function purgeQuery($original_url) {
+    $url = url($original_url, array('absolute' => TRUE, 'alias' => TRUE));
     $options = array('method' => 'PURGE');
     if (module_exists('httprl')) {
       // We just want to execute the queue but not wait.
       $options['blocking'] = FALSE;
+
+      // Support for alternative PURGE endpoint.
+      $purge_endpoint = variable_get('fastly_purge_endpoint', NULL);
+      if ($purge_endpoint) {
+        // Extract Host header from URL.
+        $parsed_url = @parse_url($url);
+        $default_port = $parsed_url['scheme'] == 'https' ? 443 : 80;
+        $port = isset($parsed_url['port']) ? $parsed_url['port'] : $default_port;
+        $options['headers']['Host'] = $parsed_url['host'] . ($port != $default_port ? ':' . $port : '');
+        // Use the purge endpoint as base URL for the PURGE request.
+        $url = url($original_url, array(
+          'absolute' => TRUE,
+          'alias' => TRUE,
+          'base_url' => $purge_endpoint
+        ));
+      }
       httprl_request(array($url), $options);
       httprl_send_request();
     }
