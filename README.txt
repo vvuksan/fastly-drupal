@@ -35,60 +35,35 @@ We offer competitive compensation, stock options, and health benefits.
 Module Features
 ---------------
 
-1. Account Sign Up/Sign In. If you are already an authenticated Fastly user,
+1. Account Sign In. If you are already an authenticated Fastly user,
 You can simply enter your API key and service ID to start using Fastly
-on your website. If I you are a site admin who wishes to begin using Fastly,
-you can simply sign up and configure your service within the module.
+on your website.
 
-2. Automated Purging. Content can be automatically purged when updated/created.
-This is done through the Cache Expiration module. Otherwise, purging will occur
-at the timeframe (TTL) in which you have specified within the module.
-
-3. Manual purging. You have the ability to set the Time To Live (TTL) for your
-content within the Fastly module. you can also take advantage of the default
-setting already provided. Also, at anytime you desire, you can click on a button
-within the module to manually purge all of thr content.
-
+2. Automated Purging. Content will be automatically purged when updated/created.
+This is done using Drupal 8's CacheTagsInvalidatorInterface.
 
 How To Install The Module?
 --------------------------
 
 1. Install Fastly (unpacking it to your Drupal
-/sites/all/modules directory if you're installing by hand, for example).
+/modules directory if you're installing by hand, for example).
 
-2. Enable any Example modules in Admin menu > Site building > Modules.
+2. Fastly will appear in your Configuration > Web services menu section.
 
-3. Rebuild access permissions if you are prompted to.
-
-4. Profit! Fastly will appear in your Configuration > Web services menu section.
+3. Enter your Fastly API key in the settings form and then select your service.
 
 If you find a problem, incorrect comment, obsolete or improper code or such,
 please search for an issue about it at http://drupal.org/project/fastly/issues
 If there isn't already an issue for it, please create a new one.
 
-SSL and Fastly
+TLS and Fastly
 --------------
-Fastly can support SSL connections.
-See http://docs.fastly.com/guides/21844521/23340542 for a list of different
-options available.
-If you are using SSL, you should add the following lines of code to your
-settings.php
+Fastly can support TLS connections.
+See https://docs.fastly.com/guides/securing-communications for a list showing
+different options available. If you are using TLS, you should add the following
+lines of code to your settings.php
 
-// Enable Faslty SSL connections.
-if (isset($_SERVER['HTTP_FASTLY_SSL']) && $_SERVER['HTTP_FASTLY_SSL']) {
+// Enable Faslty TLS connections.
+if (!empty($_SERVER['HTTP_FASTLY_SSL'])) {
   $_SERVER['HTTPS'] = 'on';
 }
-
-Custom VCL
-----------
-Fastly gives you the ability to upload and use your own VCL file.
-This needs to be enabled by contacting Fastly support and requesting it.
-
-This module contains an example.vcl file, this is intended to be used with a
-Drupal site running on Fastly.  It contains session cookie handling logic,
-as well as excluding certain paths from being cached.
-
-If you need to edit the VCL file for whatever reason, please be aware of the
-following thing:
-* Fastly uses Varnish 2, there are some differences in syntax between 2 and 3.
-* Do not include any host information in the VCL, this is added later by Fastly.

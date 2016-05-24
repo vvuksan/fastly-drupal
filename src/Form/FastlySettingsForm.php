@@ -60,6 +60,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
+      '#description' => t("You can find your API key on the Fastly Account Settings page. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
       '#ajax' => array(
         'callback' => '::updateServices',
