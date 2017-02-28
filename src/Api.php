@@ -8,6 +8,7 @@
 namespace Drupal\Fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\fastly\Form\FastlySettingsForm;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,13 @@ class Api {
    * @var \Psr\Log\LoggerInterface
    */
   protected $logger;
+
+  /**
+   * The purge method (instant / soft).
+   *
+   * @var string
+   */
+  private $purgeMethod;
 
   /**
    * Constructs a \Drupal\fastly\Api object.
@@ -41,6 +49,7 @@ class Api {
 
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
+    $this->purgeMethod = $config->get('purge_method');
 
     $this->host = $host;
     $this->httpClient = $http_client;
@@ -144,16 +153,19 @@ class Api {
 
         $result = $this->json($response);
         if ($result->status === 'ok') {
-          $this->logger->info('Successfully purged the key %key. Purge ID: %id.', [
+
+          $this->logger->info('Successfully purged the key %key. Purge ID: %id. Purge Method: %purge_method.', [
             '%key' => $key,
             '%id' => $result->id,
+            '%purge_method' => $this->purgeMethod,
           ]);
         }
         else {
-          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Response status: %status. Purge ID: %id.', [
+          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Response status: %status. Purge ID: %id. Purge Method: %purge_method.', [
             '%key' => $key,
             '%status' => $result->status,
             '%id' => $result->id,
+            '%purge_method' => $this->purgeMethod,
           ]);
         }
       }
@@ -187,6 +199,12 @@ class Api {
         $data['headers'] = $headers;
         $data['headers']['Accept'] = 'application/json';
         $data['headers']['Fastly-Key'] = $this->apiKey;
+
+        // If the module is configured to use soft purging, we need to add
+        // the appropriate header.
+        if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
+          $data['headers']['Fastly-Soft-Purge'] = 1;
+        }
       }
       switch (strtoupper($method)) {
         case 'GET':

@@ -18,6 +18,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class FastlySettingsForm extends ConfigFormBase {
 
   /**
+   * Constants for the values of instant and soft purge methods.
+   */
+  const FASTLY_INSTANT_PURGE = 'instant';
+  const FASTLY_SOFT_PURGE = 'soft';
+
+  /**
    * The Fastly API.
    *
    * @var \Drupal\Fastly\Api
@@ -88,6 +94,59 @@ class FastlySettingsForm extends ConfigFormBase {
       '#suffix' => '</div>',
     );
 
+    $form['purge_method'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Purge method'),
+      '#description' => $this->t("Switch between Fastly's Instant-Purge and Soft-Purge methods."),
+      '#default_value' => $config->get('purge_method') ?: self::FASTLY_INSTANT_PURGE,
+      '#options' => [
+        self::FASTLY_INSTANT_PURGE => $this->t('Use instant purge'),
+        self::FASTLY_SOFT_PURGE => $this->t('Use soft purge'),
+      ],
+    ];
+
+    $form['purge'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Soft purge options'),
+      '#open' => TRUE,
+      '#states' => [
+        'invisible' => [
+          ':input[name="purge_method"]' => ['value' => self::FASTLY_INSTANT_PURGE,],
+        ],
+        'required' => [
+          ':input[name="purge_method"]' => ['value' => self::FASTLY_SOFT_PURGE,],
+        ],
+      ],
+    ];
+
+    $form['purge']['stale_while_revalidate_value'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Stale while revalidate'),
+      '#description' => $this->t('The number in seconds to show stale content while cache revalidation.'),
+      '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
+    ];
+
+    $form['purge']['stale_if_error'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Stale if error'),
+      '#description' => $this->t("Activate the stale-if-error tag for serving stale content if the origin server becomes unavailable."),
+      '#default_value' => $config->get('stale_if_error'),
+    ];
+
+    $form['purge']['stale_if_error_value'] = [
+      '#type' => 'number',
+      '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
+      '#default_value' => $config->get('stale_if_error_value') ?: 604800,
+      '#states' => [
+        'invisible' => [
+          ':input[name="stale_if_error"]' => ['checked' => FALSE],
+        ],
+        'required' => [
+          ':input[name="stale_if_error"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -114,6 +173,10 @@ class FastlySettingsForm extends ConfigFormBase {
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
       ->set('service_id', $form_state->getValue('service_id'))
+      ->set('purge_method', $form_state->getValue('purge_method'))
+      ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
+      ->set('stale_if_error', $form_state->getValue('stale_if_error'))
+      ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
       ->save();
 
     parent::submitForm($form, $form_state);

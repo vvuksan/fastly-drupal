@@ -8,3 +8,15 @@ fastly.settings:
     service_id:
       type: string
       label: 'Fastly Service ID'
+    purge_method:
+      type: string
+      label: 'Fastly Purge Method'
+    stale_while_revalidate_value:
+      type: integer
+      label: 'Fastly stale while revalidation value'
+    stale_if_error:
+      type: boolean
+      label: 'Fastly stale if error'
+    stale_if_error_value:
+      type: integer
+      label: 'Fastly stale if error value'
