@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Fastly\EventSubscriber\CacheTagsHeaderLimitDetector.
- */
-
 namespace Drupal\fastly\EventSubscriber;
 
 use Psr\Log\LoggerInterface;
@@ -12,6 +7,11 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
+/**
+ * Generates a 'Surrogate-Key' header in the format expected by Fastly.
+ *
+ * @see https://docs.fastly.com/guides/purging/getting-started-with-surrogate-keys
+ */
 class SurrogateKeyGenerator implements EventSubscriberInterface {
 
   /**

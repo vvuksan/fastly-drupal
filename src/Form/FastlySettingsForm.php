@@ -1,16 +1,10 @@
 <?php
-/**
- * @file
- * This is the Fastly admin settings form to set specific Fastly service.
- * Contains \Drupal\fastly\Form.
- */
 
 namespace Drupal\fastly\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines a form to configure module settings.
@@ -43,7 +37,7 @@ class FastlySettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'fastly_settings';
   }
 
@@ -61,22 +55,22 @@ class FastlySettingsForm extends ConfigFormBase {
     $config = $this->config('fastly.settings');
 
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
-    $form['api_key'] = array(
+    $form['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
       '#description' => t("You can find your API key on the Fastly Account Settings page. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
-      '#ajax' => array(
+      '#ajax' => [
         'callback' => '::updateServices',
         'wrapper' => 'edit-service-wrapper',
         'event' => 'change',
-      ),
-    );
+      ],
+    ];
 
     $service_options = $this->getServiceOptions($api_key);
-    $form['service_id'] = array(
+    $form['service_id'] = [
       '#type' => 'select',
       '#title' => $this->t('Service'),
       '#options' => $service_options,
@@ -92,7 +86,7 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
       '#prefix' => '<div id="edit-service-wrapper">',
       '#suffix' => '</div>',
-    );
+    ];
 
     $form['purge_method'] = [
       '#type' => 'radios',
@@ -111,10 +105,10 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
       '#states' => [
         'invisible' => [
-          ':input[name="purge_method"]' => ['value' => self::FASTLY_INSTANT_PURGE,],
+          ':input[name="purge_method"]' => ['value' => self::FASTLY_INSTANT_PURGE],
         ],
         'required' => [
-          ':input[name="purge_method"]' => ['value' => self::FASTLY_SOFT_PURGE,],
+          ':input[name="purge_method"]' => ['value' => self::FASTLY_SOFT_PURGE],
         ],
       ],
     ];
@@ -182,6 +176,15 @@ class FastlySettingsForm extends ConfigFormBase {
     parent::submitForm($form, $form_state);
   }
 
+  /**
+   * Retrieves options for the Fastly service.
+   *
+   * @param string $api_key
+   *   API key.
+   *
+   * @return array
+   *   Array of service ids mapped to service names.
+   */
   protected function getServiceOptions($api_key) {
     if (empty($this->fastlyApi->apiKey)) {
       return [];
@@ -197,6 +200,15 @@ class FastlySettingsForm extends ConfigFormBase {
     return $service_options;
   }
 
+  /**
+   * Provides indicator that user entered credentials are valid.
+   *
+   * @param string $api_key
+   *   API key.
+   *
+   * @return bool
+   *   TRUE if API key is valid. FALSE otherwise.
+   */
   protected function isValidApiKey($api_key) {
     if (empty($api_key)) {
       return FALSE;

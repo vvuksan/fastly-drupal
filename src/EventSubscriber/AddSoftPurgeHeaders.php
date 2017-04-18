@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Fastly\EventSubscriber\CacheTagsHeaderLimitDetector.
- */
-
 namespace Drupal\fastly\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -14,6 +9,11 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
+/**
+ * Generates a 'Fastly-Soft-Purge' header in the format expected by Fastly.
+ *
+ * @see https://docs.fastly.com/guides/purging/soft-purges
+ */
 class AddSoftPurgeHeaders implements EventSubscriberInterface {
 
   /**
@@ -37,7 +37,6 @@ class AddSoftPurgeHeaders implements EventSubscriberInterface {
    *   The Fastly logger channel.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   *
    */
   public function __construct(LoggerInterface $logger, ConfigFactoryInterface $config_factory) {
     $this->logger = $logger;

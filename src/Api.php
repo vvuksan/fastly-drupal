@@ -1,16 +1,13 @@
 <?php
 
-/**
- * @file
- * Handles API calls to the Fastly service.
- */
-
 namespace Drupal\Fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Form\FastlySettingsForm;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Response;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -100,7 +97,7 @@ class Api {
   public function purgeAll() {
     if (!empty($this->serviceId)) {
       try {
-        $response = $this->query('service/' . $this->serviceId . '/purge_all', array(), 'POST');
+        $response = $this->query('service/' . $this->serviceId . '/purge_all', [], 'POST');
 
         $result = $this->json($response);
         if ($result->status === 'ok') {
@@ -132,12 +129,12 @@ class Api {
    * Performs an actual purge request for the given path.
    */
   protected function purgeQuery($path) {
-    drupal_http_request(url($path, array('absolute' => TRUE)), array(
-      'headers' => array(
+    drupal_http_request(url($path, ['absolute' => TRUE]), [
+      'headers' => [
         'Host' => $_SERVER['HTTP_HOST'],
-      ),
+      ],
       'method' => 'PURGE',
-    ));
+    ]);
   }
 
   /**
@@ -193,7 +190,7 @@ class Api {
    * @throws \GuzzleHttp\Exception\RequestException
    *   RequestException.
    */
-  protected function query($uri, $data = array(), $method = 'GET', $headers = array()) {
+  protected function query($uri, array $data = [], $method = 'GET', array $headers = []) {
     try {
       if (empty($data['headers'])) {
         $data['headers'] = $headers;
@@ -222,7 +219,7 @@ class Api {
     catch (\Exception $e) {
       $this->logger->critical($e->getMessage());
     }
-    return new \GuzzleHttp\Psr7\Response();
+    return new Response();
   }
 
   /**
@@ -234,7 +231,7 @@ class Api {
    * @return \stdClass
    *   JSON object.
    */
-  public function json(\Psr\Http\Message\ResponseInterface $response) {
+  public function json(ResponseInterface $response) {
     return json_decode($response->getBody());
   }
 

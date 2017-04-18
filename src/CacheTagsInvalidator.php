@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\fastly\CacheTagsInvalidator.
- */
-
 namespace Drupal\fastly;
 
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
