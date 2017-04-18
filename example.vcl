@@ -15,12 +15,13 @@ sub vcl_recv {
 
    # Do not cache these paths.
   if (req.url ~ "^/(status|update)\.php$" ||
-      req.url ~ "^/admin$" ||
-      req.url ~ "^/(admin|flag)/.*$" ||
-      req.url ~ "^.*/(ajax|ahah)/.*$" ) {
+      req.url.path == "/admin" ||
+      req.url.path == "/ooyala/ping" ||
+      req.url ~ "^/(admin|flag|info)/.*$" ||
+      req.url ~ "^.*/(ajax|ahah|system/files)/.*$" ) {
        return (pass);
   }
-
+  
   # Always cache the following file types for all users. This list of extensions
   # appears twice, once here and again in vcl_fetch so make sure you edit both
   # and keep them equal.
