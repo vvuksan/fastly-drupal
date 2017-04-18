@@ -14,13 +14,12 @@ sub vcl_recv {
   set req.grace = 6h;
 
    # Do not cache these paths.
-  if (req.url ~ "^/status\.php$" ||
-      req.url ~ "^/update\.php$" ||
-      req.url ~ "^/admin$" ||
-      req.url ~ "^/admin/.*$" ||
-      req.url ~ "^/flag/.*$" ||
-      req.url ~ "^.*/ajax/.*$" ||
-      req.url ~ "^.*/ahah/.*$") {
+   # Picked from https://github.com/NITEMAN/varnish-bites/blob/master/varnish3/drupal-base.vcl
+  if (req.url ~ "^/(status|update)\.php$" ||
+      req.url.path == "/admin" ||
+      req.url.path == "/ooyala/ping" ||
+      req.url ~ "^/(admin|flag|info)/.*$" ||
+      req.url ~ "^.*/(ajax|ahah|system/files)/.*$" ) {
        return (pass);
   }
 
