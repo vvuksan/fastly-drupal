@@ -14,20 +14,17 @@ sub vcl_recv {
   set req.grace = 6h;
 
    # Do not cache these paths.
-  if (req.url ~ "^/status\.php$" ||
-      req.url ~ "^/update\.php$" ||
+  if (req.url ~ "^/(status|update)\.php$" ||
       req.url ~ "^/admin$" ||
-      req.url ~ "^/admin/.*$" ||
-      req.url ~ "^/flag/.*$" ||
-      req.url ~ "^.*/ajax/.*$" ||
-      req.url ~ "^.*/ahah/.*$") {
+      req.url ~ "^/(admin|flag)/.*$" ||
+      req.url ~ "^.*/(ajax|ahah)/.*$" ) {
        return (pass);
   }
 
   # Always cache the following file types for all users. This list of extensions
   # appears twice, once here and again in vcl_fetch so make sure you edit both
   # and keep them equal.
-  if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
+  if (req.url.ext ~ "(?i)(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)") {
     unset req.http.Cookie;
   }
 
@@ -113,7 +110,7 @@ sub vcl_fetch {
   # (?i) denotes case insensitive in PCRE (perl compatible regular expressions).
   # This list of extensions appears twice, once here and again in vcl_recv so
   # make sure you edit both and keep them equal.
-  if (req.url ~ "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
+  if (req.url.ext ~ "(?i)(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)") {
     unset beresp.http.set-cookie;
   }
 
