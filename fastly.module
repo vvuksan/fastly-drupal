@@ -32,7 +32,7 @@ function fastly_init() {
     drupal_add_http_header('Surrogate-Control', 'no-store');
   }
 
-  drupal_add_http_header('Vary', 'Cookie,fastly-ssl');
+  drupal_add_http_header('Vary', 'Cookie,fastly-ssl', TRUE);
 
   // Add Surrogate-Key headers based on path segments.
   // E.g. if the current path is product/some-category/product-name
