@@ -174,6 +174,7 @@ synthetic {"
   </body>
   </html>
   "};
+  return(deliver);
 }
 
 sub vcl_pass {
