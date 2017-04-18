@@ -139,6 +139,24 @@ sub vcl_miss {
 
 sub vcl_deliver {
 #FASTLY deliver
+
+  if ( !req.http.Fastly-Debug ) {
+    # Remove server fingerprints.
+    unset resp.http.Server;
+    unset resp.http.Via;
+    unset resp.http.X-Generator;
+    unset resp.http.X-Powered-By;
+
+    # Remove non-Fastly debug headers.
+    unset resp.http.X-Drupal-Cache;
+    unset resp.http.X-Varnish;
+    unset resp.http.X-Varnish-Cache;
+
+    # Remove Fastly debug headers.
+    unset resp.http.X-Cache-Debug;
+    unset resp.http.X-Backend-Key;
+  }
+
   return(deliver);
 }
 
