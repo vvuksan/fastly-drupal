@@ -47,7 +47,7 @@ at the timeframe (TTL) in which you have specified within the module.
 3. Manual purging. You have the ability to set the Time To Live (TTL) for your
 content within the Fastly module. You can also take advantage of the default
 setting already provided. Also, at anytime you desire, you can click on a button
-within the module to manually purge all of thr content.
+within the module to manually purge all of the content.
 
 
 How To Install The Module?
@@ -86,7 +86,7 @@ Expire Module Integration
 The Fastly module has integration with the Cache Expiration module
 (https://www.drupal.org/project/expire).
 
-You can enable this by visiting admin/config/system/expire.  You should see
+You can enable this by visiting admin/config/system/expire. You should see
 Fastly in the list of modules that support external expiration.
 Make sure you select "External expiration".
 
@@ -101,7 +101,7 @@ Fastly gives you the ability to upload and use your own VCL file.
 This needs to be enabled by contacting Fastly support and requesting it.
 
 This module contains an example.vcl file, this is intended to be used with a
-Drupal site running on Fastly.  It contains session cookie handling logic,
+Drupal site running on Fastly. It contains session cookie handling logic,
 as well as excluding certain paths from being cached.
 
 If you need to edit the VCL file for whatever reason, please be aware of the

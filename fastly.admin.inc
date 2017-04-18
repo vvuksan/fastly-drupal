@@ -168,7 +168,7 @@ function fastly_register_form($form_state) {
     );
 
     $form['actions']['already_registered'] = array(
-      '#markup' => t('Already registered?') . l(t('Click here to enter your account information and get started!'), 'admin/config/services/fastly/config'),
+      '#markup' => t('Already registered?') . ' ' . l(t('Click here to enter your account information and get started!'), 'admin/config/services/fastly/config'),
     );
 
     $form['policy'] = array(
