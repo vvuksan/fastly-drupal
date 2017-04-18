@@ -81,6 +81,18 @@ function fastly_setup_form($form_state) {
     );
   }
 
+  $form['fastly_purge_type'] = array(
+    '#type' => 'radios',
+    '#title' => t('Purging'),
+    '#options' => array(
+      'soft' => 'Soft purge',
+      'immediate' => 'Immediate purge'
+    ),
+    '#default_value' => variable_get('fastly_purge_type', 'immediate'),
+    '#required' => TRUE,
+    '#description' => t('Purge of cached items may be immediate or delayed (soft). Soft purge means Fastly will deliver the existing cache until new data is fetched from the origin.'),
+  );
+
   $form['#submit'][] = 'fastly_setup_form_submit';
 
   return system_settings_form($form);

@@ -146,6 +146,9 @@ class Fastly {
   public function purgeQuery($original_url) {
     $url = url($original_url, array('absolute' => TRUE, 'alias' => TRUE));
     $options = array('method' => 'PURGE');
+    if (variable_get('fastly_purge_type', 'immediate') == 'soft') {
+      $options['headers']['Fastly-Soft-Purge'] = 1;
+    }
     if (module_exists('httprl')) {
       // We just want to execute the queue but not wait.
       $options['blocking'] = FALSE;
