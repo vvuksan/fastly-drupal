@@ -140,28 +140,25 @@ class Api {
   /**
    * Purge cache by key.
    *
-   * @param string $key
-   *   A Surrogate Key value; in the case of Drupal: a cache tag.
+   * @param array $keys
+   *   A list of Surrogate Key values; in the case of Drupal: cache tags.
    */
-  public function purgeKey($key) {
+  public function purgeKeys($keys) {
     if (!empty($this->serviceId)) {
       try {
-        $response = $this->query('service/' . $this->serviceId . '/purge/' . $key, [], 'POST');
+        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', [ "Surrogate-Key" => join(" ", $keys) ] );
 
         $result = $this->json($response);
-        if ($result->status === 'ok') {
+        if ( count($result) > 0 ) {
 
-          $this->logger->info('Successfully purged the key %key. Purge ID: %id. Purge Method: %purge_method.', [
-            '%key' => $key,
-            '%id' => $result->id,
+          $this->logger->info('Successfully purged key(s) %key. Purge Method: %purge_method.', [
+            '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
         }
         else {
-          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Response status: %status. Purge ID: %id. Purge Method: %purge_method.', [
-            '%key' => $key,
-            '%status' => $result->status,
-            '%id' => $result->id,
+          $this->logger->critical('Unable to purge key(s) %key was purged from Fastly. Purge Method: %purge_method.', [
+            '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
         }

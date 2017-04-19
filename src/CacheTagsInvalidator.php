@@ -38,16 +38,12 @@ class CacheTagsInvalidator implements CacheTagsInvalidatorInterface {
       return;
     }
 
-    foreach ($tags as $tag) {
-      $this->fastlyApi->purgeKey($tag);
-    }
+    $this->fastlyApi->purgeKeys($tags);
 
     // Also invalidate the cache tags as hashes, to automatically also work for
     // responses that exceed the 16 KB header limit.
     $hashes = SurrogateKeyGenerator::cacheTagsToHashes($tags);
-    foreach ($hashes as $hash) {
-      $this->fastlyApi->purgeKey($hash);
-    }
+    $this->fastlyApi->purgeKeys($hashes);
   }
 
 }
