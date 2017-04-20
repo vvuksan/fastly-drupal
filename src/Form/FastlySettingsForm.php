@@ -141,6 +141,15 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
     ];
 
+    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
+    $form['webhook_url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Webhook URL'),
+      '#default_value' => $webhook_url,
+      '#required' => FALSE,
+      '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
+    ];
+    
     return parent::buildForm($form, $form_state);
   }
 
@@ -166,6 +175,7 @@ class FastlySettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
+      ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))

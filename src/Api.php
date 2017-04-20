@@ -47,6 +47,7 @@ class Api {
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
+    $this->webHookURL = $config->get('webhook_url');
 
     $this->host = $host;
     $this->httpClient = $http_client;
@@ -135,6 +136,9 @@ class Api {
       ],
       'method' => 'PURGE',
     ]);
+    if ( $this->webHookURL != "" ) {
+      $this->sendWebHook('Purged ' . $path);
+    }
   }
 
   /**
@@ -151,13 +155,19 @@ class Api {
         $result = $this->json($response);
         if ( count($result) > 0 ) {
 
-          $this->logger->info('Successfully purged key(s) %key. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+          if ( $this->webHookURL != "" ) {
+            $this->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . "* on *http://" . $_SERVER['HTTP_HOST'] . "*. Purge Method: " . $this->purgeMethod);
+          }
+          $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+            '%key' =>  join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
         }
         else {
-          $this->logger->critical('Unable to purge key(s) %key was purged from Fastly. Purge Method: %purge_method.', [
+          if ( $this->webHookURL != "" ) {
+            $this->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod);
+          }
+          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
@@ -230,6 +240,22 @@ class Api {
    */
   public function json(ResponseInterface $response) {
     return json_decode($response->getBody());
+  }
+
+  public function sendWebHook($message)
+  {
+    $text =  $message;
+    $headers = [
+      'Content-type: application/json'
+    ];
+
+    $body = [
+      "text"  =>  $text,
+      "username" => "fastly-drupal-bot",
+      "icon_emoji"=> ":drupal:"
+    ];
+
+    return $this->httpClient->post($this->webHookURL, array ("headers" => $headers, "json" => $body));
   }
 
 }
