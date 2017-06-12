@@ -13,18 +13,18 @@ class CacheTagsInvalidator implements CacheTagsInvalidatorInterface {
   /**
    * The Fastly API.
    *
-   * @var \Drupal\Fastly\Api
+   * @var \Drupal\fastly\Api
    */
-  protected $fastlyApi;
+  protected $api;
 
   /**
    * Constructs a CacheTagsInvalidator object.
    *
-   * @param \Drupal\Fastly\Api $fastly_api
+   * @param \Drupal\fastly\Api $api
    *   The Fastly API.
    */
-  public function __construct(Api $fastly_api) {
-    $this->fastlyApi = $fastly_api;
+  public function __construct(Api $api) {
+    $this->api = $api;
   }
 
   /**
@@ -34,14 +34,14 @@ class CacheTagsInvalidator implements CacheTagsInvalidatorInterface {
     // When either an extension (module/theme) is (un)installed, purge
     // everything.
     if (in_array('config:core.extension', $tags)) {
-      $this->fastlyApi->purgeAll();
+      $this->api->purgeAll();
       return;
     }
 
     // Also invalidate the cache tags as hashes, to automatically also work for
     // responses that exceed the 16 KB header limit.
-    $all_tags_and_hashes = array_merge($tags, SurrogateKeyGenerator::cacheTagsToHashes($tags));
-    $this->fastlyApi->purgeKeys($all_tags_and_hashes);
+    $all_tags_and_hashes = SurrogateKeyGenerator::cacheTagsToHashes($tags);
+    $this->api->purgeKeys($all_tags_and_hashes);
   }
 
 }
