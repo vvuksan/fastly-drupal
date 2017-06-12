@@ -67,16 +67,53 @@ class Api {
    * Used to validate API key.
    *
    * @return bool
-   *   FALSE if any corrupt data is passed.
+   *   FALSE if any corrupt data is passed or token scope is inadequate.
    */
   public function validateApiKey() {
     try {
-      $response = $this->query('current_customer');
+      $response = $this->query('/tokens/self');
       if ($response->getStatusCode() != 200) {
         return FALSE;
       }
       $json = $this->json($response);
-      return !empty($json->owner_id);
+      if (!empty($json->scopes)) {
+        // GET /tokens/self will return scopes for the passed token, but that
+        // alone is not enough to know if a token can perform purge actions.
+        // Global scope tokens require the engineer or superuser role.
+        $potentially_valid_purge_scopes = 'global';
+        // Purge tokens require both purge_all and purge_select.
+        $valid_purge_scopes = ['purge_all', 'purge_select'];
+
+        if (array_intersect($valid_purge_scopes, $json->scopes) === $valid_purge_scopes) {
+          return TRUE;
+        }
+        elseif (in_array($potentially_valid_purge_scopes, $json->scopes, TRUE)) {
+          try {
+            $response = $this->query('/current_user');
+            if ($response->getStatusCode() != 200) {
+              return FALSE;
+            }
+            $json = $this->json($response);
+            if (!empty($json->role)) {
+              if ($json->role === 'engineer' || $json->role === 'superuser') {
+                return TRUE;
+              }
+              elseif ($json->role === 'billing' || $json->role === 'user') {
+                return FALSE;
+              }
+              else {
+                return FALSE;
+              }
+            }
+          }
+          catch (\Exception $e) {
+            return FALSE;
+          }
+        }
+        else {
+          return FALSE;
+        }
+      }
     }
     catch (\Exception $e) {
       return FALSE;
