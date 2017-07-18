@@ -289,6 +289,7 @@ class Api {
           return $this->httpClient->post($this->host . $uri, $data);
 
         case 'PURGE':
+          $data['connect_timeout'] = 3;
           return $this->httpClient->request($method, $uri, $data);
 
         default:
