@@ -51,11 +51,9 @@ class Api {
    */
   public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state) {
     $config = $config_factory->get('fastly.settings');
-
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
-
     $this->host = $host;
     $this->httpClient = $http_client;
     $this->logger = $logger;
@@ -133,7 +131,7 @@ class Api {
    * Gets a list of services for the current customer.
    */
   public function getServices() {
-    $response = $this->query('service');
+    $response = $this->query('/service');
     return $this->json($response);
   }
 
@@ -283,12 +281,67 @@ class Api {
       }
       switch (strtoupper($method)) {
         case 'GET':
+          $uri = ltrim($uri, "/");
           return $this->httpClient->request($method, $this->host . $uri, $data);
 
         case 'POST':
           return $this->httpClient->post($this->host . $uri, $data);
 
         case 'PURGE':
+          return $this->httpClient->request($method, $uri, $data);
+        default:
+          throw new \Exception('Method :method is not valid for Fastly service.', [
+            ':method' => $method,
+          ]);
+      }
+    }
+    catch (\Exception $e) {
+      $this->logger->critical($e->getMessage());
+    }
+    return new Response();
+  }
+
+  /**
+   * Performs http queries to Fastly API server (VCL related).
+   *
+   * @param string $uri
+   *   The uri to use for the request, appended to the host.
+   * @param array $data
+   *   (optional) Data to send with the request.
+   * @param string $method
+   *   (optional) The method to use for the request, defaults to GET.
+   * @param array $headers
+   *   (optional) An array of headers to send with the request.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   Response.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException
+   *   RequestException.
+   */
+  protected function VQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
+    try {
+      $this->host;
+
+      if (empty($data['headers'])) {
+        $data['headers'] = $headers;
+        $data['headers']['Accept'] = 'application/json';
+        $data['headers']['Fastly-Key'] = $this->apiKey;
+
+        // If the module is configured to use soft purging, we need to add
+        // the appropriate header.
+        if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
+          $data['headers']['Fastly-Soft-Purge'] = 1;
+        }
+      }
+      $uri = ltrim($uri, '/');
+      $uri = $this->host.$uri;
+
+      switch (strtoupper($method)) {
+        case 'GET':
+        case 'POST':
+        case 'PURGE':
+        case 'PUT':
           return $this->httpClient->request($method, $uri, $data);
 
         default:
@@ -302,7 +355,6 @@ class Api {
     }
     return new Response();
   }
-
   /**
    * Get JSON from response.
    *
@@ -328,6 +380,38 @@ class Api {
     }
     $this->setApiKey($apiKey);
     return $this->validateApiKey();
+  }
+
+  /**
+   * Wraps query method from this class
+   *
+   * @param string $uri
+   *   The uri to use for the request, appended to the host.
+   * @param array $data
+   *   (optional) Data to send with the request.
+   * @param string $method
+   *   (optional) The method to use for the request, defaults to GET.
+   * @param array $headers
+   *   (optional) An array of headers to send with the request.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   Response.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException
+   *   RequestException.
+   */
+  public function vclQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
+    if (empty($data['headers'])) {
+      $data['headers'] = $headers;
+      $data['headers']['Accept'] = 'application/json';
+      $data['headers']['Fastly-Key'] = $this->apiKey;
+    }
+
+    if($method == "POST") {
+      $data['form_params'] = $data;
+    }
+
+    return $this->VQuery($uri, $data, $method, $headers);
   }
 
 }
