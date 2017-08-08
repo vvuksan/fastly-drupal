@@ -24,6 +24,13 @@ class Api {
   protected $logger;
 
   /**
+   * Connect timeout
+   *
+   * @var string
+   */
+  protected $connectTimeout;
+
+  /**
    * The purge method (instant / soft).
    *
    * @var string
@@ -49,12 +56,20 @@ class Api {
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state) {
+  public function __construct(ConfigFactoryInterface $config_factory,
+                              $host,
+                              ClientInterface $http_client,
+                              LoggerInterface $logger,
+                              State $state,
+                              $connectTimeout){
+
     $config = $config_factory->get('fastly.settings');
 
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
+
+    $this->connectTimeout = $connectTimeout;
 
     $this->host = $host;
     $this->httpClient = $http_client;
@@ -269,6 +284,7 @@ class Api {
    *   RequestException.
    */
   protected function query($uri, array $data = [], $method = 'GET', array $headers = []) {
+    $data['connect_timeout'] = $this->connectTimeout;
     try {
       if (empty($data['headers'])) {
         $data['headers'] = $headers;
@@ -289,7 +305,6 @@ class Api {
           return $this->httpClient->post($this->host . $uri, $data);
 
         case 'PURGE':
-          $data['connect_timeout'] = 3;
           return $this->httpClient->request($method, $uri, $data);
 
         default:
