@@ -56,12 +56,7 @@ class Api {
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
    */
-  public function __construct(ConfigFactoryInterface $config_factory,
-                              $host,
-                              ClientInterface $http_client,
-                              LoggerInterface $logger,
-                              State $state,
-                              $connectTimeout){
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout) {
 
     $config = $config_factory->get('fastly.settings');
 
