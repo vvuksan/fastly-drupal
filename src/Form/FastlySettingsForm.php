@@ -132,9 +132,9 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#title' => $this->t('Purge options'),
       '#open' => TRUE,
       '#states' => [
-          'required' => [
-            ':input[name="purge_method"]' => ['value' => [self::FASTLY_SOFT_PURGE, self::FASTLY_INSTANT_PURGE]],
-          ],
+        'required' => [
+          ':input[name="purge_method"]' => ['value' => [self::FASTLY_SOFT_PURGE, self::FASTLY_INSTANT_PURGE]],
+        ],
       ],
     ];
 
@@ -157,12 +157,12 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
-          'visible' => [
-            ':input[name="stale_if_error"]' => ['checked' => FALSE],
-          ],
-          'required' => [
-            ':input[name="stale_if_error"]' => ['checked' => TRUE],
-          ],
+        'visible' => [
+          ':input[name="stale_if_error"]' => ['checked' => FALSE],
+        ],
+        'required' => [
+          ':input[name="stale_if_error"]' => ['checked' => TRUE],
+        ],
       ],
     ];
 
