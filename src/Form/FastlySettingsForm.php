@@ -7,6 +7,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
 use Drupal\fastly\State;
+use Drupal\fastly\VclHandler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -28,6 +29,13 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $api;
 
   /**
+   * VclHandler.
+   *
+   * @var \Drupal\fastly\VclHandler
+   */
+  protected $vclHandler;
+
+  /**
    * @var \Drupal\fastly\State
    */
   protected $state;
@@ -41,11 +49,14 @@ class FastlySettingsForm extends ConfigFormBase {
    *   Fastly API for Drupal.
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
+   * @param \Drupal\fastly\VclHandler
+   *   Vcl handler
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state) {
+  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
+    $this->vclHandler = $vclHandler;
   }
 
   /**
@@ -55,7 +66,8 @@ class FastlySettingsForm extends ConfigFormBase {
     return new static(
       $container->get('config.factory'),
       $container->get('fastly.api'),
-      $container->get('fastly.state')
+      $container->get('fastly.state'),
+      $container->get('fastly.vclhandler')
     );
   }
 
@@ -166,6 +178,23 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       ],
     ];
 
+    $form['vcl_snippets'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Update vcl'),
+      '#required' => false,
+      '#description' => t("Upload vcl"),
+      '#ajax' => [
+        'callback' => '::uploadVcls',
+        'event' => 'click',
+      ],
+    ];
+
+
+    $form['vcl_snippets']['activate'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Activate version on vcl upload'),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -226,5 +255,17 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     ksort($service_options);
     return $service_options;
+  }
+
+  /**
+   * Upload Vcls
+   *
+   * @param $form
+   * @param FormStateInterface $form_state
+   * @return array
+   */
+  public function uploadVcls($form, FormStateInterface $form_state) {
+    $activate = $form_state->getValue("activate");
+    return (array) $this->vclHandler->execute($activate);
   }
 }

@@ -28,3 +28,6 @@ services:
   logger.channel.fastly:
     parent: logger.channel_base
     arguments: ['fastly']
+  fastly.vclhandler:
+    class: Drupal\fastly\VclHandler
+    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly']
