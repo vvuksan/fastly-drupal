@@ -85,7 +85,10 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a 
+href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token 
+you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
+href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -126,14 +129,11 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['purge'] = [
       '#type' => 'details',
-      '#title' => $this->t('Soft purge options'),
+      '#title' => $this->t('Purge options'),
       '#open' => TRUE,
       '#states' => [
-        'invisible' => [
-          ':input[name="purge_method"]' => ['value' => self::FASTLY_INSTANT_PURGE],
-        ],
         'required' => [
-          ':input[name="purge_method"]' => ['value' => self::FASTLY_SOFT_PURGE],
+          ':input[name="purge_method"]' => ['value' => [self::FASTLY_SOFT_PURGE, self::FASTLY_INSTANT_PURGE]],
         ],
       ],
     ];
@@ -157,7 +157,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
-        'invisible' => [
+        'visible' => [
           ':input[name="stale_if_error"]' => ['checked' => FALSE],
         ],
         'required' => [
@@ -189,7 +189,6 @@ class FastlySettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
 
@@ -228,5 +227,4 @@ class FastlySettingsForm extends ConfigFormBase {
     ksort($service_options);
     return $service_options;
   }
-
 }
