@@ -321,8 +321,6 @@ class Api {
    */
   protected function VQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
     try {
-      $this->host;
-
       if (empty($data['headers'])) {
         $data['headers'] = $headers;
         $data['headers']['Accept'] = 'application/json';
@@ -355,6 +353,7 @@ class Api {
     }
     return new Response();
   }
+
   /**
    * Get JSON from response.
    *
@@ -412,6 +411,47 @@ class Api {
     }
 
     return $this->VQuery($uri, $data, $method, $headers);
+  }
+
+  /**
+   * Function for testing Fastly API connection
+   *
+   * @return array
+   */
+  public function testFastlyApiConnection() {
+
+    if (empty($this->host) || empty($this->serviceId) || empty($this->apiKey)) {
+      return ['status' => false, 'message' => 'Please enter credentials first'];
+    }
+
+    $url = '/service/' . $this->serviceId;
+    $headers = [
+      'Fastly-Key' => $this->apiKey,
+      'Accept' => 'application/json'
+    ];
+    try {
+
+      $response = $this->vclQuery($url, [], "GET", $headers);
+
+      if ($response->getStatusCode() == "200") {
+        $status = true;
+        $response_body = json_decode($response->getBody());
+        $service_name = $response_body->name;
+        $message = 'Connection Successful on service *' . $service_name . "*";
+      } else {
+        $status = false;
+        $response_body = json_decode($response->getBody());
+        $service_name = $response_body->name;
+        $message = 'Connection not Successful on service *' . $service_name . "*" . " status : " . $response->getStatusCode();
+        $this->logger->critical($message);
+      }
+
+      return ['status' => $status, 'message' => $message];
+
+    } catch (Exception $e) {
+
+      return ['status' => false, 'message' => $e->getMessage()];
+    }
   }
 
 }

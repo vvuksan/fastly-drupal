@@ -3,6 +3,7 @@
 namespace Drupal\fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class to control the VCL handling.
@@ -84,7 +85,14 @@ class VclHandler
   /**
    * Errors
    */
-  protected $_errors = array();
+  protected $_errors = [];
+
+  /**
+   * The Fastly logger channel.
+   *
+   * @var \Psr\Log\LoggerInterface
+   */
+  protected $logger;
 
   /**
    * Sets data to be processed, sets Credentials
@@ -94,43 +102,43 @@ class VclHandler
    * @param $host
    * @param Api $api
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger) {
     $vcl_dir = drupal_get_path('module', 'fastly'). '/vcl_snippets';
-    $data = array(
-      'vcl' => array(
-        array(
+    $data = [
+      'vcl' => [
+        [
           'vcl_dir' => $vcl_dir,
           'type' => 'recv'
-        ),
-        array(
+        ],
+        [
           'vcl_dir' => $vcl_dir,
           'type' => 'deliver',
-        ),
-        array(
+        ],
+        [
           'vcl_dir' => $vcl_dir,
           'type' => 'error',
-        ),
-        array(
+        ],
+        [
           'vcl_dir' => $vcl_dir,
           'type' => 'fetch',
-        )
-      ),
-      'condition' => array(
-        array(
+        ]
+      ],
+      'condition' => [
+        [
           'name' => 'drupalmodule_request1',
           'statement' => 'req.http.x-pass == "1"',
           'type' => 'REQUEST',
           'priority' => 90
-        )
-      ),
-      'setting' => array(
-        array(
+        ]
+      ],
+      'setting' => [
+        [
           'name' => 'drupalmodule_setting1',
           'action' => 'pass',
           'request_condition' => 'drupalmodule_request1'
-        )
-      )
-    );
+        ]
+      ]
+    ];
 
     $this->api = $api;
     $config = $config_factory->get('fastly.settings');
@@ -140,8 +148,9 @@ class VclHandler
     $this->_hostname = $host;
     $this->serviceId = $config->get('service_id');
     $this->_apiKey = $config->get('api_key');
+    $this->logger = $logger;
 
-    $connection = $this->testFastlyApiConnection($this->_hostname, $this->serviceId, $this->_apiKey);
+    $connection = $this->api->testFastlyApiConnection();
 
     if (!$connection['status']) {
       $this->addError($connection['message']);
@@ -150,15 +159,15 @@ class VclHandler
 
     // Set credentials based data (API url, headers, last version)
     $this->_versionBaseUrl = '/service/' . $this->serviceId . '/version';
-    $this->_headersGet = array(
+    $this->_headersGet = [
       'Fastly-Key' => $this->_apiKey,
       'Accept' => 'application/json'
-    );
-    $this->_headersPost = array(
+    ];
+    $this->_headersPost = [
       'Fastly-Key' => $this->_apiKey,
       'Accept' => 'application/json',
       'Content-Type' => 'application/x-www-form-urlencoded'
-    );
+    ];
 
     $this->_lastVersionData = $this->getLastVersion();
 
@@ -204,7 +213,7 @@ class VclHandler
         return false;
       }
 
-      $requests = array();
+      $requests = [];
 
       if (!empty($this->_vclData)) {
         $requests = array_merge($requests, $this->prepareVcl());
@@ -230,7 +239,7 @@ class VclHandler
 
       // Set Request Headers
       foreach ($requests as $key => $request) {
-        if (in_array($request['type'], array("POST", "PUT"))) {
+        if (in_array($request['type'], ["POST", "PUT"])) {
           $requests[$key]['headers'] = $this->_headersPost;
         } else {
           $requests[$key]['headers'] = $this->_headersGet;
@@ -258,7 +267,7 @@ class VclHandler
           $pass = false;
           $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
           $message = 'VCL update failed : ' . json_decode($response->getBody());
-          $this->log("critical", $message);
+          $this->logger->critical($message);
         }
       }
 
@@ -266,13 +275,13 @@ class VclHandler
       if ($pass && $activate) {
         $request = $this->prepareActivateVersion();
 
-        $response = $this->vclRequestWrapper($request['url'], $request['headers'], array(), $request['type']);
+        $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
         if ($response->getStatusCode() != "200") {
           $pass = false;
           $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
 
           $message = 'Activation of new version failed : ' . $response->body;
-          $this->log("critical", $message);
+          $this->logger->critical($message);
         } else {
           $message = 'VCL updated, version activated : ' . $this->_lastClonedVersion;
          // send_web_hook($message);
@@ -284,7 +293,7 @@ class VclHandler
     } catch (Exception $e) {
       $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
       $message = 'VCL update failed : ' . $e->getMessage();
-      error_log($message);// Force log this, possibly no response object
+      $this->logger->critical($message);
       foreach($this->getErrors() as $error) {
         drupal_set_message(t($error), 'error');
       }
@@ -300,7 +309,7 @@ class VclHandler
    */
   public function prepareVcl() {
     // Prepare VCL data content
-    $requests = array();
+    $requests = [];
     foreach ($this->_vclData as $key => $single_vcl_data) {
       if (!empty($single_vcl_data['type'])) {
         $single_vcl_data['name'] = 'drupalmodule_' . $single_vcl_data['type'];
@@ -358,11 +367,11 @@ class VclHandler
   public function prepareUpdateVcl($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data['name'];
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => "PUT"
-    );
+    ];
 
     return $request;
   }
@@ -376,11 +385,11 @@ class VclHandler
   public function prepareInsertVcl($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet';
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => 'POST'
-    );
+    ];
 
     return $request;
   }
@@ -435,7 +444,7 @@ class VclHandler
    */
   public function prepareCondition() {
     // Prepare condition content
-    $requests = array();
+    $requests = [];
     foreach ($this->_conditionData as $single_condition_data) {
       if (empty($single_condition_data['name']) ||
         empty($single_condition_data['statement']) ||
@@ -482,11 +491,11 @@ class VclHandler
   public function prepareUpdateCondition($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition/' . $data['name'];
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => "PUT"
-    );
+    ];
 
     return $request;
   }
@@ -500,16 +509,16 @@ class VclHandler
   public function insertCondition($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition';
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => 'POST'
-    );
+    ];
 
     $response = $this->vclRequestWrapper($request['url'], $this->_headersPost, $request['data'], $request['type']);
 
     if ($response->getStatusCode() == "200") {
-      return array();
+      return [];
     } else {
       return false;
     }
@@ -522,7 +531,7 @@ class VclHandler
    */
   public function prepareSetting() {
     // Prepare setting content
-    $requests = array();
+    $requests = [];
     foreach ($this->_settingData as $single_setting_data) {
       if (empty($single_setting_data['name']) ||
         empty($single_setting_data['action']) ||
@@ -568,11 +577,11 @@ class VclHandler
   public function prepare_update_setting($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings/' . $data['name'];
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => 'PUT'
-    );
+    ];
 
     return $request;
   }
@@ -586,11 +595,11 @@ class VclHandler
   public function prepare_insert_setting($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings';
 
-    $request = array(
+    $request = [
       'url' => $url,
       'data' => $data,
       'type' => 'POST'
-    );
+    ];
 
     return $request;
   }
@@ -619,11 +628,11 @@ class VclHandler
   public function prepareActivateVersion() {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/activate';
 
-    $request = array(
+    $request = [
       'url' => $url,
       'type' => 'PUT',
       'headers' => $this->_headersGet
-    );
+    ];
 
     return $request;
   }
@@ -647,48 +656,6 @@ class VclHandler
   }
 
   /**
-   * Function for testing Fastly API connection
-   *
-   * @param $hostname
-   * @param $service_id
-   * @param $api_key
-   * @return array
-   */
-  public function testFastlyApiConnection($hostname, $service_id, $api_key) {
-    if (empty($hostname) || empty($service_id) || empty($api_key)) {
-      return array('status' => false, 'message' => 'Please enter credentials first');
-    }
-
-    $url = '/service/' . $service_id;
-    $headers = array(
-      'Fastly-Key' => $api_key,
-      'Accept' => 'application/json'
-    );
-    try {
-
-      $response = $this->vclGetWrapper($url, $headers);
-      if ($response->getStatusCode() == "200") {
-        $status = true;
-        $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection Successful on service *' . $service_name . "*";
-      } else {
-        $status = false;
-        $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection not Successful on service *' . $service_name . "*" . " status : " . $response->getStatusCode();
-        $this->log("critical", $message);
-      }
-
-      return array('status' => $status, 'message' => $message);
-
-    } catch (Exception $e) {
-
-      return array('status' => false, 'message' => $e->getMessage());
-    }
-  }
-
-  /**
    * Wraps api call to make query via Guzzle
    *
    * @param $url
@@ -697,7 +664,7 @@ class VclHandler
    * @param string $type
    * @return \Psr\Http\Message\ResponseInterface
    */
-  public function vclRequestWrapper($url, $headers = array(), $data = array(), $type = "GET") {
+  public function vclRequestWrapper($url, $headers = [], $data = [], $type = "GET") {
     return $this->api->vclQuery($url, $data, $type, $headers);
   }
 
@@ -709,7 +676,7 @@ class VclHandler
    * @param array $data
    * @return \Psr\Http\Message\ResponseInterface
    */
-  public function vclGetWrapper($url, $headers = array(), $data = array()) {
+  public function vclGetWrapper($url, $headers = [], $data = []) {
     return $this->vclRequestWrapper($url, $headers, $data, "GET");
   }
 
@@ -721,19 +688,7 @@ class VclHandler
    * @param array $data
    * @return \Psr\Http\Message\ResponseInterface
    */
-  public function vclPutWrapper($url, $headers = array(), $data = array()) {
+  public function vclPutWrapper($url, $headers = [], $data = []) {
     return $this->vclRequestWrapper($url, $headers, $data, "PUT");
-  }
-
-  public function log($level, $message) {
-    switch($level) {
-      case "critical":
-        \Drupal::logger('fastly')->notice($message);
-      break;
-      case "info":
-        \Drupal::logger('fastly')->info($message);
-      default:
-    }
-
   }
 }
