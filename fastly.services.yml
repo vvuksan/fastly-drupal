@@ -1,10 +1,10 @@
 parameters:
   fastly.host: 'https://api.fastly.com/'
-
+  fastly.connect_timeout: 3
 services:
   fastly.api:
     class: Drupal\fastly\Api
-    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state']
+    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%']
   fastly.cache_tags.invalidator:
     class: Drupal\fastly\CacheTagsInvalidator
     arguments: ['@fastly.api']
