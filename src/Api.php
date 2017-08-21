@@ -361,6 +361,7 @@ class Api {
     catch (\Exception $e) {
       $this->logger->critical($e->getMessage());
     }
+
     return new Response();
   }
 

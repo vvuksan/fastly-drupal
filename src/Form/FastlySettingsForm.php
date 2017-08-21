@@ -2,6 +2,9 @@
 
 namespace Drupal\fastly\Form;
 
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\CssCommand;
+use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -9,6 +12,7 @@ use Drupal\fastly\Api;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+
 
 /**
  * Defines a form to configure module settings.
@@ -97,10 +101,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a 
-href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token 
-you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
-href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -180,19 +181,22 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     $form['vcl_snippets'] = [
       '#type' => 'button',
-      '#value' => $this->t('Update vcl'),
+      '#value' => $this->t('Update Fastly VCL with Latest'),
       '#required' => false,
-      '#description' => t("Upload vcl"),
+      '#description' => t('Update Fastly VCL with Latest'),
       '#ajax' => [
-        'callback' => '::uploadVcls',
+        'callback' =>[$this, 'uploadVcls'],
         'event' => 'click',
       ],
+      '#suffix' => '<span class="email-valid-message"></span>'
     ];
 
 
     $form['vcl_snippets']['activate'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Activate version on vcl upload'),
+      '#default_value' => 1,
+      '#attributes' => array('checked' => 'checked')
     ];
 
     return parent::buildForm($form, $form_state);
@@ -266,6 +270,9 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
    */
   public function uploadVcls($form, FormStateInterface $form_state) {
     $activate = $form_state->getValue("activate");
-    return (array) $this->vclHandler->execute($activate);
+    $response = new AjaxResponse();
+    $message = $this->vclHandler->execute($activate);
+    $response->addCommand(new HtmlCommand('.email-valid-message', $message));
+    return $response;
   }
 }
