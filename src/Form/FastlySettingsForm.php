@@ -181,9 +181,9 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['vcl_snippets'] = [
       '#type' => 'button',
-      '#value' => $this->t('Update Fastly VCL with Latest'),
+      '#value' => $this->t('Update Fastly VCL with latest'),
       '#required' => false,
-      '#description' => t('Update Fastly VCL with Latest'),
+      '#description' => t('Update Fastly VCL with latest'),
       '#ajax' => [
         'callback' =>[$this, 'uploadVcls'],
         'event' => 'click-custom',
