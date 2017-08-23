@@ -186,7 +186,12 @@ class FastlySettingsForm extends ConfigFormBase {
       '#description' => t('Update Fastly VCL with Latest'),
       '#ajax' => [
         'callback' =>[$this, 'uploadVcls'],
-        'event' => 'click',
+        'event' => 'click-custom',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
       ],
       '#suffix' => '<span class="email-valid-message"></span>'
     ];

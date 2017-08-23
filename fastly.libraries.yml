@@ -1,0 +1,6 @@
+fastly:
+  version: 1.0
+  js:
+    js/fastly.js: {}
+  dependencies:
+    - core/jquery

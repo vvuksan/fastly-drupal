@@ -22,3 +22,8 @@ function fastly_help($route_name, RouteMatchInterface $route_match) {
     default:
   }
 }
+
+function fastly_hook_page_attachments() {
+  $variables['#attached']['library'][] = 'fastly/fastly';
+}
+
