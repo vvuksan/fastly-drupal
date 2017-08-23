@@ -2,6 +2,7 @@
 
 namespace Drupal\fastly;
 
+use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Psr\Log\LoggerInterface;
 
@@ -125,7 +126,7 @@ class VclHandler
       ],
       'condition' => [
         [
-          'name' => 'drupalmodule_request1',
+          'name' => 'drupalmodule_request',
           'statement' => 'req.http.x-pass == "1"',
           'type' => 'REQUEST',
           'priority' => 90
@@ -133,9 +134,9 @@ class VclHandler
       ],
       'setting' => [
         [
-          'name' => 'drupalmodule_setting1',
+          'name' => 'drupalmodule_setting',
           'action' => 'pass',
-          'request_condition' => 'drupalmodule_request1'
+          'request_condition' => 'drupalmodule_request'
         ]
       ]
     ];
@@ -249,6 +250,9 @@ class VclHandler
       // Send Requests
       $responses = [];
       foreach($requests as $key=>$value) {
+        if(!isset($value['type'])) {
+            continue;
+        }
         $url = $value['url'];
         $data = $value['data'];
         $type = $value['type'];
@@ -262,7 +266,6 @@ class VclHandler
       $pass = true;
 
       foreach ($responses as $response) {
-
         if ($response->getStatusCode() != "200") {
           $pass = false;
           $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
@@ -279,15 +282,16 @@ class VclHandler
         if ($response->getStatusCode() != "200") {
           $pass = false;
           $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
-
-          $message = 'Activation of new version failed : ' . $response->body;
+          $message = 'Activation of new version failed : ' . $response->getBody();
           $this->logger->critical($message);
         } else {
           $message = 'VCL updated, version activated : ' . $this->_lastClonedVersion;
-         // send_web_hook($message);
+          $this->logger->info($message);
+
         }
       } elseif ($pass && !$activate) {
         $message = 'VCL updated, but not activated.';
+        $this->logger->info($message);
       }
 
     } catch (Exception $e) {
@@ -299,8 +303,7 @@ class VclHandler
       }
       return false;
     }
-
-    return $pass;
+    return $message;
   }
 
   /**
@@ -319,17 +322,23 @@ class VclHandler
           $single_vcl_data['content'] = file_get_contents($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl');
           unset($single_vcl_data['vcl_dir']);
         } else {
-          $this->addError('VCL file does not exist.');
+          $message = 'VCL file does not exist.';
+          $this->addError($message);
+          $this->logger->info($message);
+
           return false;
         }
 
         if ($this->checkIfVclExists($single_vcl_data['name'])) {
           $requests[] = $this->prepareUpdateVcl($single_vcl_data);
+
         } else {
           $requests[] = $this->prepareInsertVcl($single_vcl_data);
         }
       } else {
-        $this->addError('VCL type not set.');
+        $message = 'VCL type not set.';
+        $this->addError($message);
+        $this->logger->info($message);
         return false;
       }
     }
@@ -349,13 +358,27 @@ class VclHandler
     }
 
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $name;
-    $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $response = $this->vclGetWrapper($url);
+    $responseBody = (string) $response->getBody();
 
-    if($response->getStatusCode() == "200") {
+    $i = 0;
+    if(empty($responseBody)) {
       return false;
     }
-    return false;
+    $_responseBody = json_decode($response->getBody());
+    if(!empty($_responseBody->content)) {
+        return true;
+    }
 
+    return false;
+  }
+
+  public function getSnippetId($data) {
+      $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data['name'];
+
+      $response = $this->vclGetWrapper($url);
+      $responseData = json_decode($response->getBody());
+      return $responseData->id;
   }
 
   /**
@@ -365,7 +388,15 @@ class VclHandler
    * @return array
    */
   public function prepareUpdateVcl($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data['name'];
+    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data["name"];
+
+    $data['form_params'] = [
+      'content' => $data['content'],
+      'type' => $data['type'],
+      'name' => $data['name'],
+      'dynamic' => $data['dynamic'],
+      'priority' => $data['priority']
+    ];
 
     $request = [
       'url' => $url,
@@ -451,7 +482,9 @@ class VclHandler
         empty($single_condition_data['type']) ||
         empty($single_condition_data['priority'])
       ) {
-        $this->addError('Condition data not properly set.');
+        $message = 'Condition data not properly set.';
+        $this->addError($message);
+        $this->logger->critical($message);
         return false;
       } else {
         if ($this->getCondition($single_condition_data['name'])) {
@@ -476,9 +509,17 @@ class VclHandler
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition/' . $name;
     $response = $this->vclGetWrapper($url, $this->_headersGet);
 
-    if($response->getStatusCode() == "200") {
+    $responseBody = (string) $response->getBody();
+    $_responseBody = json_decode($responseBody);
+
+    if(empty($_responseBody)) {
+        return false;
+    }
+
+    if($_responseBody->version) {
       return true;
     }
+
     return false;
   }
 
@@ -490,7 +531,6 @@ class VclHandler
    */
   public function prepareUpdateCondition($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition/' . $data['name'];
-
     $request = [
       'url' => $url,
       'data' => $data,
@@ -516,8 +556,9 @@ class VclHandler
     ];
 
     $response = $this->vclRequestWrapper($request['url'], $this->_headersPost, $request['data'], $request['type']);
+    $responseData = json_decode($response->getBody());
 
-    if ($response->getStatusCode() == "200") {
+    if ($responseData) {
       return [];
     } else {
       return false;
@@ -537,13 +578,15 @@ class VclHandler
         empty($single_setting_data['action']) ||
         empty($single_setting_data['request_condition'])
       ) {
-        $this->addError('Setting data not properly set.');
+        $message = 'Setting data not properly set.';
+        $this->addError($message);
+        $this->logger->critical($message);
         return false;
       } else {
         if ($this->getSetting($single_setting_data['name'])) {
-          $requests[] = $this->prepare_update_setting($single_setting_data);
+          $requests[] = $this->prepareUpdateSetting($single_setting_data);
         } else {
-          $requests[] = $this->prepare_insert_setting($single_setting_data);
+          $requests[] = $this->prepareInsertSetting($single_setting_data);
         }
       }
     }
@@ -560,12 +603,18 @@ class VclHandler
   public function getSetting($name) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings/' . $name;
     $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $responseBody = (string) $response->getBody();
+    $_responseBody = json_decode($responseBody);
 
-    if($response->getStatusCode() == "200") {
-      return true;
+    if(empty($_responseBody)) {
+        return false;
     }
-    return false;
 
+    if(!$_responseBody->version) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -574,7 +623,7 @@ class VclHandler
    * @data array
    * @return array
    */
-  public function prepare_update_setting($data) {
+  public function prepareUpdateSetting($data) {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings/' . $data['name'];
 
     $request = [
@@ -592,7 +641,8 @@ class VclHandler
    * @data array
    * @return array
    */
-  public function prepare_insert_setting($data) {
+  public function prepareInsertSetting($data) {
+
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings';
 
     $request = [
@@ -612,8 +662,9 @@ class VclHandler
   public function validateVersion() {
     $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/validate';
     $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $responseData = json_decode($response->getBody());
 
-    if($response->getStatusCode() != "200") {
+    if(!empty($responseData->errors)) {
       return false;
     }
 
