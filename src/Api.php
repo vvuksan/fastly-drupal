@@ -80,7 +80,7 @@ class Api {
    */
   public function validateApiKey() {
     try {
-      $response = $this->query('/tokens/self');
+      $response = $this->query('tokens/self');
       if ($response->getStatusCode() != 200) {
         return FALSE;
       }
@@ -98,7 +98,7 @@ class Api {
         }
         elseif (in_array($potentially_valid_purge_scopes, $json->scopes, TRUE)) {
           try {
-            $response = $this->query('/current_user');
+            $response = $this->query('current_user');
             if ($response->getStatusCode() != 200) {
               return FALSE;
             }
