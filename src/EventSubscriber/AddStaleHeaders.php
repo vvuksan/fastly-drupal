@@ -10,9 +10,11 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Generates additional headers for instant purge
+ * Adds stale headers
+ *
+ * @see https://docs.fastly.com/guides/purging/soft-purges
  */
-class AddInstantPurgeHeaders implements EventSubscriberInterface {
+class AddStaleHeaders implements EventSubscriberInterface {
 
   /**
    * The Fastly logger channel.
@@ -52,7 +54,7 @@ class AddInstantPurgeHeaders implements EventSubscriberInterface {
     $config = $this->config->get('fastly.settings');
 
     // Only modify the master request.
-    if ((!$event->isMasterRequest()) || (!($config->get('purge_method') == FastlySettingsForm::FASTLY_INSTANT_PURGE))) {
+    if ((!$event->isMasterRequest())) {
       return;
     }
 
@@ -64,7 +66,7 @@ class AddInstantPurgeHeaders implements EventSubscriberInterface {
     $surrogate_control_header = $cache_control_header . ', stale-while-revalidate=' . $config->get('stale_while_revalidate_value');
 
     if ((bool) $config->get('stale_if_error')) {
-       $surrogate_control_header .= ', stale-if-error=' . $config->get('stale_if_error_value');
+      $surrogate_control_header .= ', stale-if-error=' . $config->get('stale_if_error_value');
     }
 
     // Set the modified Cache-Control header.
@@ -78,4 +80,5 @@ class AddInstantPurgeHeaders implements EventSubscriberInterface {
     $events[KernelEvents::RESPONSE][] = ['onRespond'];
     return $events;
   }
+
 }

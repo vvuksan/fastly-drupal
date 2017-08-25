@@ -1,10 +1,10 @@
 parameters:
   fastly.host: 'https://api.fastly.com/'
-
+  fastly.connect_timeout: 3
 services:
   fastly.api:
     class: Drupal\fastly\Api
-    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state']
+    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%']
   fastly.cache_tags.invalidator:
     class: Drupal\fastly\CacheTagsInvalidator
     arguments: ['@fastly.api']
@@ -16,7 +16,7 @@ services:
     tags:
       - { name: event_subscriber }
   fastly.cache_tags.add_soft_purge_headers:
-    class: Drupal\fastly\EventSubscriber\AddSoftPurgeHeaders
+    class: Drupal\fastly\EventSubscriber\AddStaleHeaders
     arguments: ['@logger.channel.fastly', '@config.factory']
     tags:
       - { name: event_subscriber }
@@ -28,3 +28,6 @@ services:
   logger.channel.fastly:
     parent: logger.channel_base
     arguments: ['fastly']
+  fastly.vclhandler:
+    class: Drupal\fastly\VclHandler
+    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly']

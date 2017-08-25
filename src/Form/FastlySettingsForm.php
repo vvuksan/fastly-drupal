@@ -7,6 +7,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
 use Drupal\fastly\State;
+use Drupal\fastly\VclHandler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -28,6 +29,13 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $api;
 
   /**
+   * VclHandler.
+   *
+   * @var \Drupal\fastly\VclHandler
+   */
+  protected $vclHandler;
+
+  /**
    * @var \Drupal\fastly\State
    */
   protected $state;
@@ -41,11 +49,14 @@ class FastlySettingsForm extends ConfigFormBase {
    *   Fastly API for Drupal.
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
+   * @param \Drupal\fastly\VclHandler
+   *   Vcl handler
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state) {
+  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
+    $this->vclHandler = $vclHandler;
   }
 
   /**
@@ -55,7 +66,8 @@ class FastlySettingsForm extends ConfigFormBase {
     return new static(
       $container->get('config.factory'),
       $container->get('fastly.api'),
-      $container->get('fastly.state')
+      $container->get('fastly.state'),
+      $container->get('fastly.vclhandler')
     );
   }
 
@@ -80,7 +92,18 @@ class FastlySettingsForm extends ConfigFormBase {
     $config = $this->config('fastly.settings');
 
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
-    $form['api_key'] = [
+    $form['account_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Account settings'),
+      '#open' => TRUE,
+    ];
+
+    $form['service_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Service settings'),
+      '#open' => TRUE,
+    ];
+    $form['account_settings']['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
@@ -98,7 +121,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
     ];
 
     $service_options = $this->getServiceOptions($api_key);
-    $form['service_id'] = [
+    $form['service_settings']['service_id'] = [
       '#type' => 'select',
       '#title' => $this->t('Service'),
       '#options' => $service_options,
@@ -116,7 +139,16 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#suffix' => '</div>',
     ];
 
-    $form['purge_method'] = [
+    $form['purge'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Purge options'),
+      '#open' => TRUE,
+    ];
+
+
+
+
+    $form['purge']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
       '#description' => $this->t("Switch between Fastly's Instant-Purge and Soft-Purge methods."),
@@ -127,43 +159,61 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       ],
     ];
 
-    $form['purge'] = [
+    $form['stale_content'] = [
       '#type' => 'details',
-      '#title' => $this->t('Purge options'),
+      '#title' => $this->t('Stale content options'),
       '#open' => TRUE,
-      '#states' => [
-        'required' => [
-          ':input[name="purge_method"]' => ['value' => [self::FASTLY_SOFT_PURGE, self::FASTLY_INSTANT_PURGE]],
-        ],
-      ],
     ];
 
-    $form['purge']['stale_while_revalidate_value'] = [
+    $form['stale_content']['stale_while_revalidate_value'] = [
       '#type' => 'number',
       '#title' => $this->t('Stale while revalidate'),
       '#description' => $this->t('The number in seconds to show stale content while cache revalidation.'),
       '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
     ];
 
-    $form['purge']['stale_if_error'] = [
+    $form['stale_content']['stale_if_error'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Stale if error'),
       '#description' => $this->t("Activate the stale-if-error tag for serving stale content if the origin server becomes unavailable."),
       '#default_value' => $config->get('stale_if_error'),
     ];
 
-    $form['purge']['stale_if_error_value'] = [
+    $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
       '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
-          ':input[name="stale_if_error"]' => ['checked' => FALSE],
-        ],
-        'required' => [
           ':input[name="stale_if_error"]' => ['checked' => TRUE],
         ],
+        'required' => [
+          ':input[name="stale_if_error"]' => ['checked' => false],
+        ],
       ],
+    ];
+
+    $form['vcl'] = [
+      '#type' => 'details',
+      '#title' => $this->t('VCL update options'),
+      '#open' => TRUE,
+    ];
+
+    $form['vcl']['vcl_snippets'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Update vcl'),
+      '#required' => false,
+      '#description' => t("Upload vcl"),
+      '#ajax' => [
+        'callback' => '::uploadVcls',
+        'event' => 'click',
+      ],
+    ];
+
+
+    $form['vcl']['vcl_snippets']['activate'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Activate version on vcl upload'),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -226,5 +276,17 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     ksort($service_options);
     return $service_options;
+  }
+
+  /**
+   * Upload Vcls
+   *
+   * @param $form
+   * @param FormStateInterface $form_state
+   * @return array
+   */
+  public function uploadVcls($form, FormStateInterface $form_state) {
+    $activate = $form_state->getValue("activate");
+    return (array) $this->vclHandler->execute($activate);
   }
 }
