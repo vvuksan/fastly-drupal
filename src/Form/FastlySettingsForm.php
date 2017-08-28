@@ -3,7 +3,6 @@
 namespace Drupal\fastly\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CssCommand;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
@@ -96,7 +95,18 @@ class FastlySettingsForm extends ConfigFormBase {
     $config = $this->config('fastly.settings');
 
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
-    $form['api_key'] = [
+    $form['account_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Account settings'),
+      '#open' => TRUE,
+    ];
+
+    $form['service_settings'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Service settings'),
+      '#open' => TRUE,
+    ];
+    $form['account_settings']['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
@@ -111,7 +121,7 @@ class FastlySettingsForm extends ConfigFormBase {
     ];
 
     $service_options = $this->getServiceOptions($api_key);
-    $form['service_id'] = [
+    $form['service_settings']['service_id'] = [
       '#type' => 'select',
       '#title' => $this->t('Service'),
       '#options' => $service_options,
@@ -129,7 +139,14 @@ class FastlySettingsForm extends ConfigFormBase {
       '#suffix' => '</div>',
     ];
 
-    $form['purge_method'] = [
+    $form['purge'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Purge options'),
+      '#open' => TRUE,
+    ];
+
+
+    $form['purge']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
       '#description' => $this->t("Switch between Fastly's Instant-Purge and Soft-Purge methods."),
@@ -140,46 +157,62 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
     ];
 
-    $form['purge'] = [
+    $form['stale_content'] = [
       '#type' => 'details',
-      '#title' => $this->t('Purge options'),
+      '#title' => $this->t('Stale content options'),
       '#open' => TRUE,
+    ];
+
+    $form['stale_content']['stale_while_revalidate'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Stale while revalidate'),
+      '#description' => $this->t("Activate the stale-while-revalidate tag for serving stale content if the origin server becomes unavailable."),
+      '#default_value' => $config->get('stale_while_revalidate'),
+    ];
+
+    $form['stale_content']['stale_while_revalidate_value'] = [
+      '#type' => 'number',
+      '#description' => $this->t('The number in seconds to show stale content while cache revalidation.'),
+      '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
       '#states' => [
+        'visible' => [
+          ':input[name="stale_while_revalidate"]' => ['checked' => true],
+        ],
         'required' => [
-          ':input[name="purge_method"]' => ['value' => [self::FASTLY_SOFT_PURGE, self::FASTLY_INSTANT_PURGE]],
+          ':input[name="stale_while_revalidate"]' => ['checked' => false],
         ],
       ],
     ];
 
-    $form['purge']['stale_while_revalidate_value'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Stale while revalidate'),
-      '#description' => $this->t('The number in seconds to show stale content while cache revalidation.'),
-      '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
-    ];
-
-    $form['purge']['stale_if_error'] = [
+    $form['stale_content']['stale_if_error'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Stale if error'),
       '#description' => $this->t("Activate the stale-if-error tag for serving stale content if the origin server becomes unavailable."),
       '#default_value' => $config->get('stale_if_error'),
     ];
 
-    $form['purge']['stale_if_error_value'] = [
+    $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
       '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
-          ':input[name="stale_if_error"]' => ['checked' => FALSE],
+          ':input[name="stale_if_error"]' => ['checked' => true],
         ],
         'required' => [
-          ':input[name="stale_if_error"]' => ['checked' => TRUE],
+          ':input[name="stale_if_error"]' => ['checked' => false],
         ],
       ],
     ];
 
-    $form['vcl_snippets'] = [
+    $form['vcl'] = [
+      '#type' => 'details',
+      '#title' => $this->t('VCL update options'),
+      '#open' => TRUE,
+    ];
+
+
+    $form['vcl']['vcl_snippets'] = [
       '#type' => 'button',
       '#value' => $this->t('Update Fastly VCL with latest'),
       '#required' => false,
@@ -197,7 +230,7 @@ class FastlySettingsForm extends ConfigFormBase {
     ];
 
 
-    $form['vcl_snippets']['activate'] = [
+    $form['vcl']['vcl_snippets']['activate'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Activate version on vcl upload'),
       '#default_value' => 1,
@@ -234,6 +267,7 @@ class FastlySettingsForm extends ConfigFormBase {
       ->set('api_key', $form_state->getValue('api_key'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
+      ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
       ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))

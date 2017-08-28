@@ -16,7 +16,7 @@ services:
     tags:
       - { name: event_subscriber }
   fastly.cache_tags.add_soft_purge_headers:
-    class: Drupal\fastly\EventSubscriber\AddSoftPurgeHeaders
+    class: Drupal\fastly\EventSubscriber\AddStaleHeaders
     arguments: ['@logger.channel.fastly', '@config.factory']
     tags:
       - { name: event_subscriber }

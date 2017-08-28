@@ -11,6 +11,9 @@ fastly.settings:
     purge_method:
       type: string
       label: 'Fastly Purge Method'
+    stale_while_revalidate:
+       type: boolean
+       label: 'Fastly stale while revalidate'
     stale_while_revalidate_value:
       type: integer
       label: 'Fastly stale while revalidation value'
