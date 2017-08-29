@@ -95,6 +95,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $config = $this->config('fastly.settings');
 
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+
     $form['account_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Account settings'),
@@ -121,6 +122,7 @@ class FastlySettingsForm extends ConfigFormBase {
     ];
 
     $service_options = $this->getServiceOptions($api_key);
+
     $form['service_settings']['service_id'] = [
       '#type' => 'select',
       '#title' => $this->t('Service'),
@@ -244,7 +246,7 @@ class FastlySettingsForm extends ConfigFormBase {
    * Handles changing the API key.
    */
   public function updateServices($form, FormStateInterface $form_state) {
-    return $form['service_id'];
+    return $form['service_settings']['service_id'];
   }
 
   /**
