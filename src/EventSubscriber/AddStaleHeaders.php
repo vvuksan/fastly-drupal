@@ -44,7 +44,7 @@ class AddStaleHeaders implements EventSubscriberInterface {
   }
 
   /**
-   * Adds Surrogate-Control header if soft purging is enabled.
+   * Adds Surrogate-Control header
    *
    * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
    *   The event to process.
