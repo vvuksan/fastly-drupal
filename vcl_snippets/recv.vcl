@@ -1,5 +1,8 @@
   # Flag that tells us to pass
-  set req.http.X-Pass = "0";
+  # Don't allow clients to force a pass
+  if ( req.restarts == 0 ) {
+    set req.http.X-Pass = "0";
+  }
 
   # Allow the backend to serve up stale content if it is responding slowly.
   set req.grace = 6h;
