@@ -168,13 +168,13 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['stale_content']['stale_while_revalidate'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Stale while revalidate'),
-      '#description' => $this->t("Activate the stale-while-revalidate tag for serving stale content if the origin server becomes unavailable."),
+      '#description' => $this->t("Activate the stale-while-revalidate tag to improve experience for users attempting to access expired content."),
       '#default_value' => $config->get('stale_while_revalidate'),
     ];
 
     $form['stale_content']['stale_while_revalidate_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('The number in seconds to show stale content while cache revalidation.'),
+      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
       '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -189,13 +189,13 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['stale_content']['stale_if_error'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Stale if error'),
-      '#description' => $this->t("Activate the stale-if-error tag for serving stale content if the origin server becomes unavailable."),
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable.'),
       '#default_value' => $config->get('stale_if_error'),
     ];
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('The number in seconds to show stale content if the origin server becomes unavailable.'),
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -216,9 +216,9 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['vcl']['vcl_snippets'] = [
       '#type' => 'button',
-      '#value' => $this->t('Update Fastly VCL with latest'),
+      '#value' => $this->t('Upload latest Fastly VCL snippets'),
       '#required' => false,
-      '#description' => t('Update Fastly VCL with latest'),
+      '#description' => t('Uploads/updates custom VCL used to optimize Fastly services for Drupal. Not required however strongly encouraged.'),
       '#ajax' => [
         'callback' =>[$this, 'uploadVcls'],
         'event' => 'click-custom',
