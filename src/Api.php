@@ -63,6 +63,7 @@ class Api {
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
     $this->connectTimeout = $connectTimeout;
+    $this->webHookURL = $config->get('webhook_url');
     $this->host = $host;
     $this->httpClient = $http_client;
     $this->logger = $logger;
@@ -182,7 +183,6 @@ class Api {
    *   FALSE if purge failed or URL is invalid, TRUE is successful.
    */
   public function purgeUrl($url = '') {
-
     // Validate URL -- this could be improved.
     // $url needs to be URL encoded. Need to make sure we can avoid double encoding.
     if ((strpos($url, 'http') === FALSE) && (strpos($url, 'https') === FALSE)) {
@@ -223,6 +223,21 @@ class Api {
   }
 
   /**
+   * Performs an actual purge request for the given path.
+   */
+  protected function purgeQuery($path) {
+    drupal_http_request(url($path, ['absolute' => TRUE]), [
+      'headers' => [
+        'Host' => $_SERVER['HTTP_HOST'],
+      ],
+      'method' => 'PURGE',
+    ]);
+    if ( $this->webHookURL != "" ) {
+      $this->sendWebHook('Purged ' . $path);
+    }
+  }
+
+  /**
    * Purge cache by key.
    *
    * @param array $keys
@@ -236,15 +251,25 @@ class Api {
       try {
         $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => join(" ", $keys)]);
         $result = $this->json($response);
-        if (count($result) > 0) {
-          $this->logger->info('Successfully purged key(s) %key. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+
+        if ( count($result) > 0 ) {
+
+          if ( $this->webHookURL != "" ) {
+            $this->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . "* on *http://" . $_SERVER['HTTP_HOST'] . "*. Purge Method: " . $this->purgeMethod);
+          }
+          $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+            '%key' =>  join(" ", $keys),
+
             '%purge_method' => $this->purgeMethod,
           ]);
           return TRUE;
         }
         else {
-          $this->logger->critical('Unable to purge key(s) %key from Fastly. Purge Method: %purge_method.', [
+
+          if ( $this->webHookURL != "" ) {
+            $this->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod);
+          }
+          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
@@ -465,4 +490,19 @@ class Api {
     }
   }
 
+  public function sendWebHook($message) {
+    $text =  $message;
+    $headers = [
+      'Content-type: application/json'
+    ];
+
+    $body = [
+      "text"  =>  $text,
+      "username" => "fastly-drupal-bot",
+      "icon_emoji"=> ":drupal:"
+    ];
+
+    return $this->httpClient->post($this->webHookURL, array ("headers" => $headers, "json" => $body));
+  }
 }
+

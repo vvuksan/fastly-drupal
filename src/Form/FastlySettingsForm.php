@@ -112,7 +112,9 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more 
+information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
+href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -195,7 +197,8 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
+href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -239,6 +242,15 @@ class FastlySettingsForm extends ConfigFormBase {
       '#attributes' => array('checked' => 'checked')
     ];
 
+    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
+    $form['webhook_url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Webhook URL'),
+      '#default_value' => $webhook_url,
+      '#required' => FALSE,
+      '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -267,6 +279,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
+      ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
       ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
