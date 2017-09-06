@@ -23,3 +23,12 @@ fastly.settings:
     stale_if_error_value:
       type: integer
       label: 'Fastly stale if error value'
+    webhook_notifications:
+      type: array
+      label: 'Webhook notifications'
+    webhook_enabled:
+      type: boolean
+      label: 'Webhook enabled'
+    webhook_url:
+      type: string
+      label: 'Webhook URL'

@@ -99,19 +99,19 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['account_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Account settings'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
     $form['service_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Service settings'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
     $form['account_settings']['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
-      '#required' => TRUE,
+      '#required' => true,
       '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more 
 information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
 href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
@@ -131,7 +131,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
-      '#required' => TRUE,
+      '#required' => true,
       '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
       // Hide while no API key is set.
       '#states' => [
@@ -146,7 +146,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
     $form['purge'] = [
       '#type' => 'details',
       '#title' => $this->t('Purge options'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
 
@@ -164,7 +164,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
     $form['stale_content'] = [
       '#type' => 'details',
       '#title' => $this->t('Stale content options'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
     $form['stale_content']['stale_while_revalidate'] = [
@@ -242,14 +242,43 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#attributes' => array('checked' => 'checked')
     ];
 
+    $form['integrations'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Integrations'),
+      '#open' => TRUE,
+    ];
+
+    $form['integrations']['slack'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Slack'),
+      '#open' => true,
+    ];
+
     $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
-    $form['webhook_url'] = [
+    $form['integrations']['slack']['webhook_url'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Webhook URL'),
+      '#title' => $this->t('Slack channel webhook URL'),
       '#default_value' => $webhook_url,
-      '#required' => FALSE,
+      '#required' => false,
       '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
     ];
+
+    $form['integrations']['slack']['webhook_enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable Slack integration'),
+      '#description' => $this->t("Enables or disabled slack integration"),
+      '#default_value' => $config->get('webhook_enabled'),
+    ];
+
+    $form['integrations']['slack']['webhook_notifications'] = array(
+      '#type'           =>  'select',
+      '#title'          =>  'Notify for this events',
+      '#description'    =>  'Chose which nofification to push to your webhook',
+      '#options'        =>  $this->getEventsNotificationOptions(),
+      '#default_value'  =>  $config->get('webhook_notifications'),
+      '#multiple'       =>  true,
+      '#size'           =>  3
+    );
 
     return parent::buildForm($form, $form_state);
   }
@@ -270,6 +299,14 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     }
   }
 
+  public function getEventsNotificationOptions() {
+    return [
+      'purge'       => $this->t('Purge'),
+      'config_save' => $this->t('Config save'),
+      'vcl_update'  => $this->t('VCL update'),
+    ];
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -286,6 +323,8 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
       ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
+      ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
+      ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
     parent::submitForm($form, $form_state);

@@ -5,6 +5,7 @@ namespace Drupal\fastly;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Form\FastlySettingsForm;
+use Drupal\fastly\Services\Slack;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
@@ -43,6 +44,11 @@ class Api {
   protected $state;
 
   /**
+   * @var \Drupal\fastly\Services\Slack
+   */
+  protected $_slack;
+
+  /**
    * Constructs a \Drupal\fastly\Api object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -56,18 +62,19 @@ class Api {
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client,
+                              LoggerInterface $logger, State $state, $connectTimeout, Slack $slack) {
 
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
     $this->connectTimeout = $connectTimeout;
-    $this->webHookURL = $config->get('webhook_url');
     $this->host = $host;
     $this->httpClient = $http_client;
     $this->logger = $logger;
     $this->state = $state;
+    $this->_slack = $slack;
   }
 
   /**
@@ -232,9 +239,9 @@ class Api {
       ],
       'method' => 'PURGE',
     ]);
-    if ( $this->webHookURL != "" ) {
-      $this->sendWebHook('Purged ' . $path);
-    }
+
+    $this->_slack->sendWebHook('Purged ' . $path, "purge");
+
   }
 
   /**
@@ -254,9 +261,9 @@ class Api {
 
         if ( count($result) > 0 ) {
 
-          if ( $this->webHookURL != "" ) {
-            $this->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . "* on *http://" . $_SERVER['HTTP_HOST'] . "*. Purge Method: " . $this->purgeMethod);
-          }
+
+          $this->_slack->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . "* on *http://" . $_SERVER['HTTP_HOST'] . "*. Purge Method: " . $this->purgeMethod, 'purge');
+
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
             '%key' =>  join(" ", $keys),
 
@@ -266,9 +273,8 @@ class Api {
         }
         else {
 
-          if ( $this->webHookURL != "" ) {
-            $this->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod);
-          }
+          $this->_slack->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod, 'purge');
+
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
@@ -488,21 +494,6 @@ class Api {
 
       return ['status' => false, 'message' => $e->getMessage()];
     }
-  }
-
-  public function sendWebHook($message) {
-    $text =  $message;
-    $headers = [
-      'Content-type: application/json'
-    ];
-
-    $body = [
-      "text"  =>  $text,
-      "username" => "fastly-drupal-bot",
-      "icon_emoji"=> ":drupal:"
-    ];
-
-    return $this->httpClient->post($this->webHookURL, array ("headers" => $headers, "json" => $body));
   }
 }
 
