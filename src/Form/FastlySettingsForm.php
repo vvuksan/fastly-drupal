@@ -422,7 +422,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   public function purgeAll($form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
     $purge = $this->api->purgeAll();
-    if ($purge) {
+    if (!$purge) {
       $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
     } else {
       $message = $this->t("All content is purged / invalidated successfuly.");
