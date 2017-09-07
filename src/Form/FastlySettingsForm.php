@@ -10,6 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
+use Drupal\fastly\Services\Slack;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
@@ -44,6 +45,13 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $state;
 
   /**
+   * @var Slack
+   */
+  protected $_slack;
+
+  protected $_base_url;
+
+  /**
    * Constructs a \Drupal\fastly\Form object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -55,11 +63,13 @@ class FastlySettingsForm extends ConfigFormBase {
    * @param \Drupal\fastly\VclHandler
    *   Vcl handler
    */
-  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
+  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Slack $slack) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
     $this->vclHandler = $vclHandler;
+    $this->_slack = $slack;
+    $this->_base_url = \Drupal::request()->getHost();
   }
 
   /**
@@ -70,7 +80,8 @@ class FastlySettingsForm extends ConfigFormBase {
       $container->get('config.factory'),
       $container->get('fastly.api'),
       $container->get('fastly.state'),
-      $container->get('fastly.vclhandler')
+      $container->get('fastly.vclhandler'),
+      $container->get('fastly.services.slack')
     );
   }
 
@@ -306,7 +317,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#options'        =>  $this->getEventsNotificationOptions(),
       '#default_value'  =>  $config->get('webhook_notifications'),
       '#multiple'       =>  true,
-      '#size'           =>  3
+      '#size'           =>  5
     );
 
     return parent::buildForm($form, $form_state);
@@ -330,10 +341,10 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
 
   public function getEventsNotificationOptions() {
     return [
-      'purge_keys'  => $this->t('Purge by keys'),
-      'purge_all'   => $this->t('Purge all'),
-      'config_save' => $this->t('Config save'),
-      'vcl_update'  => $this->t('VCL update'),
+      'purge_keys'  => " " . $this->t('Purge by keys') . " ",
+      'purge_all'   => " " . $this->t('Purge all') . " ",
+      'vcl_update'  => " " . $this->t('VCL update') . " ",
+      'config_save'  => " " . $this->t('Config save') . " ",
     ];
   }
 
@@ -356,6 +367,8 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
+
+    $this->_slack->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->_base_url, "config_save");
 
     parent::submitForm($form, $form_state);
   }
