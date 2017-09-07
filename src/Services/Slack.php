@@ -68,7 +68,7 @@ class Slack
 
 
     $this->_httpClient->request("POST", $this->_config->get('webhook_url'),
-      array ("headers" =>$headers, "connect_timeout" => $this->slack_connect_timeout, "json" => $body));
+      array ("headers" =>$headers, "connect_timeout" => $this->slackConnectTimeout, "json" => $body));
 
   }
 
