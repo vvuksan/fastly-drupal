@@ -1,6 +1,7 @@
 parameters:
   fastly.host: 'https://api.fastly.com/'
   fastly.connect_timeout: 3
+  fastly.slack_connect_timeout: 2
 services:
   fastly.api:
     class: Drupal\fastly\Api
@@ -30,7 +31,7 @@ services:
     arguments: ['fastly']
   fastly.vclhandler:
     class: Drupal\fastly\VclHandler
-    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly']
+    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly', '@fastly.services.slack']
   fastly.services.slack:
     class: Drupal\fastly\Services\Slack
-    arguments: ['@config.factory', '@http_client', '@logger.channel.fastly']
+    arguments: ['@config.factory', '@http_client', '@logger.channel.fastly', '%fastly.slack_connect_timeout%']

@@ -17,6 +17,8 @@ use Psr\Log\LoggerInterface;
  */
 class Api {
 
+  protected $_base_url;
+
   /**
    * The Fastly logger channel.
    *
@@ -75,6 +77,7 @@ class Api {
     $this->logger = $logger;
     $this->state = $state;
     $this->_slack = $slack;
+    $this->_base_url = \Drupal::request()->getHost();
   }
 
   /**
@@ -165,7 +168,8 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          return TRUE;
+          $this->_slack->sendWebHook('Successfully purged / invalidated all content '. ' on ' . $this->_base_url . '.', 'purge_all');
+          return true;
         }
         else {
           $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', [
@@ -235,12 +239,12 @@ class Api {
   protected function purgeQuery($path) {
     drupal_http_request(url($path, ['absolute' => TRUE]), [
       'headers' => [
-        'Host' => $_SERVER['HTTP_HOST'],
+        'Host' => $this->_base_url,
       ],
       'method' => 'PURGE',
     ]);
 
-    $this->_slack->sendWebHook('Purged ' . $path, "purge");
+    $this->_slack->sendWebHook('Purged ' . $path, "purge_keys");
 
   }
 
@@ -262,7 +266,7 @@ class Api {
         if ( count($result) > 0 ) {
 
 
-          $this->_slack->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . "* on *http://" . $_SERVER['HTTP_HOST'] . "*. Purge Method: " . $this->purgeMethod, 'purge');
+          $this->_slack->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " . $this->_base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
             '%key' =>  join(" ", $keys),
@@ -273,7 +277,7 @@ class Api {
         }
         else {
 
-          $this->_slack->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod, 'purge');
+          $this->_slack->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
 
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => join(" ", $keys),

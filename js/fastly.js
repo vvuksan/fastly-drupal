@@ -6,4 +6,12 @@
         }
 
     });
+
+    $("#edit-purge-all").click(function (e) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to purge/invalidate all content?')) {
+            $("#edit-purge-all").trigger("click-custom-purge-all");
+        }
+
+    });
 })(jQuery);

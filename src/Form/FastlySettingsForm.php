@@ -14,7 +14,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 /**
- * Defines a form to configure module settings.
+ * Class FastlySettingsForm Defines a form to configure module settings.
+ *
+ * @package Drupal\fastly\Form
  */
 class FastlySettingsForm extends ConfigFormBase {
 
@@ -25,9 +27,7 @@ class FastlySettingsForm extends ConfigFormBase {
   const FASTLY_SOFT_PURGE = 'soft';
 
   /**
-   * The Fastly API.
-   *
-   * @var \Drupal\fastly\Api
+   * @var Api
    */
   protected $api;
 
@@ -55,7 +55,7 @@ class FastlySettingsForm extends ConfigFormBase {
    * @param \Drupal\fastly\VclHandler
    *   Vcl handler
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
+  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
@@ -145,12 +145,18 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     $form['purge'] = [
       '#type' => 'details',
+      '#title' => $this->t('Purging'),
+      '#open' => true,
+    ];
+
+    $form['purge']['purge_options'] = [
+      '#type' => 'details',
       '#title' => $this->t('Purge options'),
       '#open' => true,
     ];
 
 
-    $form['purge']['purge_method'] = [
+    $form['purge']['purge_options']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
       '#description' => $this->t("Switch between Fastly's Instant-Purge and Soft-Purge methods."),
@@ -159,6 +165,29 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
         self::FASTLY_INSTANT_PURGE => $this->t('Use instant purge'),
         self::FASTLY_SOFT_PURGE => $this->t('Use soft purge'),
       ],
+    ];
+
+    $form['purge']['purge_actions'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Purge actions'),
+      '#open' => true,
+    ];
+
+    $form['purge']['purge_actions']['purge_all'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Purge / Invalidate all content'),
+      '#required' => false,
+      '#description' => t('Purge all'),
+      '#ajax' => [
+        'callback' =>[$this, 'purgeAll'],
+        'event' => 'click-custom-purge-all',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
+      ],
+      '#suffix' => '<span class="purge-all-message"></span>'
     ];
 
     $form['stale_content'] = [
@@ -272,7 +301,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
 
     $form['integrations']['slack']['webhook_notifications'] = array(
       '#type'           =>  'select',
-      '#title'          =>  'Notify for this events',
+      '#title'          =>  'Send notifications for this events',
       '#description'    =>  'Chose which nofification to push to your webhook',
       '#options'        =>  $this->getEventsNotificationOptions(),
       '#default_value'  =>  $config->get('webhook_notifications'),
@@ -301,7 +330,8 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
 
   public function getEventsNotificationOptions() {
     return [
-      'purge'       => $this->t('Purge'),
+      'purge_keys'  => $this->t('Purge by keys'),
+      'purge_all'   => $this->t('Purge all'),
       'config_save' => $this->t('Config save'),
       'vcl_update'  => $this->t('VCL update'),
     ];
@@ -366,6 +396,25 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     $response = new AjaxResponse();
     $message = $this->vclHandler->execute($activate);
     $response->addCommand(new HtmlCommand('.email-valid-message', $message));
+    return $response;
+  }
+
+  /**
+   * Purge all
+   *
+   * @param $form
+   * @param FormStateInterface $form_state
+   * @return array
+   */
+  public function purgeAll($form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+    $purge = $this->api->purgeAll();
+    if ($purge) {
+      $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
+    } else {
+      $message = $this->t("All content is purged / invalidated successfuly.");
+    }
+    $response->addCommand(new HtmlCommand('.purge-all-message', $message));
     return $response;
   }
 }

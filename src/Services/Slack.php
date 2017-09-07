@@ -3,13 +3,11 @@
 namespace Drupal\fastly\Services;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
-
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\RequestException;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class SlackService
+ * Class Slack
  *
  * @package Drupal\fastly\Services
  */
@@ -28,6 +26,9 @@ class Slack
    */
   protected $_httpClient;
 
+
+  protected $slackConnectTimeout;
+
   /**
    * Slack constructor.
    *
@@ -35,9 +36,9 @@ class Slack
    * @param ClientInterface $httpClient
    * @param LoggerInterface $logger
    */
-  public function __construct(ConfigFactoryInterface $configFactory, ClientInterface $httpClient, LoggerInterface $logger) {
+  public function __construct(ConfigFactoryInterface $configFactory, ClientInterface $httpClient, LoggerInterface $logger, $slackConnectTimeout) {
     $this->_config = $configFactory->get('fastly.settings');
-
+    $this->slackConnectTimeout = $slackConnectTimeout;
     $this->_httpClient = $httpClient;
     $this->_logger = $logger;
   }
@@ -50,7 +51,7 @@ class Slack
    * @return mixed
    */
   public function sendWebHook($message, $type) {
-    if (!in_array($type, $this->_config->get('webhook_notifications'))) {
+    if (!in_array($type, $this->_config->get('webhook_notifications')) || !$this->_config->get('webhook_enabled')) {
       return false;
     }
 
@@ -66,7 +67,8 @@ class Slack
     ];
 
 
-    $this->_httpClient->request("POST", $this->_config->get('webhook_url'), array ("headers" =>$headers, "json" => $body));
+    $this->_httpClient->request("POST", $this->_config->get('webhook_url'),
+      array ("headers" =>$headers, "connect_timeout" => $this->slack_connect_timeout, "json" => $body));
 
   }
 
