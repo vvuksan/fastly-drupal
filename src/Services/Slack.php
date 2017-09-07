@@ -63,7 +63,7 @@ class Slack
     $body = [
       "text"  =>  $text,
       "username" => "fastly-drupal-bot",
-      "icon_emoji"=> ":drupal:"
+      "icon_emoji"=> ":airplane:"
     ];
 
 
