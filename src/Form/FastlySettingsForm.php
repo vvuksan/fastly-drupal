@@ -294,21 +294,32 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#open' => true,
     ];
 
-    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
-    $form['integrations']['slack']['webhook_url'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Slack channel webhook URL'),
-      '#default_value' => $webhook_url,
-      '#required' => false,
-      '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
-    ];
-
     $form['integrations']['slack']['webhook_enabled'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable Slack integration'),
       '#description' => $this->t("Enables or disabled slack integration"),
       '#default_value' => $config->get('webhook_enabled'),
     ];
+
+    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
+
+    $form['integrations']['slack']['webhook_url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Slack channel webhook URL'),
+      '#default_value' => $webhook_url,
+      '#required' => false,
+      '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
+      '#states' => [
+        'visible' => [
+          ':input[name="webhook_enabled"]' => ['checked' => true],
+        ],
+        'required' => [
+          ':input[name="webhook_enabled"]' => ['checked' => false],
+        ],
+      ],
+    ];
+
+
 
     $form['integrations']['slack']['webhook_notifications'] = array(
       '#type'           =>  'select',
