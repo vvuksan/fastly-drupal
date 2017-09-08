@@ -7,11 +7,11 @@ use GuzzleHttp\ClientInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class Slack
+ * Class Webhook
  *
  * @package Drupal\fastly\Services
  */
-class Slack
+class Webhook
 {
 
   protected $_config;
@@ -27,18 +27,18 @@ class Slack
   protected $_httpClient;
 
 
-  protected $slackConnectTimeout;
+  protected $webhookConnectTimeout;
 
   /**
-   * Slack constructor.
+   * Webhook constructor.
    *
    * @param ConfigFactoryInterface $configFactory
    * @param ClientInterface $httpClient
    * @param LoggerInterface $logger
    */
-  public function __construct(ConfigFactoryInterface $configFactory, ClientInterface $httpClient, LoggerInterface $logger, $slackConnectTimeout) {
+  public function __construct(ConfigFactoryInterface $configFactory, ClientInterface $httpClient, LoggerInterface $logger, $webhookConnectTimeout) {
     $this->_config = $configFactory->get('fastly.settings');
-    $this->slackConnectTimeout = $slackConnectTimeout;
+    $this->webhookConnectTimeout = $webhookConnectTimeout;
     $this->_httpClient = $httpClient;
     $this->_logger = $logger;
   }
@@ -68,7 +68,7 @@ class Slack
 
 
     $this->_httpClient->request("POST", $this->_config->get('webhook_url'),
-      array ("headers" =>$headers, "connect_timeout" => $this->slackConnectTimeout, "json" => $body));
+      array ("headers" =>$headers, "connect_timeout" => $this->webhookConnectTimeout, "json" => $body));
 
   }
 

@@ -4,7 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\fastly\Services\Slack;
+use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -97,9 +97,9 @@ class VclHandler
   protected $logger;
 
   /**
-   * @var Slack
+   * @var Webhook
    */
-  protected $_slack;
+  protected $_webhook;
 
   /**
    * @var string
@@ -114,7 +114,7 @@ class VclHandler
    * @param $host
    * @param Api $api
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Slack $slack) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook) {
     $vcl_dir = drupal_get_path('module', 'fastly'). '/vcl_snippets';
     $data = [
       'vcl' => [
@@ -153,7 +153,7 @@ class VclHandler
     ];
 
     $this->api = $api;
-    $this->_slack = $slack;
+    $this->_webhook = $webhook;
     $config = $config_factory->get('fastly.settings');
     $this->_vclData = !empty($data['vcl']) ? $data['vcl'] : false;
     $this->_conditionData = !empty($data['condition']) ? $data['condition'] : false;
@@ -306,7 +306,7 @@ class VclHandler
         $message = 'VCL updated, but not activated.';
         $this->logger->info($message);
       }
-      $this->_slack->sendWebHook($message . " on ".$this->_base_url, "vcl_update");
+      $this->_webhook->sendWebHook($message . " on ".$this->_base_url, "vcl_update");
 
     } catch (Exception $e) {
       $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');

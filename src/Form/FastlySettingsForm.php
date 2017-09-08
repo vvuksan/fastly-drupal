@@ -10,7 +10,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
-use Drupal\fastly\Services\Slack;
+use Drupal\fastly\Services\Webhook;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
@@ -45,9 +45,9 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $state;
 
   /**
-   * @var Slack
+   * @var Webhook
    */
-  protected $_slack;
+  protected $_webhook;
 
   protected $_base_url;
 
@@ -63,12 +63,13 @@ class FastlySettingsForm extends ConfigFormBase {
    * @param \Drupal\fastly\VclHandler
    *   Vcl handler
    */
-  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Slack $slack) {
+  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler
+  $vclHandler, Webhook $webhook) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
     $this->vclHandler = $vclHandler;
-    $this->_slack = $slack;
+    $this->_webhook = $webhook;
     $this->_base_url = \Drupal::request()->getHost();
   }
 
@@ -81,7 +82,7 @@ class FastlySettingsForm extends ConfigFormBase {
       $container->get('fastly.api'),
       $container->get('fastly.state'),
       $container->get('fastly.vclhandler'),
-      $container->get('fastly.services.slack')
+      $container->get('fastly.services.webhook')
     );
   }
 
@@ -288,27 +289,27 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#open' => TRUE,
     ];
 
-    $form['integrations']['slack'] = [
+    $form['integrations']['webhook'] = [
       '#type' => 'details',
-      '#title' => $this->t('Slack'),
+      '#title' => $this->t('Webhook'),
       '#open' => true,
     ];
 
-    $form['integrations']['slack']['webhook_enabled'] = [
+    $form['integrations']['webhook']['webhook_enabled'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Enable Slack integration'),
-      '#description' => $this->t("Enables or disabled slack integration"),
+      '#title' => $this->t('Enable Webhook'),
+      '#description' => $this->t("Enables or disabled webhook"),
       '#default_value' => $config->get('webhook_enabled'),
     ];
 
     $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
 
-    $form['integrations']['slack']['webhook_url'] = [
+    $form['integrations']['webhook']['webhook_url'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Slack channel webhook URL'),
+      '#title' => $this->t('Webhook URL'),
       '#default_value' => $webhook_url,
       '#required' => false,
-      '#description' => t("Incoming WebHook URL - intended for Slack users. Sends a log of purges to Slack."),
+      '#description' => t("Incoming WebHook URL"),
       '#states' => [
         'visible' => [
           ':input[name="webhook_enabled"]' => ['checked' => true],
@@ -321,7 +322,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
 
 
 
-    $form['integrations']['slack']['webhook_notifications'] = array(
+    $form['integrations']['webhook']['webhook_notifications'] = array(
       '#type'           =>  'select',
       '#title'          =>  'Send notifications for this events',
       '#description'    =>  'Chose which nofification to push to your webhook',
@@ -379,7 +380,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
-    $this->_slack->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->_base_url, "config_save");
+    $this->_webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->_base_url, "config_save");
 
     parent::submitForm($form, $form_state);
   }
