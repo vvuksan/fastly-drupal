@@ -6,6 +6,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class to control the VCL handling.
@@ -114,7 +115,7 @@ class VclHandler
    * @param $host
    * @param Api $api
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack) {
     $vcl_dir = drupal_get_path('module', 'fastly'). '/vcl_snippets';
     $data = [
       'vcl' => [
@@ -162,7 +163,7 @@ class VclHandler
     $this->serviceId = $config->get('service_id');
     $this->apiKey = $config->get('api_key');
     $this->logger = $logger;
-    $this->base_url = \Drupal::request()->getHost();
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
 
     $connection = $this->api->testFastlyApiConnection();
 

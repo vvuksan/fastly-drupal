@@ -12,6 +12,7 @@ use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
 use Drupal\fastly\Services\Webhook;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 
 /**
@@ -66,14 +67,13 @@ class FastlySettingsForm extends ConfigFormBase {
    * @param \Drupal\fastly\VclHandler
    *   Vcl handler
    */
-  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler
-  $vclHandler, Webhook $webhook) {
+  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Webhook $webhook, RequestStack $requestStack) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
     $this->vclHandler = $vclHandler;
     $this->webhook = $webhook;
-    $this->base_url = \Drupal::request()->getHost();
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -85,7 +85,8 @@ class FastlySettingsForm extends ConfigFormBase {
       $container->get('fastly.api'),
       $container->get('fastly.state'),
       $container->get('fastly.vclhandler'),
-      $container->get('fastly.services.webhook')
+      $container->get('fastly.services.webhook'),
+      $container->get('request_stack')
     );
   }
 

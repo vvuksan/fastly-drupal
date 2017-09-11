@@ -11,6 +11,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Fastly API for Drupal.
@@ -64,8 +65,7 @@ class Api {
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client,
-                              LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack) {
 
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = $config->get('api_key');
@@ -77,7 +77,7 @@ class Api {
     $this->logger = $logger;
     $this->state = $state;
     $this->webhook = $webhook;
-    $this->base_url = \Drupal::request()->getHost();
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -196,14 +196,14 @@ class Api {
   public function purgeUrl($url = '') {
     // Validate URL -- this could be improved.
     // $url needs to be URL encoded. Need to make sure we can avoid double encoding.
-    if ((strpos($url, 'http') === FALSE) && (strpos($url, 'https') === FALSE)) {
-      return FALSE;
+    if ((strpos($url, 'http') === false) && (strpos($url, 'https') === false)) {
+      return false;
     }
-    if (!UrlHelper::isValid($url, TRUE)) {
-      return FALSE;
+    if (!UrlHelper::isValid($url, true)) {
+      return false;
     }
-    if (strpos($url, ' ') !== FALSE) {
-      return FALSE;
+    if (strpos($url, ' ') !== false) {
+      return false;
     }
 
     if ($this->state->getPurgeCredentialsState()) {
@@ -259,7 +259,7 @@ class Api {
 
             '%purge_method' => $this->purgeMethod,
           ]);
-          return TRUE;
+          return true;
         }
         else {
 
