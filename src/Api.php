@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
  */
 class Api {
 
-  protected $_base_url;
+  protected $base_url;
 
   /**
    * The Fastly logger channel.
@@ -48,7 +48,7 @@ class Api {
   /**
    * @var \Drupal\fastly\Services\Webhook
    */
-  protected $_webhook;
+  protected $webhook;
 
   /**
    * Constructs a \Drupal\fastly\Api object.
@@ -76,8 +76,8 @@ class Api {
     $this->httpClient = $http_client;
     $this->logger = $logger;
     $this->state = $state;
-    $this->_webhook = $webhook;
-    $this->_base_url = \Drupal::request()->getHost();
+    $this->webhook = $webhook;
+    $this->base_url = \Drupal::request()->getHost();
   }
 
   /**
@@ -168,7 +168,7 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          $this->_webhook->sendWebHook('Successfully purged / invalidated all content '. ' on ' . $this->_base_url . '.', 'purge_all');
+          $this->webhook->sendWebHook('Successfully purged / invalidated all content '. ' on ' . $this->base_url . '.', 'purge_all');
           return true;
         }
         else {
@@ -251,8 +251,8 @@ class Api {
         if ( count($result) > 0 ) {
 
 
-          $this->_webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
-            $this->_base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
+          $this->webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
+            $this->base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
             '%key' =>  join(" ", $keys),
@@ -263,7 +263,7 @@ class Api {
         }
         else {
 
-          $this->_webhook->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " .
+          $this->webhook->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " .
             $this->purgeMethod, 'purge_keys');
 
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [

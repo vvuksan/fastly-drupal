@@ -47,9 +47,12 @@ class FastlySettingsForm extends ConfigFormBase {
   /**
    * @var Webhook
    */
-  protected $_webhook;
+  protected $webhook;
 
-  protected $_base_url;
+  /**
+   * @var string
+   */
+  protected $base_url;
 
   /**
    * Constructs a \Drupal\fastly\Form object.
@@ -69,8 +72,8 @@ class FastlySettingsForm extends ConfigFormBase {
     $this->api = $api;
     $this->state = $state;
     $this->vclHandler = $vclHandler;
-    $this->_webhook = $webhook;
-    $this->_base_url = \Drupal::request()->getHost();
+    $this->webhook = $webhook;
+    $this->base_url = \Drupal::request()->getHost();
   }
 
   /**
@@ -380,7 +383,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
-    $this->_webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->_base_url, "config_save");
+    $this->webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->base_url, "config_save");
 
     parent::submitForm($form, $form_state);
   }

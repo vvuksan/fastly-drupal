@@ -14,17 +14,17 @@ use Psr\Log\LoggerInterface;
 class Webhook
 {
 
-  protected $_config;
+  protected $config;
 
   /**
    * @var LoggerInterface
    */
-  protected $_logger;
+  protected $logger;
 
   /**
    * @var ClientInterface
    */
-  protected $_httpClient;
+  protected $httpClient;
 
 
   protected $webhookConnectTimeout;
@@ -37,10 +37,10 @@ class Webhook
    * @param LoggerInterface $logger
    */
   public function __construct(ConfigFactoryInterface $configFactory, ClientInterface $httpClient, LoggerInterface $logger, $webhookConnectTimeout) {
-    $this->_config = $configFactory->get('fastly.settings');
+    $this->config = $configFactory->get('fastly.settings');
     $this->webhookConnectTimeout = $webhookConnectTimeout;
-    $this->_httpClient = $httpClient;
-    $this->_logger = $logger;
+    $this->httpClient = $httpClient;
+    $this->logger = $logger;
   }
 
   /**
@@ -51,7 +51,7 @@ class Webhook
    * @return mixed
    */
   public function sendWebHook($message, $type) {
-    if (!in_array($type, $this->_config->get('webhook_notifications')) || !$this->_config->get('webhook_enabled')) {
+    if (!in_array($type, $this->config->get('webhook_notifications')) || !$this->config->get('webhook_enabled')) {
       return false;
     }
 
@@ -67,7 +67,7 @@ class Webhook
     ];
 
 
-    $this->_httpClient->request("POST", $this->_config->get('webhook_url'),
+    $this->httpClient->request("POST", $this->config->get('webhook_url'),
       array ("headers" =>$headers, "connect_timeout" => $this->webhookConnectTimeout, "json" => $body));
 
   }
