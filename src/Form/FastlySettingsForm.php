@@ -10,11 +10,15 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
+use Drupal\fastly\Services\Webhook;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 
 /**
- * Defines a form to configure module settings.
+ * Class FastlySettingsForm Defines a form to configure module settings.
+ *
+ * @package Drupal\fastly\Form
  */
 class FastlySettingsForm extends ConfigFormBase {
 
@@ -25,9 +29,7 @@ class FastlySettingsForm extends ConfigFormBase {
   const FASTLY_SOFT_PURGE = 'soft';
 
   /**
-   * The Fastly API.
-   *
-   * @var \Drupal\fastly\Api
+   * @var Api
    */
   protected $api;
 
@@ -44,6 +46,16 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $state;
 
   /**
+   * @var Webhook
+   */
+  protected $webhook;
+
+  /**
+   * @var string
+   */
+  protected $base_url;
+
+  /**
    * Constructs a \Drupal\fastly\Form object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -55,11 +67,13 @@ class FastlySettingsForm extends ConfigFormBase {
    * @param \Drupal\fastly\VclHandler
    *   Vcl handler
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler) {
+  public function __construct (ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Webhook $webhook, RequestStack $requestStack) {
     parent::__construct($config_factory);
     $this->api = $api;
     $this->state = $state;
     $this->vclHandler = $vclHandler;
+    $this->webhook = $webhook;
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -70,7 +84,9 @@ class FastlySettingsForm extends ConfigFormBase {
       $container->get('config.factory'),
       $container->get('fastly.api'),
       $container->get('fastly.state'),
-      $container->get('fastly.vclhandler')
+      $container->get('fastly.vclhandler'),
+      $container->get('fastly.services.webhook'),
+      $container->get('request_stack')
     );
   }
 
@@ -99,20 +115,22 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['account_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Account settings'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
     $form['service_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Service settings'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
     $form['account_settings']['api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
-      '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#required' => true,
+      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more 
+information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
+href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -129,7 +147,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
-      '#required' => TRUE,
+      '#required' => true,
       '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
       // Hide while no API key is set.
       '#states' => [
@@ -143,12 +161,18 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['purge'] = [
       '#type' => 'details',
+      '#title' => $this->t('Purging'),
+      '#open' => true,
+    ];
+
+    $form['purge']['purge_options'] = [
+      '#type' => 'details',
       '#title' => $this->t('Purge options'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
 
-    $form['purge']['purge_method'] = [
+    $form['purge']['purge_options']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
       '#description' => $this->t("Switch between Fastly's Instant-Purge and Soft-Purge methods."),
@@ -159,10 +183,33 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
     ];
 
+    $form['purge']['purge_actions'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Purge actions'),
+      '#open' => true,
+    ];
+
+    $form['purge']['purge_actions']['purge_all'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Purge / Invalidate all content'),
+      '#required' => false,
+      '#description' => t('Purge all'),
+      '#ajax' => [
+        'callback' =>[$this, 'purgeAll'],
+        'event' => 'click-custom-purge-all',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
+      ],
+      '#suffix' => '<span class="purge-all-message"></span>'
+    ];
+
     $form['stale_content'] = [
       '#type' => 'details',
       '#title' => $this->t('Stale content options'),
-      '#open' => TRUE,
+      '#open' => true,
     ];
 
     $form['stale_content']['stale_while_revalidate'] = [
@@ -195,7 +242,8 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
+href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -239,6 +287,55 @@ class FastlySettingsForm extends ConfigFormBase {
       '#attributes' => array('checked' => 'checked')
     ];
 
+    $form['integrations'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Integrations'),
+      '#open' => TRUE,
+    ];
+
+    $form['integrations']['webhook'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Webhook'),
+      '#open' => true,
+    ];
+
+    $form['integrations']['webhook']['webhook_enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable Webhook'),
+      '#description' => $this->t("Enables or disabled webhook"),
+      '#default_value' => $config->get('webhook_enabled'),
+    ];
+
+    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
+
+    $form['integrations']['webhook']['webhook_url'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Webhook URL'),
+      '#default_value' => $webhook_url,
+      '#required' => false,
+      '#description' => t("Incoming WebHook URL"),
+      '#states' => [
+        'visible' => [
+          ':input[name="webhook_enabled"]' => ['checked' => true],
+        ],
+        'required' => [
+          ':input[name="webhook_enabled"]' => ['checked' => false],
+        ],
+      ],
+    ];
+
+
+
+    $form['integrations']['webhook']['webhook_notifications'] = array(
+      '#type'           =>  'select',
+      '#title'          =>  'Send notifications for this events',
+      '#description'    =>  'Chose which nofification to push to your webhook',
+      '#options'        =>  $this->getEventsNotificationOptions(),
+      '#default_value'  =>  $config->get('webhook_notifications'),
+      '#multiple'       =>  true,
+      '#size'           =>  5
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -258,6 +355,15 @@ class FastlySettingsForm extends ConfigFormBase {
     }
   }
 
+  public function getEventsNotificationOptions() {
+    return [
+      'purge_keys'  => " " . $this->t('Purge by keys') . " ",
+      'purge_all'   => " " . $this->t('Purge all') . " ",
+      'vcl_update'  => " " . $this->t('VCL update') . " ",
+      'config_save'  => " " . $this->t('Config save') . " ",
+    ];
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -267,13 +373,18 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
+      ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
       ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
       ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
+      ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
+      ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
+
+    $this->webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->base_url, "config_save");
 
     parent::submitForm($form, $form_state);
   }
@@ -314,6 +425,25 @@ class FastlySettingsForm extends ConfigFormBase {
     $response = new AjaxResponse();
     $message = $this->vclHandler->execute($activate);
     $response->addCommand(new HtmlCommand('.email-valid-message', $message));
+    return $response;
+  }
+
+  /**
+   * Purge all
+   *
+   * @param $form
+   * @param FormStateInterface $form_state
+   * @return array
+   */
+  public function purgeAll($form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+    $purge = $this->api->purgeAll();
+    if (!$purge) {
+      $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
+    } else {
+      $message = $this->t("All content is purged / invalidated successfuly.");
+    }
+    $response->addCommand(new HtmlCommand('.purge-all-message', $message));
     return $response;
   }
 }

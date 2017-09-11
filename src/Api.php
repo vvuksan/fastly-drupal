@@ -5,16 +5,20 @@ namespace Drupal\fastly;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Form\FastlySettingsForm;
+use Drupal\fastly\Services\Webhook;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Fastly API for Drupal.
  */
 class Api {
+
+  protected $base_url;
 
   /**
    * The Fastly logger channel.
@@ -43,6 +47,11 @@ class Api {
   protected $state;
 
   /**
+   * @var \Drupal\fastly\Services\Webhook
+   */
+  protected $webhook;
+
+  /**
    * Constructs a \Drupal\fastly\Api object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -56,7 +65,7 @@ class Api {
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack) {
 
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = $config->get('api_key');
@@ -67,6 +76,8 @@ class Api {
     $this->httpClient = $http_client;
     $this->logger = $logger;
     $this->state = $state;
+    $this->webhook = $webhook;
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -157,7 +168,8 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          return TRUE;
+          $this->webhook->sendWebHook('Successfully purged / invalidated all content '. ' on ' . $this->base_url . '.', 'purge_all');
+          return true;
         }
         else {
           $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', [
@@ -182,17 +194,16 @@ class Api {
    *   FALSE if purge failed or URL is invalid, TRUE is successful.
    */
   public function purgeUrl($url = '') {
-
     // Validate URL -- this could be improved.
     // $url needs to be URL encoded. Need to make sure we can avoid double encoding.
-    if ((strpos($url, 'http') === FALSE) && (strpos($url, 'https') === FALSE)) {
-      return FALSE;
+    if ((strpos($url, 'http') === false) && (strpos($url, 'https') === false)) {
+      return false;
     }
-    if (!UrlHelper::isValid($url, TRUE)) {
-      return FALSE;
+    if (!UrlHelper::isValid($url, true)) {
+      return false;
     }
-    if (strpos($url, ' ') !== FALSE) {
-      return FALSE;
+    if (strpos($url, ' ') !== false) {
+      return false;
     }
 
     if ($this->state->getPurgeCredentialsState()) {
@@ -236,15 +247,26 @@ class Api {
       try {
         $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => join(" ", $keys)]);
         $result = $this->json($response);
-        if (count($result) > 0) {
-          $this->logger->info('Successfully purged key(s) %key. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+
+        if ( count($result) > 0 ) {
+
+
+          $this->webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
+            $this->base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
+
+          $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+            '%key' =>  join(" ", $keys),
+
             '%purge_method' => $this->purgeMethod,
           ]);
-          return TRUE;
+          return true;
         }
         else {
-          $this->logger->critical('Unable to purge key(s) %key from Fastly. Purge Method: %purge_method.', [
+
+          $this->webhook->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " .
+            $this->purgeMethod, 'purge_keys');
+
+          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => join(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
@@ -464,5 +486,5 @@ class Api {
       return ['status' => false, 'message' => $e->getMessage()];
     }
   }
-
 }
+

@@ -1,10 +1,11 @@
 parameters:
   fastly.host: 'https://api.fastly.com/'
   fastly.connect_timeout: 3
+  fastly.webhook_connect_timeout: 2
 services:
   fastly.api:
     class: Drupal\fastly\Api
-    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%']
+    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%', '@fastly.services.webhook', '@request_stack']
   fastly.cache_tags.invalidator:
     class: Drupal\fastly\CacheTagsInvalidator
     arguments: ['@fastly.api']
@@ -30,4 +31,7 @@ services:
     arguments: ['fastly']
   fastly.vclhandler:
     class: Drupal\fastly\VclHandler
-    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly']
+    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly', '@fastly.services.webhook', '@request_stack']
+  fastly.services.webhook:
+    class: Drupal\fastly\Services\Webhook
+    arguments: ['@config.factory', '@http_client', '@logger.channel.fastly', '%fastly.webhook_connect_timeout%','@request_stack']

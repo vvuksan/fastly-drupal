@@ -4,7 +4,9 @@ namespace Drupal\fastly;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class to control the VCL handling.
@@ -21,27 +23,27 @@ class VclHandler
   /**
    * VCL data to be processed
    */
-  protected $_vclData;
+  protected $vclData;
 
   /**
    * Condition data to be processed
    */
-  protected $_conditionData;
+  protected $conditionData;
 
   /**
    * Setting data to be processed
    */
-  protected $_settingData;
+  protected $settingData;
 
   /**
    * Fastly API endpoint
    */
-  protected $_hostname;
+  protected $hostname;
 
   /**
    * Fastly API Key
    */
-  protected $_apiKey;
+  protected $apiKey;
 
   /**
    * Fastly Service ID
@@ -51,42 +53,42 @@ class VclHandler
   /**
    * Fastly API URL version base
    */
-  protected $_versionBaseUrl;
+  protected $versionBaseUrl;
 
   /**
    * Headers used for GET requests
    */
-  protected $_headersGet;
+  protected $headersGet;
 
   /**
    * Headers used for POST, PUT requests
    */
-  protected $_headersPost;
+  protected $headersPost;
 
   /**
    * Last active version data
    */
-  protected $_lastVersionData;
+  protected $lastVersionData;
 
   /**
    * Next cloned version number
    */
-  public $_nextClonedVersionNum = null;
+  public $nextClonedVersionNum = null;
 
   /**
    * Last active version number
    */
-  public $_lastActiveVersionNum = null;
+  public $lastActiveVersionNum = null;
 
   /**
    * Last cloned version number
    */
-  protected $_lastClonedVersion;
+  protected $lastClonedVersion;
 
   /**
    * Errors
    */
-  protected $_errors = [];
+  protected $errors = [];
 
   /**
    * The Fastly logger channel.
@@ -96,6 +98,16 @@ class VclHandler
   protected $logger;
 
   /**
+   * @var Webhook
+   */
+  protected $webhook;
+
+  /**
+   * @var string
+   */
+  protected $base_url;
+
+  /**
    * Sets data to be processed, sets Credentials
    * Vcl_Handler constructor.
    *
@@ -103,7 +115,7 @@ class VclHandler
    * @param $host
    * @param Api $api
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack) {
     $vcl_dir = drupal_get_path('module', 'fastly'). '/vcl_snippets';
     $data = [
       'vcl' => [
@@ -142,14 +154,16 @@ class VclHandler
     ];
 
     $this->api = $api;
+    $this->webhook = $webhook;
     $config = $config_factory->get('fastly.settings');
-    $this->_vclData = !empty($data['vcl']) ? $data['vcl'] : false;
-    $this->_conditionData = !empty($data['condition']) ? $data['condition'] : false;
-    $this->_settingData = !empty($data['setting']) ? $data['setting'] : false;
-    $this->_hostname = $host;
+    $this->vclData = !empty($data['vcl']) ? $data['vcl'] : false;
+    $this->conditionData = !empty($data['condition']) ? $data['condition'] : false;
+    $this->settingData = !empty($data['setting']) ? $data['setting'] : false;
+    $this->hostname = $host;
     $this->serviceId = $config->get('service_id');
-    $this->_apiKey = $config->get('api_key');
+    $this->apiKey = $config->get('api_key');
     $this->logger = $logger;
+    $this->base_url = $requestStack->getCurrentRequest()->getHost();
 
     $connection = $this->api->testFastlyApiConnection();
 
@@ -159,21 +173,21 @@ class VclHandler
     }
 
     // Set credentials based data (API url, headers, last version)
-    $this->_versionBaseUrl = '/service/' . $this->serviceId . '/version';
-    $this->_headersGet = [
-      'Fastly-Key' => $this->_apiKey,
+    $this->versionBaseUrl = '/service/' . $this->serviceId . '/version';
+    $this->headersGet = [
+      'Fastly-Key' => $this->apiKey,
       'Accept' => 'application/json'
     ];
-    $this->_headersPost = [
-      'Fastly-Key' => $this->_apiKey,
+    $this->headersPost = [
+      'Fastly-Key' => $this->apiKey,
       'Accept' => 'application/json',
       'Content-Type' => 'application/x-www-form-urlencoded'
     ];
 
-    $this->_lastVersionData = $this->getLastVersion();
+    $this->lastVersionData = $this->getLastVersion();
 
-    if ($this->_lastVersionData) {
-      $this->_lastActiveVersionNum = $this->_lastVersionData->number;
+    if ($this->lastVersionData) {
+      $this->lastActiveVersionNum = $this->lastVersionData->number;
     }
 
     return;
@@ -197,13 +211,13 @@ class VclHandler
     }
 
     // Check if last version is fetched
-    if ($this->_lastVersionData === false) {
+    if ($this->lastVersionData === false) {
       $this->addError('Last version does not exist');
       return false;
     }
 
     // Check if any of the data is set
-    if (empty($this->_vclData) && empty($this->_conditionData) && empty($this->_settingData)) {
+    if (empty($this->vclData) && empty($this->conditionData) && empty($this->settingData)) {
       $this->addError('No update data set, please specify, vcl, condition or setting data');
       return false;
     }
@@ -216,11 +230,11 @@ class VclHandler
 
       $requests = [];
 
-      if (!empty($this->_vclData)) {
+      if (!empty($this->vclData)) {
         $requests = array_merge($requests, $this->prepareVcl());
       }
 
-      if (!empty($this->_conditionData)) {
+      if (!empty($this->conditionData)) {
         $conditions = $this->prepareCondition();
         if (false === $conditions) {
           $this->addError('Unable to insert new condition');
@@ -229,7 +243,7 @@ class VclHandler
         $requests = array_merge($requests, $conditions);
       }
 
-      if (!empty($this->_settingData)) {
+      if (!empty($this->settingData)) {
         $requests = array_merge($requests, $this->prepareSetting());
       }
 
@@ -241,9 +255,9 @@ class VclHandler
       // Set Request Headers
       foreach ($requests as $key => $request) {
         if (in_array($request['type'], ["POST", "PUT"])) {
-          $requests[$key]['headers'] = $this->_headersPost;
+          $requests[$key]['headers'] = $this->headersPost;
         } else {
-          $requests[$key]['headers'] = $this->_headersGet;
+          $requests[$key]['headers'] = $this->headersGet;
         }
       }
 
@@ -285,7 +299,7 @@ class VclHandler
           $message = 'Activation of new version failed : ' . $response->getBody();
           $this->logger->critical($message);
         } else {
-          $message = 'VCL updated, version activated : ' . $this->_lastClonedVersion;
+          $message = 'VCL updated, version activated : ' . $this->lastClonedVersion;
           $this->logger->info($message);
 
         }
@@ -293,6 +307,7 @@ class VclHandler
         $message = 'VCL updated, but not activated.';
         $this->logger->info($message);
       }
+      $this->webhook->sendWebHook($message . " on ".$this->base_url, "vcl_update");
 
     } catch (Exception $e) {
       $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
@@ -313,7 +328,7 @@ class VclHandler
   public function prepareVcl() {
     // Prepare VCL data content
     $requests = [];
-    foreach ($this->_vclData as $key => $single_vcl_data) {
+    foreach ($this->vclData as $key => $single_vcl_data) {
       if (!empty($single_vcl_data['type'])) {
         $single_vcl_data['name'] = 'drupalmodule_' . $single_vcl_data['type'];
         $single_vcl_data['dynamic'] = 0;
@@ -353,11 +368,11 @@ class VclHandler
    * @return bool
    */
   public function checkIfVclExists($name) {
-    if (empty($this->_lastVersionData)) {
+    if (empty($this->lastVersionData)) {
       return false;
     }
 
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $name;
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet/' . $name;
     $response = $this->vclGetWrapper($url);
     $responseBody = (string) $response->getBody();
 
@@ -374,7 +389,7 @@ class VclHandler
   }
 
   public function getSnippetId($data) {
-      $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data['name'];
+      $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet/' . $data['name'];
 
       $response = $this->vclGetWrapper($url);
       $responseData = json_decode($response->getBody());
@@ -388,7 +403,7 @@ class VclHandler
    * @return array
    */
   public function prepareUpdateVcl($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet/' . $data["name"];
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet/' . $data["name"];
 
     $data['form_params'] = [
       'content' => $data['content'],
@@ -414,7 +429,7 @@ class VclHandler
    * @return array
    */
   public function prepareInsertVcl($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/snippet';
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet';
 
     $request = [
       'url' => $url,
@@ -431,11 +446,11 @@ class VclHandler
    * @return bool|int
    */
   public function getLastVersion() {
-    $url = $this->_versionBaseUrl;
-    $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $url = $this->versionBaseUrl;
+    $response = $this->vclGetWrapper($url, $this->headersGet);
     $response_data = json_decode($response->getBody());
 
-    $this->_nextClonedVersionNum = count($response_data) + 1;
+    $this->nextClonedVersionNum = count($response_data) + 1;
 
     foreach ($response_data as $key => $version_data) {
       if ($version_data->active) {
@@ -452,18 +467,18 @@ class VclHandler
    * @return bool
    */
   public function cloneLastActiveVersion() {
-    if (empty($this->_lastVersionData)) {
+    if (empty($this->lastVersionData)) {
       return false;
     }
 
-    $version_number = $this->_lastVersionData->number;
-    $url = $this->_versionBaseUrl . '/' . $version_number . '/clone';
-    $response = $this->vclPutWrapper($url, $this->_headersPost);
+    $version_number = $this->lastVersionData->number;
+    $url = $this->versionBaseUrl . '/' . $version_number . '/clone';
+    $response = $this->vclPutWrapper($url, $this->headersPost);
 
     $response_data = json_decode($response->getBody());
 
     $cloned_version_number = isset($response_data->number) ? $response_data->number : false;
-    $this->_lastClonedVersion = $cloned_version_number;
+    $this->lastClonedVersion = $cloned_version_number;
 
     return $cloned_version_number;
   }
@@ -476,7 +491,7 @@ class VclHandler
   public function prepareCondition() {
     // Prepare condition content
     $requests = [];
-    foreach ($this->_conditionData as $single_condition_data) {
+    foreach ($this->conditionData as $single_condition_data) {
       if (empty($single_condition_data['name']) ||
         empty($single_condition_data['statement']) ||
         empty($single_condition_data['type']) ||
@@ -506,8 +521,8 @@ class VclHandler
    * @return bool
    */
   public function getCondition($name) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition/' . $name;
-    $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
+    $response = $this->vclGetWrapper($url, $this->headersGet);
 
     $responseBody = (string) $response->getBody();
     $_responseBody = json_decode($responseBody);
@@ -530,7 +545,7 @@ class VclHandler
    * @return array
    */
   public function prepareUpdateCondition($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition/' . $data['name'];
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $data['name'];
     $request = [
       'url' => $url,
       'data' => $data,
@@ -547,7 +562,7 @@ class VclHandler
    * @return array
    */
   public function insertCondition($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/condition';
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition';
 
     $request = [
       'url' => $url,
@@ -555,7 +570,7 @@ class VclHandler
       'type' => 'POST'
     ];
 
-    $response = $this->vclRequestWrapper($request['url'], $this->_headersPost, $request['data'], $request['type']);
+    $response = $this->vclRequestWrapper($request['url'], $this->headersPost, $request['data'], $request['type']);
     $responseData = json_decode($response->getBody());
 
     if ($responseData) {
@@ -573,7 +588,7 @@ class VclHandler
   public function prepareSetting() {
     // Prepare setting content
     $requests = [];
-    foreach ($this->_settingData as $single_setting_data) {
+    foreach ($this->settingData as $single_setting_data) {
       if (empty($single_setting_data['name']) ||
         empty($single_setting_data['action']) ||
         empty($single_setting_data['request_condition'])
@@ -601,8 +616,8 @@ class VclHandler
    * @return bool
    */
   public function getSetting($name) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings/' . $name;
-    $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/request_settings/' . $name;
+    $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseBody = (string) $response->getBody();
     $_responseBody = json_decode($responseBody);
 
@@ -624,7 +639,7 @@ class VclHandler
    * @return array
    */
   public function prepareUpdateSetting($data) {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings/' . $data['name'];
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/request_settings/' . $data['name'];
 
     $request = [
       'url' => $url,
@@ -643,7 +658,7 @@ class VclHandler
    */
   public function prepareInsertSetting($data) {
 
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/request_settings';
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/request_settings';
 
     $request = [
       'url' => $url,
@@ -660,8 +675,8 @@ class VclHandler
    * @return bool
    */
   public function validateVersion() {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/validate';
-    $response = $this->vclGetWrapper($url, $this->_headersGet);
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/validate';
+    $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseData = json_decode($response->getBody());
 
     if(!empty($responseData->errors)) {
@@ -677,12 +692,12 @@ class VclHandler
    * @return array
    */
   public function prepareActivateVersion() {
-    $url = $this->_versionBaseUrl . '/' . $this->_lastClonedVersion . '/activate';
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/activate';
 
     $request = [
       'url' => $url,
       'type' => 'PUT',
-      'headers' => $this->_headersGet
+      'headers' => $this->headersGet
     ];
 
     return $request;
@@ -694,7 +709,7 @@ class VclHandler
    * @param string $message
    */
   public function addError($message) {
-    $this->_errors[] = $message;
+    $this->errors[] = $message;
   }
 
   /**
@@ -703,7 +718,7 @@ class VclHandler
    * @return array
    */
   public function getErrors() {
-    return $this->_errors;
+    return $this->errors;
   }
 
   /**
