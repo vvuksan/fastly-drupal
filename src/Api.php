@@ -234,21 +234,6 @@ class Api {
   }
 
   /**
-   * Performs an actual purge request for the given path.
-   */
-  protected function purgeQuery($path) {
-    drupal_http_request(url($path, ['absolute' => TRUE]), [
-      'headers' => [
-        'Host' => $this->_base_url,
-      ],
-      'method' => 'PURGE',
-    ]);
-
-    $this->_webhook->sendWebHook('Purged ' . $path, "purge_keys");
-
-  }
-
-  /**
    * Purge cache by key.
    *
    * @param array $keys
