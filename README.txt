@@ -36,8 +36,8 @@ Module Features
 ---------------
 
 1. Account Sign In. If you are already an authenticated Fastly user,
-You can simply enter your API key and service ID to start using Fastly
-on your website.
+You can simply enter an API token and a list of service will show up in a 
+drop down.
 
 2. Automated Purging. Content will be automatically purged when updated/created.
 This is done using Drupal 8's CacheTagsInvalidatorInterface.
@@ -50,7 +50,10 @@ How To Install The Module?
 
 2. Fastly will appear in your Configuration > Web services menu section.
 
-3. Enter your Fastly API key in the settings form and then select your service.
+3. Enter your Fastly API token in the settings form and then select your service.
+
+4. *IMPORTANT* Make sure you click Upload Fastly VCL snippets. Although this step is not 
+required it improves caching and enables features such as serve stale on errors etc.
 
 If you find a problem, incorrect comment, obsolete or improper code or such,
 please search for an issue about it at http://drupal.org/project/fastly/issues
