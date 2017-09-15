@@ -159,7 +159,42 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#suffix' => '</div>',
     ];
 
-    $form['purge'] = [
+      $form['vcl'] = [
+          '#type' => 'details',
+          '#title' => $this->t('VCL update options'),
+          '#open' => TRUE,
+          '#description' => t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+      ];
+
+
+      $form['vcl']['vcl_snippets'] = [
+          '#type' => 'button',
+          '#title' => 'KK',
+          '#value' => $this->t('Upload latest Fastly VCL snippets'),
+          '#required' => $this->t('Upload latest Fastly VCL snippets'),
+          '#title' => '',
+          '#ajax' => [
+              'callback' =>[$this, 'uploadVcls'],
+              'event' => 'click-custom',
+          ],
+          '#attached' => [
+              'library' => [
+                  'fastly/fastly',
+              ],
+          ],
+          '#suffix' => '<span class="email-valid-message"></span>'
+      ];
+
+
+      $form['vcl']['activate'] = [
+          '#type' => 'checkbox',
+          '#title' => $this->t('Activate version on vcl upload'),
+          '#default_value' => 1,
+          '#attributes' => array('checked' => 'checked')
+      ];
+
+
+      $form['purge'] = [
       '#type' => 'details',
       '#title' => $this->t('Purging'),
       '#open' => true,
@@ -253,38 +288,6 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
           ':input[name="stale_if_error"]' => ['checked' => false],
         ],
       ],
-    ];
-
-    $form['vcl'] = [
-      '#type' => 'details',
-      '#title' => $this->t('VCL update options'),
-      '#open' => TRUE,
-    ];
-
-
-    $form['vcl']['vcl_snippets'] = [
-      '#type' => 'button',
-      '#value' => $this->t('Upload latest Fastly VCL snippets'),
-      '#required' => false,
-      '#description' => t('Uploads/updates custom VCL used to optimize Fastly services for Drupal. Not required however strongly encouraged.'),
-      '#ajax' => [
-        'callback' =>[$this, 'uploadVcls'],
-        'event' => 'click-custom',
-      ],
-      '#attached' => [
-        'library' => [
-          'fastly/fastly',
-        ],
-      ],
-      '#suffix' => '<span class="email-valid-message"></span>'
-    ];
-
-
-    $form['vcl']['vcl_snippets']['activate'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Activate version on vcl upload'),
-      '#default_value' => 1,
-      '#attributes' => array('checked' => 'checked')
     ];
 
     $form['integrations'] = [
