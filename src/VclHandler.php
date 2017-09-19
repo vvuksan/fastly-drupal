@@ -2,7 +2,6 @@
 
 namespace Drupal\fastly;
 
-use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
@@ -13,6 +12,11 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class VclHandler
 {
+  /**
+   * Drupal Error Page Response Object Name
+   */
+  const ERROR_PAGE_RESPONSE_OBJECT = 'drupalmodule_error_page_response_object';
+
   /**
    * The Fastly API.
    *
@@ -191,6 +195,110 @@ class VclHandler
     }
 
     return;
+  }
+
+  /**
+   * Creates a new Response Object.
+   *
+   * @param $version
+   * @param array $response
+   * @return mixed
+   */
+  public function createResponse($version, array $response)
+  {
+    $_response = $this->getResponse($version, $response['name']);
+
+    $url = $this->versionBaseUrl . '/' . $version . '/response_object/';
+
+    if($_response->getStatusCode() != "404")
+    {
+      $verb = $this->headersPost;
+      $type = "PUT";
+      $url = $url . $response['name'];
+    } else {
+      $verb = $this->headersPost;
+      $type = "POST";
+    }
+
+    $result = $this->vclRequestWrapper($url, $verb, $response, $type);
+
+    return $result;
+  }
+
+  /**
+   * Gets the specified Response Object.
+   *
+   * @param string $version
+   * @param string $name
+   * @return bool|mixed $result
+   */
+  public function getResponse($version, $name)
+  {
+    if (empty($this->lastVersionData)) {
+      return false;
+    }
+    $url = $this->versionBaseUrl . '/' . $version . '/response_object/' . $name;
+
+    return $this->vclRequestWrapper($url);
+  }
+
+
+  public function activateVersion($versionNumber) {
+
+  }
+
+  public function uploadMaintenancePage($html) {
+    try {
+      $clone = $this->cloneLastActiveVersion();
+      if (false === $clone) {
+        $this->addError('Unable to clone last version');
+        return false;
+      }
+
+      $condition = [
+        'name' => 'drupalmodule_error_page_condition',
+        'statement' => 'req.http.ResponseObject == "970"',
+        'type' => 'REQUEST',
+      ];
+
+      $_condition = $this->getCondition1($condition["name"]);
+
+      if($_condition->getStatusCode() == "404") {
+        $this->insertCondition($condition);
+      }
+
+      $response = array(
+        'name' => self::ERROR_PAGE_RESPONSE_OBJECT,
+        'request_condition' => $condition["name"],
+        'content'   =>  $html,
+        'status' => "503",
+        'response' => "Service Temporarily Unavailable"
+      );
+
+      $createResponse = $this->createResponse($this->lastClonedVersion, $response);
+
+      if(!$createResponse) {
+        $this->addError('Failed to create a RESPONSE object.');
+        return false;
+      }
+
+      $validate = $this->validateVersion($this->lastClonedVersion);
+      if(!$validate) {
+        $this->addError('Failed to validate service version: '.$this->lastClonedVersion);
+        return false;
+      }
+
+      //$this->activateVersion($clone->number);
+
+      /*if ($this->config->areWebHooksEnabled() && $this->config->canPublishConfigChanges()) {
+        $this->api->sendWebHook('*New Error/Maintenance page has updated and activated under config version ' . $clone->number . '*');
+      }*/
+      return true;
+      //set message version activated
+    } catch (\Exception $e) {
+      $this->addError($e->getMessage());
+      return false;
+    }
   }
 
   /**
@@ -514,27 +622,26 @@ class VclHandler
     return $requests;
   }
 
-  /**
-   * Fetches condition by condition name
-   *
-   * @name string
-   * @return bool
-   */
-  public function getCondition($name) {
+
+  public function getCondition1($name) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
     $response = $this->vclGetWrapper($url, $this->headersGet);
 
+    return $response;
+  }
+
+
+  public function getCondition($name) {
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
+    $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseBody = (string) $response->getBody();
     $_responseBody = json_decode($responseBody);
-
     if(empty($_responseBody)) {
-        return false;
+      return false;
     }
-
     if($_responseBody->version) {
       return true;
     }
-
     return false;
   }
 
@@ -574,9 +681,10 @@ class VclHandler
     $responseData = json_decode($response->getBody());
 
     if ($responseData) {
-      return [];
+      //return [];
+      return $responseData;
     } else {
-      return false;
+      return [];
     }
   }
 

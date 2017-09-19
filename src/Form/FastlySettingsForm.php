@@ -14,7 +14,6 @@ use Drupal\fastly\Services\Webhook;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-
 /**
  * Class FastlySettingsForm Defines a form to configure module settings.
  *
@@ -156,6 +155,16 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
         ],
       ],
       '#prefix' => '<div id="edit-service-wrapper">',
+      '#suffix' => '</div>',
+    ];
+
+    $form['service_settings']['error_maintenance'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Error/Maintenance'),
+      '#default_value' => $config->get('error_maintenance'),
+      '#required' => false,
+      '#description' => t('Custom error / maintenance page content'),
+      '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];
 
@@ -367,12 +376,19 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     ];
   }
 
+  
+
+
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
+
+    if($this->config("error_maintenance") != $form_state->getValue('error_maintenance')) {
+      $this->vclHandler->uploadMaintenancePage($form_state->getValue('error_maintenance'));
+    }
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
@@ -384,6 +400,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
       ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
       ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
+      ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 

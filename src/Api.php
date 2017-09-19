@@ -363,17 +363,20 @@ class Api {
         if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
+        $data['headers']['http_errors'] = false;
       }
       $uri = ltrim($uri, '/');
       $uri = $this->host.$uri;
+      $uri = rtrim($uri, '/');
+
 
       switch (strtoupper($method)) {
         case 'GET':
         case 'POST':
         case 'PURGE':
         case 'PUT':
+          $data["http_errors"] = false;
           return $this->httpClient->request($method, $uri, $data);
-
         default:
           throw new \Exception('Method :method is not valid for Fastly service.', [
             ':method' => $method,
