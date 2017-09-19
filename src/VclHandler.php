@@ -242,11 +242,6 @@ class VclHandler
     return $this->vclRequestWrapper($url);
   }
 
-
-  public function activateVersion($versionNumber) {
-
-  }
-
   public function uploadMaintenancePage($html) {
     try {
       $clone = $this->cloneLastActiveVersion();
@@ -288,7 +283,9 @@ class VclHandler
         return false;
       }
 
-      //$this->activateVersion($clone->number);
+      $request = $this->prepareActivateVersion();
+
+      $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
 
       /*if ($this->config->areWebHooksEnabled() && $this->config->canPublishConfigChanges()) {
         $this->api->sendWebHook('*New Error/Maintenance page has updated and activated under config version ' . $clone->number . '*');
