@@ -3,14 +3,13 @@
 namespace Drupal\fastly\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\fastly\Form\FastlySettingsForm;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Adds stale headers
+ * Adds stale headers.
  *
  * @see https://docs.fastly.com/guides/purging/soft-purges
  */
@@ -44,7 +43,7 @@ class AddStaleHeaders implements EventSubscriberInterface {
   }
 
   /**
-   * Adds Surrogate-Control header
+   * Adds Surrogate-Control header.
    *
    * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
    *   The event to process.

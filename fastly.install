@@ -15,7 +15,8 @@ function fastly_requirements($phase) {
 
   if ($phase == 'runtime') {
 
-    // Check API token to be sure it has not been removed from Fastly or expired.
+    // Check API token to be sure it has not been removed from
+    // Fastly or expired.
     $api = \Drupal::service('fastly.api');
     $config = \Drupal::config('fastly.settings');
     $state = \Drupal::service('fastly.state');
