@@ -204,23 +204,23 @@ class VclHandler {
    *
    * @return mixed
    */
-  public function createResponse($version, array $response) {
-    $_response = $this->getResponse($version, $response['name']);
+  public function createResponse($version, array $responseToCreate) {
+    $responseObject = $this->getResponse($version, $responseToCreate['name']);
 
     $url = $this->versionBaseUrl . '/' . $version . '/response_object/';
 
-    if ($_response->getStatusCode() != "404") {
-      $verb = $this->headersPost;
+    if ($responseObject->getStatusCode() != "404") {
+      $headers = $this->headersPost;
       $type = "PUT";
-      $url = $url . $response['name'];
+      $url = $url . $responseToCreate['name'];
     }
     else {
-      $verb = $this->headersPost;
+      $headers = $this->headersPost;
       $type = "POST";
     }
 
-    $result = $this->vclRequestWrapper($url, $verb, $response, $type);
-
+    $result = $this->vclRequestWrapper($url, $headers, $responseToCreate, $type);
+    $resultArray = \GuzzleHttp\json_decode($result->getBody());
     return $result;
   }
 
@@ -239,6 +239,40 @@ class VclHandler {
     $url = $this->versionBaseUrl . '/' . $version . '/response_object/' . $name;
 
     return $this->vclRequestWrapper($url);
+  }
+
+  /**
+   *
+   */
+  public function prepareSingleVcl($single_vcl_data) {
+    if (!empty($single_vcl_data['type'])) {
+      $single_vcl_data['name'] = 'drupalmodule_' . $single_vcl_data['type'];
+      $single_vcl_data['dynamic'] = 0;
+      $single_vcl_data['priority'] = 50;
+      if (file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
+        $single_vcl_data['content'] = file_get_contents($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl');
+        unset($single_vcl_data['vcl_dir']);
+      }
+      else {
+        $message = 'VCL file does not exist.';
+        $this->addError($message);
+        $this->logger->info($message);
+        return FALSE;
+      }
+      if ($this->checkIfVclExists($single_vcl_data['name'])) {
+        $requests[] = $this->prepareUpdateVcl($single_vcl_data);
+      }
+      else {
+        $requests[] = $this->prepareInsertVcl($single_vcl_data);
+      }
+    }
+    else {
+      $message = 'VCL type not set.';
+      $this->addError($message);
+      $this->logger->info($message);
+      return FALSE;
+    }
+    return $requests;
   }
 
   /**
@@ -266,7 +300,7 @@ class VclHandler {
 
       $response = [
         'name' => self::ERROR_PAGE_RESPONSE_OBJECT,
-        'request_condition' => $condition["name"],
+        //'request_condition' => $condition["name"],
         'content'   => $html,
         'status' => "503",
         'response' => "Service Temporarily Unavailable",
@@ -285,10 +319,42 @@ class VclHandler {
         return FALSE;
       }
 
+
+
+      //---->
+     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
+      $singleVclData['vcl_dir'] = $vcl_dir;
+      $singleVclData['type'] = 'error';
+      $requests = [];
+      if (!empty($singleVclData)) {
+        $requests = array_merge($requests, $this->prepareSingleVcl($singleVclData));
+      }
+
+      $responses = [];
+      foreach ($requests as $key => $value) {
+        if (!isset($value['type'])) {
+          continue;
+        }
+        $url = $value['url'];
+        $data = $value['data'];
+        $type = $value['type'];
+        $headers = [];//$value['headers'];
+
+        $response = $this->vclRequestWrapper($url, $headers, $data, $type);
+
+        $responses[] = $response;
+      }
+
+      foreach ($responses as $_response) {
+        $i = $_response;
+        $j = 0;
+      }
+      //<----
       $request = $this->prepareActivateVersion();
 
       $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
 
+      //
       /*if ($this->config->areWebHooksEnabled() && $this->config->canPublishConfigChanges()) {
       $this->api->sendWebHook('*New Error/Maintenance page has updated and activated under config version ' . $clone->number . '*');
       }*/
