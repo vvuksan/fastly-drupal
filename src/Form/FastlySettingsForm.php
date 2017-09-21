@@ -177,10 +177,8 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     $form['vcl']['vcl_snippets'] = [
       '#type' => 'button',
-      '#title' => 'KK',
+      '#title' => 'Upload latest Fastly VCL snippets',
       '#value' => $this->t('Upload latest Fastly VCL snippets'),
-      '#required' => $this->t('Upload latest Fastly VCL snippets'),
-      '#title' => '',
       '#ajax' => [
         'callback' => [$this, 'uploadVcls'],
         'event' => 'click-custom',
