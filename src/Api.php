@@ -375,9 +375,7 @@ class Api {
         case 'PURGE':
         case 'PUT':
           $data["http_errors"] = false;
-          $test = $this->httpClient->request($method, $uri, $data);
-          $_test = \GuzzleHttp\json_decode($test->getBody());
-          return $test;
+          return $this->httpClient->request($method, $uri, $data);
 
         default:
           throw new \Exception('Method :method is not valid for Fastly service.', [

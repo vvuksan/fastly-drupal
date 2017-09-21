@@ -220,7 +220,6 @@ class VclHandler {
     }
 
     $result = $this->vclRequestWrapper($url, $headers, $responseToCreate, $type);
-    $resultArray = \GuzzleHttp\json_decode($result->getBody());
     return $result;
   }
 
@@ -292,7 +291,7 @@ class VclHandler {
         'type' => 'REQUEST',
       ];
 
-      $_condition = $this->getCondition1($condition["name"]);
+      $_condition = $this->getCondition($condition["name"]);
 
       if ($_condition->getStatusCode() == "404") {
         $this->insertCondition($condition);
@@ -300,7 +299,7 @@ class VclHandler {
 
       $response = [
         'name' => self::ERROR_PAGE_RESPONSE_OBJECT,
-        //'request_condition' => $condition["name"],
+        'request_condition' => $condition["name"],
         'content'   => $html,
         'status' => "503",
         'response' => "Service Temporarily Unavailable",
@@ -319,10 +318,7 @@ class VclHandler {
         return FALSE;
       }
 
-
-
-      //---->
-     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
+      $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
       $singleVclData['vcl_dir'] = $vcl_dir;
       $singleVclData['type'] = 'error';
       $requests = [];
@@ -338,28 +334,24 @@ class VclHandler {
         $url = $value['url'];
         $data = $value['data'];
         $type = $value['type'];
-        $headers = [];//$value['headers'];
+        $headers = [];
 
         $response = $this->vclRequestWrapper($url, $headers, $data, $type);
 
         $responses[] = $response;
       }
 
-      foreach ($responses as $_response) {
-        $i = $_response;
-        $j = 0;
-      }
-      //<----
       $request = $this->prepareActivateVersion();
 
       $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+      if ($response->getStatusCode() != "200") {
+        return FALSE;
+      }
 
-      //
-      /*if ($this->config->areWebHooksEnabled() && $this->config->canPublishConfigChanges()) {
-      $this->api->sendWebHook('*New Error/Maintenance page has updated and activated under config version ' . $clone->number . '*');
-      }*/
+      $message = '*New Error/Maintenance page has updated and activated under config version ' . $this->lastClonedVersion;
+      $this->webhook->sendWebHook($message . " on " . $this->base_url, "maintenance_page");
+
       return TRUE;
-      // Set message version activated.
     }
     catch (\Exception $e) {
       $this->addError($e->getMessage());
@@ -692,7 +684,7 @@ class VclHandler {
         return FALSE;
       }
       else {
-        if ($this->getCondition($single_condition_data['name'])) {
+        if ($this->checkCondition($single_condition_data['name'])) {
           $requests[] = $this->prepareUpdateCondition($single_condition_data);
         }
         else {
@@ -706,30 +698,34 @@ class VclHandler {
   }
 
   /**
+   * Checks if condition exists
    *
+   * @name string
+   * @return bool
    */
-  public function getCondition1($name) {
-    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
-    $response = $this->vclGetWrapper($url, $this->headersGet);
-
-    return $response;
-  }
-
-  /**
-   *
-   */
-  public function getCondition($name) {
+  public function checkCondition($name) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
     $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseBody = (string) $response->getBody();
     $_responseBody = json_decode($responseBody);
-    if (empty($_responseBody)) {
-      return FALSE;
+    if(empty($_responseBody)) {
+      return false;
     }
-    if ($_responseBody->version) {
-      return TRUE;
+    if($_responseBody->version) {
+      return true;
     }
-    return FALSE;
+    return false;
+  }
+
+  /**
+   * Fetches condition by condition name
+   *
+   * @param $name
+   * @return bool
+   */
+  public function getCondition($name) {
+    $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
+    return $this->vclGetWrapper($url, $this->headersGet);
   }
 
   /**

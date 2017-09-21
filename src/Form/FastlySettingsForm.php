@@ -370,6 +370,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       'purge_all'   => " " . $this->t('Purge all') . " ",
       'vcl_update'  => " " . $this->t('VCL update') . " ",
       'config_save'  => " " . $this->t('Config save') . " ",
+      'maintenance_page' => " " . $this->t('Maintenance page upload') . " ",
     ];
   }
 
