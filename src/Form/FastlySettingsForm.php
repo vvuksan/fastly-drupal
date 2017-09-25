@@ -28,24 +28,24 @@ class FastlySettingsForm extends ConfigFormBase {
   const FASTLY_SOFT_PURGE = 'soft';
 
   /**
-   * @var \Drupal\fastly\Api
+   * @var Api
    */
   protected $api;
 
   /**
    * VclHandler.
    *
-   * @var \Drupal\fastly\VclHandler
+   * @var VclHandler
    */
   protected $vclHandler;
 
   /**
-   * @var \Drupal\fastly\State
+   * @var State
    */
   protected $state;
 
   /**
-   * @var \Drupal\fastly\Services\Webhook
+   * @var Webhook
    */
   protected $webhook;
 
@@ -55,15 +55,15 @@ class FastlySettingsForm extends ConfigFormBase {
   protected $base_url;
 
   /**
-   * Constructs a \Drupal\fastly\Form object.
+   * Constructs a FastlySettingsForm object.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   * @param ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param \Drupal\fastly\Api $api
+   * @param Api $api
    *   Fastly API for Drupal.
-   * @param \Drupal\fastly\State $state
+   * @param State $state
    *   Fastly state service for Drupal.
-   * @param \Drupal\fastly\VclHandler
+   * @param VclHandler
    *   Vcl handler
    */
   public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Webhook $webhook, RequestStack $requestStack) {
@@ -360,7 +360,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   }
 
   /**
-   *
+   * Gets options to be used as webhook config options
    */
   public function getEventsNotificationOptions() {
     return [
@@ -430,7 +430,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
    * Upload Vcls.
    *
    * @param $form
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *
    * @return array
    */
@@ -446,7 +446,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
    * Purge all.
    *
    * @param $form
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @param FormStateInterface $form_state
    *
    * @return array
    */
