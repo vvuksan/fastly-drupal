@@ -325,7 +325,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
           ':input[name="webhook_enabled"]' => ['checked' => TRUE],
         ],
         'required' => [
-          ':input[name="webhook_enabled"]' => ['checked' => FALSE],
+          ':input[name="webhook_enabled"]' => ['checked' => true],
         ],
       ],
     ];

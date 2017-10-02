@@ -1,0 +1,11 @@
+{
+  "name": "drupal/fastly",
+  "type": "drupal-module",
+  "description": "Fastly Integration for Drupal",
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/fastly",
+  "support": {
+    "issues": "http://drupal.org/project/issues/fastly",
+    "source": "http://cgit.drupalcode.org/fastly"
+  }
+}
