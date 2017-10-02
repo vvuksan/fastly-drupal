@@ -28,7 +28,7 @@ class Api {
   protected $logger;
 
   /**
-   * Connect timeout
+   * Connect timeout.
    *
    * @var string
    */
@@ -168,8 +168,8 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          $this->webhook->sendWebHook('Successfully purged / invalidated all content '. ' on ' . $this->base_url . '.', 'purge_all');
-          return true;
+          $this->webhook->sendWebHook('Successfully purged / invalidated all content ' . ' on ' . $this->base_url . '.', 'purge_all');
+          return TRUE;
         }
         else {
           $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', [
@@ -196,14 +196,14 @@ class Api {
   public function purgeUrl($url = '') {
     // Validate URL -- this could be improved.
     // $url needs to be URL encoded. Need to make sure we can avoid double encoding.
-    if ((strpos($url, 'http') === false) && (strpos($url, 'https') === false)) {
-      return false;
+    if ((strpos($url, 'http') === FALSE) && (strpos($url, 'https') === FALSE)) {
+      return FALSE;
     }
-    if (!UrlHelper::isValid($url, true)) {
-      return false;
+    if (!UrlHelper::isValid($url, TRUE)) {
+      return FALSE;
     }
-    if (strpos($url, ' ') !== false) {
-      return false;
+    if (strpos($url, ' ') !== FALSE) {
+      return FALSE;
     }
 
     if ($this->state->getPurgeCredentialsState()) {
@@ -248,18 +248,17 @@ class Api {
         $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => join(" ", $keys)]);
         $result = $this->json($response);
 
-        if ( count($result) > 0 ) {
-
+        if (count($result) > 0) {
 
           $this->webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
             $this->base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-            '%key' =>  join(" ", $keys),
+            '%key' => join(" ", $keys),
 
             '%purge_method' => $this->purgeMethod,
           ]);
-          return true;
+          return TRUE;
         }
         else {
 
@@ -321,6 +320,7 @@ class Api {
 
         case 'PURGE':
           return $this->httpClient->request($method, $uri, $data);
+
         default:
           throw new \Exception('Method :method is not valid for Fastly service.', [
             ':method' => $method,
@@ -363,15 +363,18 @@ class Api {
         if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
+        $data['headers']['http_errors'] = true;
       }
       $uri = ltrim($uri, '/');
-      $uri = $this->host.$uri;
+      $uri = $this->host . $uri;
+      $uri = rtrim($uri, '/');
 
       switch (strtoupper($method)) {
         case 'GET':
         case 'POST':
         case 'PURGE':
         case 'PUT':
+          $data["http_errors"] = false;
           return $this->httpClient->request($method, $uri, $data);
 
         default:
@@ -415,7 +418,7 @@ class Api {
   }
 
   /**
-   * Wraps query method from this class
+   * Wraps query method from this class.
    *
    * @param string $uri
    *   The uri to use for the request, appended to the host.
@@ -439,7 +442,7 @@ class Api {
       $data['headers']['Fastly-Key'] = $this->apiKey;
     }
 
-    if($method == "POST") {
+    if (($method == "POST") || ($method == "PUT")) {
       $data['form_params'] = $data;
     }
 
@@ -447,32 +450,33 @@ class Api {
   }
 
   /**
-   * Function for testing Fastly API connection
+   * Function for testing Fastly API connection.
    *
    * @return array
    */
   public function testFastlyApiConnection() {
 
     if (empty($this->host) || empty($this->serviceId) || empty($this->apiKey)) {
-      return ['status' => false, 'message' => 'Please enter credentials first'];
+      return ['status' => FALSE, 'message' => 'Please enter credentials first'];
     }
 
     $url = '/service/' . $this->serviceId;
     $headers = [
       'Fastly-Key' => $this->apiKey,
-      'Accept' => 'application/json'
+      'Accept' => 'application/json',
     ];
     try {
 
       $response = $this->vclQuery($url, [], "GET", $headers);
 
       if ($response->getStatusCode() == "200") {
-        $status = true;
+        $status = TRUE;
         $response_body = json_decode($response->getBody());
         $service_name = $response_body->name;
         $message = 'Connection Successful on service *' . $service_name . "*";
-      } else {
-        $status = false;
+      }
+      else {
+        $status = FALSE;
         $response_body = json_decode($response->getBody());
         $service_name = $response_body->name;
         $message = 'Connection not Successful on service *' . $service_name . "*" . " status : " . $response->getStatusCode();
@@ -481,10 +485,11 @@ class Api {
 
       return ['status' => $status, 'message' => $message];
 
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
 
-      return ['status' => false, 'message' => $e->getMessage()];
+      return ['status' => FALSE, 'message' => $e->getMessage()];
     }
   }
-}
 
+}
