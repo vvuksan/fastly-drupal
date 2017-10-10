@@ -11,8 +11,3 @@
         /* synthetic {"<!DOCTYPE html><html>Trouble connecting to origin</html>"};
         return(deliver); */
     }
-
-    # error 200
-    if (obj.status == 200) {
-        return (deliver);
-    }
