@@ -158,16 +158,6 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#suffix' => '</div>',
     ];
 
-    $form['service_settings']['error_maintenance'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('Error/Maintenance'),
-      '#default_value' => $config->get('error_maintenance'),
-      '#required' => FALSE,
-      '#description' => t('Custom error / maintenance page content'),
-      '#prefix' => '<div id="edit-maintenance-wrapper">',
-      '#suffix' => '</div>',
-    ];
-
     $form['vcl'] = [
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
@@ -196,6 +186,33 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#title' => $this->t('Activate version on vcl upload'),
       '#default_value' => 1,
       '#attributes' => ['checked' => 'checked'],
+    ];
+
+    $form['vcl']['error_maintenance'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Error/Maintenance'),
+      '#default_value' => $config->get('error_maintenance'),
+      '#required' => FALSE,
+      '#description' => t('Custom error / maintenance page content'),
+      '#prefix' => '<div id="edit-maintenance-wrapper">',
+      '#suffix' => '</div>',
+    ];
+
+    $form['vcl']['upload_error_maintenance'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Upload error maintenance page'),
+      '#required' => FALSE,
+      '#description' => t('Upload error maintenance page'),
+      '#ajax' => [
+        'callback' => [$this, 'uploadMaintenance'],
+        'event' => 'click-custom-upload-error-maintenance',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
+      ],
+      '#suffix' => '<span class="error-maintenance-message"></span>',
     ];
 
     $form['purge'] = [
@@ -379,10 +396,6 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
 
-    if ($this->config("error_maintenance") != $form_state->getValue('error_maintenance')) {
-      $this->vclHandler->uploadMaintenancePage($form_state->getValue('error_maintenance'));
-    }
-
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
       ->set('webhook_url', $form_state->getValue('webhook_url'))
@@ -460,6 +473,25 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       $message = $this->t("All content is purged / invalidated successfuly.");
     }
     $response->addCommand(new HtmlCommand('.purge-all-message', $message));
+    return $response;
+  }
+
+  public function uploadMaintenance($form, FormStateInterface $form_state)
+  {
+    $response = new AjaxResponse();
+    if ($this->config("error_maintenance") != $form_state->getValue('error_maintenance')) {
+      $upload = $this->vclHandler->uploadMaintenancePage($form_state->getValue('error_maintenance'));
+    }
+    if (!$upload) {
+      $message = $this->t("Maintenance page upload failed.");
+    }
+    else {
+      $message = $this->t("Maintenance page uploaded successfuly.");
+      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated") . " on " . $this->base_url, "config_save");
+      $this->submitForm($form, $form_state);
+    }
+    $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));
+
     return $response;
   }
 
