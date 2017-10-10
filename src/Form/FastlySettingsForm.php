@@ -476,6 +476,13 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     return $response;
   }
 
+  /**
+   * Uploads maintenance page and saves configuration
+   *
+   * @param $form
+   * @param FormStateInterface $form_state
+   * @return AjaxResponse
+   */
   public function uploadMaintenance($form, FormStateInterface $form_state)
   {
     $response = new AjaxResponse();
