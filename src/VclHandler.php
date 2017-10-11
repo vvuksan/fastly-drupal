@@ -241,11 +241,13 @@ class VclHandler {
   }
 
   /**
-   *
+   * @param $single_vcl_data
+   * @param string $prefix
+   * @return array|bool
    */
-  public function prepareSingleVcl($single_vcl_data) {
+  public function prepareSingleVcl($single_vcl_data, $prefix = "drupalmodule") {
     if (!empty($single_vcl_data['type'])) {
-      $single_vcl_data['name'] = 'drupalmodule_' . $single_vcl_data['type'];
+      $single_vcl_data['name'] = $prefix . '_' . $single_vcl_data['type'];
       $single_vcl_data['dynamic'] = 0;
       $single_vcl_data['priority'] = 50;
       if (file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
@@ -318,12 +320,12 @@ class VclHandler {
         return FALSE;
       }
 
-      $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
+      $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets/errors';
       $singleVclData['vcl_dir'] = $vcl_dir;
-      $singleVclData['type'] = 'error';
+      $singleVclData['type'] = 'deliver';
       $requests = [];
       if (!empty($singleVclData)) {
-        $requests = array_merge($requests, $this->prepareSingleVcl($singleVclData));
+        $requests = array_merge($requests, $this->prepareSingleVcl($singleVclData, "drupalmodule_error_page"));
       }
 
       $responses = [];

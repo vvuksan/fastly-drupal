@@ -14,4 +14,13 @@
         }
 
     });
+
+    $("#edit-upload-error-maintenance").click(function (e) {
+        console.log("Ajde vise");
+        e.preventDefault();
+        if (confirm('Are you sure you want to upload new maintenance page?')) {
+            $("#edit-upload-error-maintenance").trigger("click-custom-upload-error-maintenance");
+        }
+
+    });
 })(jQuery);
