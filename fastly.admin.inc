@@ -76,7 +76,7 @@ function fastly_setup_form($form_state) {
       '#default_value' => variable_get('fastly_purge_endpoint', NULL),
       '#description' => t('Alternative PURGE request endpoint, use your <a href="@cname-url">Fastly CNAME hostname</a> if an HTTP request to %base_url from your server would not go through Fastly.', array(
         '%base_url' => $GLOBALS['base_url'],
-        '@cname-url' => 'https://docs.fastly.com/guides/basic-setup/adding-cname-records'
+        '@cname-url' => 'https://docs.fastly.com/guides/basic-setup/adding-cname-records',
       )),
     );
   }
@@ -86,7 +86,7 @@ function fastly_setup_form($form_state) {
     '#title' => t('Purging'),
     '#options' => array(
       'soft' => 'Soft purge',
-      'immediate' => 'Immediate purge'
+      'immediate' => 'Immediate purge',
     ),
     '#default_value' => variable_get('fastly_purge_type', 'immediate'),
     '#required' => TRUE,
@@ -442,6 +442,40 @@ function fastly_purge_form_submit($form, &$form_state) {
   if (empty($error)) {
     drupal_set_message(t('Cache successfuly purged.'));
   }
+}
+
+/**
+ *
+ */
+function fastly_vcl_upload_form($form, &$form_state) {
+  $form['vcl'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('VCL Upload'),
+    '#description' => t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+  );
+  $form['vcl']['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Upload VCL'),
+  );
+
+  $form['vcl']['actions']['activate'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => 1,
+    '#title' => t('Activate version'),
+  );
+
+  return $form;
+}
+
+/**
+ *
+ */
+function fastly_vcl_upload_form_submit($form, &$form_state) {
+
+  $vcl = fastly_get_vcl();
+  $activate = $form_state['values']['activate'];
+  $vcl->execute($activate);
+
 }
 
 /**
