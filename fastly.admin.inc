@@ -456,6 +456,7 @@ function fastly_vcl_upload_form($form, &$form_state) {
   $form['vcl']['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Upload VCL'),
+    '#attributes' => array('onclick' => 'if(!confirm("Are you sure you want to upload VCL snippets?")){return false;}'),
   );
 
   $form['vcl']['actions']['activate'] = array(
