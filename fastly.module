@@ -18,7 +18,7 @@ function fastly_init() {
   // To do this check the status header.
   $status = drupal_get_http_header("status");
   $is_error = preg_match('/^(4|5)/', $status);
-  
+
   $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
   $no_store = drupal_strtolower(variable_get('fastly_non_cached', ''));
 
@@ -37,7 +37,7 @@ function fastly_init() {
   // Add Surrogate-Key headers based on path segments.
   // E.g. if the current path is product/some-category/product-name
   // we should end up with the following Surrogate-Keys:
-  // product product/some-category product/some-category/product-name
+  // product product/some-category product/some-category/product-name.
   $path_segments = explode('/', drupal_get_path_alias());
 
   $surrogate_keys = array();
@@ -124,6 +124,16 @@ function fastly_menu() {
     'weight' => -10,
   );
 
+  $items['admin/config/services/fastly/vcl'] = array(
+    'title' => 'Vcl upload',
+    'description' => 'VCL upload',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_vcl_upload_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
   return $items;
 }
 
@@ -156,6 +166,62 @@ function fastly_get_api($api_key = '', $service_id = '') {
 
   return new Fastly($api_key, $service_id);
 }
+
+/**
+ * Returns the API object.
+ *
+ * The key and service id can be overriden for validation reasons.
+ */
+function fastly_get_vcl($api_key = '', $service_id = '') {
+
+  $vcl_dir = $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
+  $data = [
+    'vcl' => [
+      [
+        'vcl_dir' => $vcl_dir,
+        'type' => 'recv',
+      ],
+      [
+        'vcl_dir' => $vcl_dir,
+        'type' => 'deliver',
+      ],
+      [
+        'vcl_dir' => $vcl_dir,
+        'type' => 'error',
+      ],
+      [
+        'vcl_dir' => $vcl_dir,
+        'type' => 'fetch',
+      ],
+    ],
+    'condition' => [
+      [
+        'name' => 'drupalmodule_request',
+        'statement' => 'req.http.x-pass == "1"',
+        'type' => 'REQUEST',
+        'priority' => 90,
+      ],
+    ],
+    'setting' => [
+      [
+        'name' => 'drupalmodule_setting',
+        'action' => 'pass',
+        'request_condition' => 'drupalmodule_request',
+      ],
+    ],
+  ];
+
+  if (empty($api_key)) {
+    $api_key = variable_get('fastly_api_key', '');
+  }
+
+  if (empty($service_id)) {
+    $service_id = variable_get('fastly_service_id', '');
+  }
+
+  return new Vcl($data, $api_key, $service_id);
+}
+
 /**
  * Implements hook_expire_cache().
  *
