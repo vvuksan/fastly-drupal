@@ -24,7 +24,7 @@
 
     # Add an easy way to see whether custom Fastly VCL has been uploaded
     if ( req.http.Fastly-Debug ) {
-        set resp.http.Fastly-Drupal-VCL-Uploaded = "8-1.0.1";
+        set resp.http.Fastly-Drupal-VCL-Uploaded = "7-1.0.0";
     } else {
         remove resp.http.Fastly-Drupal-VCL-Uploaded;
     }
