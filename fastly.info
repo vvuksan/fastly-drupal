@@ -5,4 +5,5 @@ core = 7.x
 configure = admin/config/services/fastly
 files[] = fastly.api.inc
 files[] = fastly.vcl.inc
+files[] = fastly.webhook.inc
 dependencies[] = expire

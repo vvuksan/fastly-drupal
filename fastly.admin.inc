@@ -99,6 +99,75 @@ function fastly_setup_form($form_state) {
 }
 
 /**
+ * Webhook form
+ *
+ * @param $form_state
+ * @return mixed
+ */
+function fastly_webhook_form($form_state) {
+  $form['fastly_webhook_enabled'] = array(
+    '#type' => 'radios',
+    '#title' => t('Webhook enabled?'),
+    '#options' => array(
+        'yes' => 'Yes',
+        'no' => 'No',
+    ),
+    '#default_value' => variable_get('fastly_webhook_enabled', 'no'),
+  );
+
+  $defaultWebhookUrlValue = variable_get('fastly_webhook_url', '');
+
+  $form['fastly_webhook_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Incoming WebHook URL'),
+    '#description' => t('Incoming WebHook URL'),
+    '#states' => array(
+        'visible' => array(
+            ':input[name="fastly_webhook_enabled"]' => array('value' => 'yes'),
+        ),
+    ),
+    '#required' => TRUE,
+    '#default_value' => $defaultWebhookUrlValue,
+  );
+
+  $defaultFastlyWebhookEvents = variable_get('fastly_webhook_events', array());
+
+  $form['fastly_webhook_events'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('Send webhook notifications for'),
+    '#required' => FALSE,
+    '#options' => array("purge_actions" =>"Purge actions", "vcl_upload_actions" =>"VLC upload actions"),
+    '#size' => 5,
+    '#weight' => 0,
+    '#states' => array(
+        'visible' => array(
+            ':input[name="fastly_webhook_enabled"]' => array('value' => 'yes'),
+        ),
+    ),
+    '#default_value' => $defaultFastlyWebhookEvents,
+  );
+
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save webhook configuration'),
+  );
+
+  return $form;
+}
+
+/**
+ * Save form variables
+ *
+ * @param $form
+ * @param $form_state
+ */
+function fastly_webhook_form_submit(&$form, &$form_state) {
+  variable_set('fastly_webhook_url', $form_state['values']['fastly_webhook_url']);
+  variable_set('fastly_webhook_events', $form_state['values']['fastly_webhook_events']);
+}
+
+/**
  * Register form.
  */
 function fastly_register_form($form_state) {
@@ -445,7 +514,7 @@ function fastly_purge_form_submit($form, &$form_state) {
 }
 
 /**
- *
+ * New VCL upload form
  */
 function fastly_vcl_upload_form($form, &$form_state) {
   $form['vcl'] = array(
@@ -469,14 +538,12 @@ function fastly_vcl_upload_form($form, &$form_state) {
 }
 
 /**
- *
+ * Implements hook_form_submit().
  */
 function fastly_vcl_upload_form_submit($form, &$form_state) {
-
   $vcl = fastly_get_vcl();
   $activate = $form_state['values']['activate'];
   $vcl->execute($activate);
-
 }
 
 /**
