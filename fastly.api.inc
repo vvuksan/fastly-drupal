@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains Faslt class that handles API calls to the Fastly service.
@@ -165,7 +166,7 @@ class Fastly {
         $url = url($original_url, array(
           'absolute' => TRUE,
           'alias' => TRUE,
-          'base_url' => $purge_endpoint
+          'base_url' => $purge_endpoint,
         ));
       }
       httprl_request(array($url), $options);
@@ -278,4 +279,12 @@ class Fastly {
       }
     }
   }
+
+  /**
+   *
+   */
+  public function makeRequest($uri, $data = array(), $method = 'GET', $headers = array()) {
+    return $this->query($uri, $data, $method, $headers);
+  }
+
 }
