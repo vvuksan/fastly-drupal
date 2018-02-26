@@ -13,6 +13,7 @@ function fastly_uninstall() {
   variable_del('fastly_api_key');
   variable_del('fastly_service_id');
   variable_del('fastly_non_cached');
+  variable_del('fastly_webhook_url');
 }
 
 /**
