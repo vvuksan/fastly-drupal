@@ -10,7 +10,7 @@
     }
 
     /* else go to vcl_error to deliver a synthetic */
-    error 503;
+    error beresp.status beresp.response;
   }
 
   # Don't allow static files to set cookies.
@@ -22,7 +22,7 @@
   }
 
   # If object is the Fastly Drupal HTML we should mark the object as uncacheable before sending to the user
-  if ( beresp.http.Fastly-Drupal-HTML ) {
+  if ( !req.http.Fastly-FF && beresp.http.Fastly-Drupal-HTML ) {
     set beresp.http.Cache-Control = "no-store, no-cache, must-revalidate, max-age=0";
     unset beresp.http.Fastly-Drupal-HTML;
   }

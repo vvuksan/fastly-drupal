@@ -9,10 +9,10 @@
 
    # Do not cache these paths.
    # Picked from https://github.com/NITEMAN/varnish-bites/blob/master/varnish3/drupal-base.vcl
-  if (req.url ~ "^/(status|update)\.php$" ||
+  if (req.url.path ~ "^/(status|update)\.php$" ||
     req.url.path == "/admin" ||
-    req.url ~ "^/(admin|flag|info)/.*$" ||
-    req.url ~ "^.*/(ajax|ahah|system/files)/.*$" ) {
+    req.url.path ~ "^/(admin|flag|info)/.*$" ||
+    req.url.path ~ "^.*/(ajax|ahah|system/files)/.*$" ) {
       set req.http.X-Pass = "1";
   }
 
