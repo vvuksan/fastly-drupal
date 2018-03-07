@@ -51,7 +51,7 @@ class Webhook {
    * @return mixed
    */
   public function sendWebHook($message, $type) {
-    if (!in_array($type, $this->config->get('webhook_notifications')) || !$this->config->get('webhook_enabled')) {
+    if (!$this->config->get('webhook_enabled') || !in_array($type, $this->config->get('webhook_notifications'))) {
       return FALSE;
     }
 
