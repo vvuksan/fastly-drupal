@@ -28,28 +28,36 @@ class FastlySettingsForm extends ConfigFormBase {
   const FASTLY_SOFT_PURGE = 'soft';
 
   /**
-   * @var Api
+   * The Fastly API.
+   *
+   * @var \Drupal\fastly\Api
    */
   protected $api;
 
   /**
-   * VclHandler.
+   * The Fastly VclHandler.
    *
-   * @var VclHandler
+   * @var \Drupal\fastly\VclHandler
    */
   protected $vclHandler;
 
   /**
-   * @var State
+   * Tracks validity of credentials associated with Fastly Api.
+   *
+   * @var \Drupal\fastly\State
    */
   protected $state;
 
   /**
-   * @var Webhook
+   * The Fastly webhook service.
+   *
+   * @var \Drupal\fastly\Services\Webhook
    */
   protected $webhook;
 
   /**
+   * Host of current request.
+   *
    * @var string
    */
   protected $base_url;
@@ -57,14 +65,18 @@ class FastlySettingsForm extends ConfigFormBase {
   /**
    * Constructs a FastlySettingsForm object.
    *
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param Api $api
+   * @param \Drupal\fastly\Api $api
    *   Fastly API for Drupal.
-   * @param State $state
+   * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
-   * @param VclHandler
-   *   Vcl handler
+   * @param \Drupal\fastly\VclHandler $vclHandler
+   *   Vcl handler.
+   * @param \Drupal\fastly\Services\Webhook $webhook
+   *   The Fastly webhook service.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack object.
    */
   public function __construct(ConfigFactoryInterface $config_factory, Api $api, State $state, VclHandler $vclHandler, Webhook $webhook, RequestStack $requestStack) {
     parent::__construct($config_factory);
@@ -377,7 +389,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   }
 
   /**
-   * Gets options to be used as webhook config options
+   * Gets options to be used as webhook config options.
    */
   public function getEventsNotificationOptions() {
     return [
@@ -442,12 +454,15 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   /**
    * Upload Vcls.
    *
-   * @param $form
-   * @param FormStateInterface $form_state
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    *
-   * @return array
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse.
    */
-  public function uploadVcls($form, FormStateInterface $form_state) {
+  public function uploadVcls(array $form, FormStateInterface $form_state) {
     $activate = $form_state->getValue("activate");
     $response = new AjaxResponse();
     $message = $this->vclHandler->execute($activate);
@@ -458,12 +473,15 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   /**
    * Purge all.
    *
-   * @param $form
-   * @param FormStateInterface $form_state
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
    *
-   * @return array
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse.
    */
-  public function purgeAll($form, FormStateInterface $form_state) {
+  public function purgeAll(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
     $purge = $this->api->purgeAll();
     if (!$purge) {
@@ -477,14 +495,17 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   }
 
   /**
-   * Uploads maintenance page and saves configuration
+   * Uploads maintenance page and saves configuration.
    *
-   * @param $form
-   * @param FormStateInterface $form_state
-   * @return AjaxResponse
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse.
    */
-  public function uploadMaintenance($form, FormStateInterface $form_state)
-  {
+  public function uploadMaintenance(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
     if ($this->config("error_maintenance") != $form_state->getValue('error_maintenance')) {
       $upload = $this->vclHandler->uploadMaintenancePage($form_state->getValue('error_maintenance'));
