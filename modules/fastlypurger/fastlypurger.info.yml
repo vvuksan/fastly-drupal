@@ -5,5 +5,5 @@ core: 8.x
 package: Purge - reverse proxies & CDNs
 configure: fastly.admin_settings_form
 dependencies:
-  - fastly
-  - purge
+  - fastly:fastly
+  - purge:purge
