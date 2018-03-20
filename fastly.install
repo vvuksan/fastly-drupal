@@ -25,7 +25,7 @@ function fastly_requirements($phase) {
 
     if (!$purge_credentials_state) {
       $link_to_settings = Url::fromRoute('fastly.settings')->toString();
-      $message = t('Missing valid purge credentials for Fastly. Please go <a href="@link_to_settings">here</a> to set.', ['@link_to_settings' => $link_to_settings]);
+      $message = t('Missing valid purge credentials for Fastly. Please go <a href=":link_to_settings">here</a> to set.', [':link_to_settings' => $link_to_settings]);
 
       $requirements['fastly'] = [
         'title' => t('Fastly - Credentials'),

@@ -3,6 +3,7 @@
 namespace Drupal\fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -11,6 +12,9 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * Class to control the VCL handling.
  */
 class VclHandler {
+
+  use StringTranslationTrait;
+
   /**
    * Drupal Error Page Response Object Name.
    */

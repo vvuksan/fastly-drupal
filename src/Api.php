@@ -4,6 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Form\FastlySettingsForm;
 use Drupal\fastly\Services\Webhook;
 use GuzzleHttp\ClientInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class Api {
 
   protected $base_url;
+  use StringTranslationTrait;
 
   /**
    * The Fastly logger channel.
