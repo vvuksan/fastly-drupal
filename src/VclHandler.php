@@ -25,71 +25,99 @@ class VclHandler {
 
   /**
    * VCL data to be processed.
+   *
+   * @var array
    */
   protected $vclData;
 
   /**
    * Condition data to be processed.
+   *
+   * @var array
    */
   protected $conditionData;
 
   /**
    * Setting data to be processed.
+   *
+   * @var array
    */
   protected $settingData;
 
   /**
    * Fastly API endpoint.
+   *
+   * @var string
    */
   protected $hostname;
 
   /**
    * Fastly API Key.
+   *
+   * @var string
    */
   protected $apiKey;
 
   /**
    * Fastly Service ID.
+   *
+   * @var string
    */
   protected $serviceId;
 
   /**
    * Fastly API URL version base.
+   *
+   * @var string
    */
   protected $versionBaseUrl;
 
   /**
    * Headers used for GET requests.
+   *
+   * @var array
    */
   protected $headersGet;
 
   /**
    * Headers used for POST, PUT requests.
+   *
+   * @var array
    */
   protected $headersPost;
 
   /**
    * Last active version data.
+   *
+   * @var array
    */
   protected $lastVersionData;
 
   /**
    * Next cloned version number.
+   *
+   * @var string
    */
   public $nextClonedVersionNum = NULL;
 
   /**
    * Last active version number.
+   *
+   * @var string
    */
   public $lastActiveVersionNum = NULL;
 
   /**
    * Last cloned version number.
+   *
+   * @var string
    */
   protected $lastClonedVersion;
 
   /**
    * Errors.
+   *
+   * @var array
    */
   protected $errors = [];
 
@@ -101,22 +129,34 @@ class VclHandler {
   protected $logger;
 
   /**
+   * The Fastly webhook service.
+   *
    * @var \Drupal\fastly\Services\Webhook
    */
   protected $webhook;
 
   /**
+   * Host of current request.
+   *
    * @var string
    */
   protected $base_url;
 
   /**
-   * Sets data to be processed, sets Credentials
-   * Vcl_Handler constructor.
+   * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   * @param $host
-   * @param Api $api
+   *   The config.
+   * @param string $host
+   *   The host to use to talk to the Fastly API.
+   * @param \Drupal\fastly\Api $api
+   *   Fastly API for Drupal.
+   * @param \Psr\Log\LoggerInterface $logger
+   *   The Fastly logger channel.
+   * @param \Drupal\fastly\Services\Webhook $webhook
+   *   The Fastly webhook service.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack object.
    */
   public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack) {
     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
@@ -199,10 +239,13 @@ class VclHandler {
   /**
    * Creates a new Response Object.
    *
-   * @param $version
-   * @param array $response
+   * @param string $version
+   *   Version number.
+   * @param array $responseToCreate
+   *   Request data for response to create.
    *
-   * @return mixed
+   * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
   public function createResponse($version, array $responseToCreate) {
     $responseObject = $this->getResponse($version, $responseToCreate['name']);
@@ -227,9 +270,12 @@ class VclHandler {
    * Gets the specified Response Object.
    *
    * @param string $version
+   *   Version number.
    * @param string $name
+   *   Response name.
    *
-   * @return bool|mixed $result
+   * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
   public function getResponse($version, $name) {
     if (empty($this->lastVersionData)) {
@@ -241,9 +287,15 @@ class VclHandler {
   }
 
   /**
-   * @param $single_vcl_data
+   * Prepares request for Single VCL.
+   *
+   * @param array $single_vcl_data
+   *   Single VCL data.
    * @param string $prefix
+   *   Prefix.
+   *
    * @return array|bool
+   *   Request data for single VCL, FALSE otherwise.
    */
   public function prepareSingleVcl($single_vcl_data, $prefix = "drupalmodule") {
     if (!empty($single_vcl_data['type'])) {
@@ -277,7 +329,14 @@ class VclHandler {
   }
 
   /**
+   * Upload maintenance page.
    *
+   * @param string $html
+   *   Content for maintenance page.
+   *
+   * @return bool
+   *   TRUE if New Error/Maintenance page is updated and activated,
+   *   FALSE if unsuccessful.
    */
   public function uploadMaintenancePage($html) {
     try {
@@ -362,12 +421,16 @@ class VclHandler {
   }
 
   /**
-   * Main execute function, takes values inserted into constructor, builds requests
-   * and sends them via Fastly API.
+   * Main execute function.
+   *
+   * Takes values inserted into constructor,
+   * builds requests and sends them via Fastly API.
    *
    * @param bool $activate
+   *   (optional) TRUE to update and active, FALSE to update only.
    *
-   * @return bool
+   * @return mixed
+   *   TRUE if executes successfully, FALSE if unsuccessful.
    */
   public function execute($activate = FALSE) {
     // Check if there are connection errors from construct.
@@ -498,6 +561,7 @@ class VclHandler {
    * Prepares VCL request.
    *
    * @return array|bool
+   *   Request date for VCL request, FALSE if not valid.
    */
   public function prepareVcl() {
     // Prepare VCL data content.
@@ -544,6 +608,7 @@ class VclHandler {
    * @name string
    *
    * @return bool
+   *   TRUE if VCL exists, FALSE otherwise.
    */
   public function checkIfVclExists($name) {
     if (empty($this->lastVersionData)) {
@@ -554,7 +619,6 @@ class VclHandler {
     $response = $this->vclGetWrapper($url);
     $responseBody = (string) $response->getBody();
 
-    $i = 0;
     if (empty($responseBody)) {
       return FALSE;
     }
@@ -567,7 +631,12 @@ class VclHandler {
   }
 
   /**
+   * Fetch Id of a snippet.
    *
+   * @data array
+   *
+   * @return int
+   *   Snippet Id.
    */
   public function getSnippetId($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet/' . $data['name'];
@@ -583,6 +652,7 @@ class VclHandler {
    * @data array
    *
    * @return array
+   *   Request data for updating existing VCL.
    */
   public function prepareUpdateVcl($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet/' . $data["name"];
@@ -610,6 +680,7 @@ class VclHandler {
    * @data array
    *
    * @return array
+   *   Request data for inserting new VCL.
    */
   public function prepareInsertVcl($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/snippet';
@@ -627,6 +698,7 @@ class VclHandler {
    * Fetch last service version.
    *
    * @return bool|int
+   *   FALSE otherwise.
    */
   public function getLastVersion() {
     $url = $this->versionBaseUrl;
@@ -647,7 +719,8 @@ class VclHandler {
   /**
    * Creates and returns cloned version number.
    *
-   * @return bool
+   * @return mixed
+   *   Cloned version number if successful, FALSE otherwise.
    */
   public function cloneLastActiveVersion() {
     if (empty($this->lastVersionData)) {
@@ -670,6 +743,7 @@ class VclHandler {
    * Prepares condition for insertion.
    *
    * @return array|bool
+   *   Request data to insert condition or FALSE if condition data invalid.
    */
   public function prepareCondition() {
     // Prepare condition content.
@@ -690,7 +764,8 @@ class VclHandler {
           $requests[] = $this->prepareUpdateCondition($single_condition_data);
         }
         else {
-          // Do insert here because condition is needed before setting (requests are not sent in order)
+          // Do insert here because condition is needed before setting
+          // (requests are not sent in order).
           return $this->insertCondition($single_condition_data);
         }
       }
@@ -720,10 +795,13 @@ class VclHandler {
   }
 
   /**
-   * Fetches condition by condition name
+   * Fetches condition by condition name.
    *
-   * @param $name
-   * @return bool
+   * @param string $name
+   *   Condition name.
+   *
+   * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
   public function getCondition($name) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
@@ -736,6 +814,7 @@ class VclHandler {
    * @data array
    *
    * @return array
+   *   Request data to update condition.
    */
   public function prepareUpdateCondition($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $data['name'];
@@ -754,6 +833,7 @@ class VclHandler {
    * @data
    *
    * @return array
+   *   Response data or empty array.
    */
   public function insertCondition($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition';
@@ -768,7 +848,6 @@ class VclHandler {
     $responseData = json_decode($response->getBody());
 
     if ($responseData) {
-      // Return [];.
       return $responseData;
     }
     else {
@@ -780,6 +859,7 @@ class VclHandler {
    * Prepares setting for insertion.
    *
    * @return array|bool
+   *   Request data to insert setting or FALSE if settings data invalid.
    */
   public function prepareSetting() {
     // Prepare setting content.
@@ -813,6 +893,7 @@ class VclHandler {
    * @name string
    *
    * @return bool
+   *   FALSE if response not returned or without version, TRUE otherwise.
    */
   public function getSetting($name) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/request_settings/' . $name;
@@ -837,6 +918,7 @@ class VclHandler {
    * @data array
    *
    * @return array
+   *   Request data to update settings.
    */
   public function prepareUpdateSetting($data) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/request_settings/' . $data['name'];
@@ -856,6 +938,7 @@ class VclHandler {
    * @data array
    *
    * @return array
+   *   Request data to insert settings.
    */
   public function prepareInsertSetting($data) {
 
@@ -874,6 +957,7 @@ class VclHandler {
    * Validates last cloned version.
    *
    * @return bool
+   *   TRUE if no validation errors, FALSE otherwise.
    */
   public function validateVersion() {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/validate';
@@ -891,6 +975,7 @@ class VclHandler {
    * Activates last cloned version.
    *
    * @return array
+   *   Request data to activates last cloned version.
    */
   public function prepareActivateVersion() {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/activate';
@@ -917,6 +1002,7 @@ class VclHandler {
    * Fetches logged errors.
    *
    * @return array
+   *   Logged errors.
    */
   public function getErrors() {
     return $this->errors;
@@ -925,40 +1011,53 @@ class VclHandler {
   /**
    * Wraps api call to make query via Guzzle.
    *
-   * @param $url
+   * @param string $url
+   *   The uri to use for the request, appended to the host.
    * @param array $headers
+   *   (optional) An array of headers to send with the request.
    * @param array $data
+   *   (optional) Data to send with the request.
    * @param string $type
+   *   (optional) The method to use for the request, defaults to GET.
    *
    * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
-  public function vclRequestWrapper($url, $headers = [], $data = [], $type = "GET") {
+  public function vclRequestWrapper($url, array $headers = [], array $data = [], $type = "GET") {
     return $this->api->vclQuery($url, $data, $type, $headers);
   }
 
   /**
    * Makes get request via vclRequestWrapper.
    *
-   * @param $url
+   * @param string $url
+   *   The uri to use for the request, appended to the host.
    * @param array $headers
+   *   (optional) An array of headers to send with the request.
    * @param array $data
+   *   (optional) Data to send with the request.
    *
    * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
-  public function vclGetWrapper($url, $headers = [], $data = []) {
+  public function vclGetWrapper($url, array $headers = [], array $data = []) {
     return $this->vclRequestWrapper($url, $headers, $data, "GET");
   }
 
   /**
    * Makes put request via vclRequestWrapper.
    *
-   * @param $url
+   * @param string $url
+   *   The uri to use for the request, appended to the host.
    * @param array $headers
+   *   (optional) An array of headers to send with the request.
    * @param array $data
+   *   (optional) Data to send with the request.
    *
    * @return \Psr\Http\Message\ResponseInterface
+   *   vclQuery.
    */
-  public function vclPutWrapper($url, $headers = [], $data = []) {
+  public function vclPutWrapper($url, array $headers = [], array $data = []) {
     return $this->vclRequestWrapper($url, $headers, $data, "PUT");
   }
 
