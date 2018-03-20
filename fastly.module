@@ -103,6 +103,16 @@ function fastly_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
+  $items['admin/config/services/fastly/webhook'] = array(
+    'title' => 'Webhook',
+    'description' => 'Webhook configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fastly_webhook_form'),
+    'access arguments' => array('administer fastly'),
+    'file' => 'fastly.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
   $items['admin/config/services/fastly/register'] = array(
     'title' => 'Registration',
     'description' => 'Fastly registration',
@@ -149,6 +159,14 @@ function fastly_select_page() {
   }
   drupal_goto($path);
 }
+
+/**
+ * Returns the Webhook object.
+ */
+function fastly_get_webhook() {
+  return new Webhook();
+}
+
 
 /**
  * Returns the API object.

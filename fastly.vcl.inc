@@ -5,6 +5,11 @@
  */
 class Vcl {
   /**
+   * Webhook object
+   */
+  protected $_webhook;
+
+  /**
    * VCL data to be processed .*/
   protected $_vcl_data;
 
@@ -15,7 +20,6 @@ class Vcl {
   /**
    * Setting data to be processed .*/
   protected $_setting_data;
-
 
   /**
    * Fastly API endpoint .*/
@@ -71,11 +75,11 @@ class Vcl {
    * VclHandler constructor.
    */
   public function __construct($data, $api_key, $service_id) {
+    $this->_webhook = fastly_get_webhook();
     $this->_api_key = $api_key;
     $this->_service_id = $service_id;
     $this->_hostname = 'https://api.fastly.com/';
     $this->_api = fastly_get_api($this->_api_key, $this->_service_id);
-
     $this->_vcl_data = !empty($data['vcl']) ? $data['vcl'] : FALSE;
     $this->_condition_data = !empty($data['condition']) ? $data['condition'] : FALSE;
     $this->_setting_data = !empty($data['setting']) ? $data['setting'] : FALSE;
@@ -675,6 +679,7 @@ class Vcl {
    */
   public function add_error($message) {
     drupal_set_message($message, "error");
+    $this->_webhook->sendMessage(t($message), "ERROR", "vlc_upload_actions");
   }
 
   /**
@@ -684,6 +689,7 @@ class Vcl {
    */
   public function add_message($message) {
     drupal_set_message(t($message), "status");
+    $this->_webhook->sendMessage(t($message), "INFO", "vlc_upload_actions");
   }
 
 }

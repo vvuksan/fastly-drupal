@@ -10,6 +10,8 @@
  */
 class Fastly {
 
+  public $webhook;
+
   /**
    * Construct function for the Fastly class.
    */
@@ -18,6 +20,7 @@ class Fastly {
     $this->service_id = $service_id;
     $this->host = 'https://api.fastly.com/';
     // $this->host = 'http://stg.fastly.com/';
+    $this->webhook = fastly_get_webhook();
   }
 
   /**
@@ -130,6 +133,7 @@ class Fastly {
    */
   public function purgeAll() {
     $this->query('service/' . $this->service_id . '/purge_all', array(), 'POST');
+    $this->webhook->sendMessage(t("Purge all is executed"), "INFO", "purge_actions");
   }
 
   /**
@@ -138,6 +142,7 @@ class Fastly {
    * @deprecated Use purgeQuery() instead.
    */
   public function purgePath($path) {
+    $this->webhook->sendMessage($path . t("path is purged"), "INFO", "purge_actions");
     $this->purgeQuery($path);
   }
 
@@ -145,6 +150,7 @@ class Fastly {
    * Performs an actual purge request for the given url.
    */
   public function purgeQuery($original_url) {
+    $this->webhook->sendMessage($original_url ." ".t("purged") , "INFO", "purge_actions");
     $url = url($original_url, array('absolute' => TRUE, 'alias' => TRUE));
     $options = array('method' => 'PURGE');
     if (variable_get('fastly_purge_type', 'immediate') == 'soft') {
@@ -181,6 +187,7 @@ class Fastly {
    * Purge cache by key.
    */
   public function purgeKey($key) {
+    $this->webhook->sendMessage($key." " . t("key is purged"), "INFO", "purge_actions");
     $this->purgeKeys(array($key));
   }
 
