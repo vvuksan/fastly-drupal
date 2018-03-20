@@ -376,7 +376,7 @@ class Api {
         if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
-        $data['headers']['http_errors'] = true;
+        $data['headers']['http_errors'] = TRUE;
       }
       $uri = ltrim($uri, '/');
       $uri = $this->host . $uri;
@@ -387,7 +387,7 @@ class Api {
         case 'POST':
         case 'PURGE':
         case 'PUT':
-          $data["http_errors"] = false;
+          $data["http_errors"] = FALSE;
           return $this->httpClient->request($method, $uri, $data);
 
         default:

@@ -237,7 +237,6 @@ class VclHandler {
       $this->lastActiveVersionNum = $this->lastVersionData->number;
     }
 
-    return;
   }
 
   /**
@@ -301,7 +300,7 @@ class VclHandler {
    * @return array|bool
    *   Request data for single VCL, FALSE otherwise.
    */
-  public function prepareSingleVcl($single_vcl_data, $prefix = "drupalmodule") {
+  public function prepareSingleVcl(array $single_vcl_data, $prefix = "drupalmodule") {
     if (!empty($single_vcl_data['type'])) {
       $single_vcl_data['name'] = $prefix . '_' . $single_vcl_data['type'];
       $single_vcl_data['dynamic'] = 0;
@@ -392,7 +391,7 @@ class VclHandler {
       }
 
       $responses = [];
-      foreach ($requests as $key => $value) {
+      foreach ($requests as $value) {
         if (!isset($value['type'])) {
           continue;
         }
@@ -405,6 +404,7 @@ class VclHandler {
 
         $responses[] = $response;
       }
+      unset($responses);
 
       $request = $this->prepareActivateVersion();
 
@@ -570,7 +570,7 @@ class VclHandler {
   public function prepareVcl() {
     // Prepare VCL data content.
     $requests = [];
-    foreach ($this->vclData as $key => $single_vcl_data) {
+    foreach ($this->vclData as $single_vcl_data) {
       if (!empty($single_vcl_data['type'])) {
         $single_vcl_data['name'] = 'drupalmodule_' . $single_vcl_data['type'];
         $single_vcl_data['dynamic'] = 0;
@@ -711,7 +711,7 @@ class VclHandler {
 
     $this->nextClonedVersionNum = count($response_data) + 1;
 
-    foreach ($response_data as $key => $version_data) {
+    foreach ($response_data as $version_data) {
       if ($version_data->active) {
         return $version_data;
       }
@@ -779,23 +779,26 @@ class VclHandler {
   }
 
   /**
-   * Checks if condition exists
+   * Checks if condition exists.
    *
-   * @name string
+   * @param string $name
+   *   Condition name.
+   *
    * @return bool
+   *   FALSE if response not returned or without condition, TRUE otherwise.
    */
   public function checkCondition($name) {
     $url = $this->versionBaseUrl . '/' . $this->lastClonedVersion . '/condition/' . $name;
     $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseBody = (string) $response->getBody();
     $_responseBody = json_decode($responseBody);
-    if(empty($_responseBody)) {
-      return false;
+    if (empty($_responseBody)) {
+      return FALSE;
     }
-    if($_responseBody->version) {
-      return true;
+    if ($_responseBody->version) {
+      return TRUE;
     }
-    return false;
+    return FALSE;
   }
 
   /**
@@ -997,6 +1000,8 @@ class VclHandler {
    * Adds new error to error array.
    *
    * @param string $message
+   *   Error message.
+   *
    */
   public function addError($message) {
     $this->errors[] = $message;
