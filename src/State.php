@@ -12,6 +12,8 @@ class State {
   const VALID_PURGE_CREDENTIALS = 'fastly.state.valid_purge_credentials';
 
   /**
+   * The drupal state service.
+   *
    * @var \Drupal\Core\State\StateInterface
    */
   protected $state;
@@ -27,10 +29,13 @@ class State {
   }
 
   /**
+   * Get the state of the Fastly credentials related to Purge functionality.
+   *
    * Get the Drupal state representing whether or not the configured Fastly Api
-   * credentials are sufficient to perform all supported types of purge requests.
+   * credentials are sufficient to perform all supported purge operations.
    *
    * @return mixed
+   *   The state of the configured Fastly Api credentials
    */
   public function getPurgeCredentialsState() {
     $state = $this->state->get(self::VALID_PURGE_CREDENTIALS);
@@ -38,8 +43,10 @@ class State {
   }
 
   /**
-   * Get the Drupal state representing whether or not the configured Fastly Api
-   * credentials are sufficient to perform all supported types of purge requests.
+   * Set the state of the Fastly credentials related to Purge functionality.
+   *
+   * Set the Drupal state representing whether or not the configured Fastly Api
+   * credentials are sufficient to perform all supported purge operations.
    */
   public function setPurgeCredentialsState($state = FALSE) {
     $this->state->set(self::VALID_PURGE_CREDENTIALS, $state);

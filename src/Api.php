@@ -42,11 +42,15 @@ class Api {
   private $purgeMethod;
 
   /**
+   * Fastly state service.
+   *
    * @var \Drupal\fastly\State
    */
   protected $state;
 
   /**
+   * Fastly webhook service.
+   *
    * @var \Drupal\fastly\Services\Webhook
    */
   protected $webhook;
@@ -63,7 +67,13 @@ class Api {
    * @param \Psr\Log\LoggerInterface $logger
    *   The Fastly logger channel.
    * @param \Drupal\fastly\State $state
-   *   Fastly state service for Drupal.
+   *   The Fastly state service.
+   * @param string $connectTimeout
+   *   The timeout for connections to the Fastly API.
+   * @param \Drupal\fastly\Services\Webhook $webhook
+   *   The Fastly webhook service.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   *   The request stack object.
    */
   public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack) {
 
@@ -83,8 +93,8 @@ class Api {
   /**
    * Set API key.
    *
-   * @paran string $api_key
-   *  API key.
+   * @param string $api_key
+   *   Fastly API key.
    */
   public function setApiKey($api_key) {
     $this->apiKey = $api_key;
@@ -195,7 +205,8 @@ class Api {
    */
   public function purgeUrl($url = '') {
     // Validate URL -- this could be improved.
-    // $url needs to be URL encoded. Need to make sure we can avoid double encoding.
+    // $url needs to be URL encoded.
+    // Need to make sure we can avoid double encoding.
     if ((strpos($url, 'http') === FALSE) && (strpos($url, 'https') === FALSE)) {
       return FALSE;
     }
@@ -453,9 +464,9 @@ class Api {
    * Function for testing Fastly API connection.
    *
    * @return array
+   *   Returns keyed array with 'status' and 'message' of test connection.
    */
   public function testFastlyApiConnection() {
-
     if (empty($this->host) || empty($this->serviceId) || empty($this->apiKey)) {
       return ['status' => FALSE, 'message' => 'Please enter credentials first'];
     }
@@ -476,6 +487,7 @@ class Api {
         $message = 'Connection Successful on service *' . $service_name . "*";
       }
       else {
+
         $status = FALSE;
         $response_body = json_decode($response->getBody());
         $service_name = $response_body->name;
@@ -487,7 +499,6 @@ class Api {
 
     }
     catch (Exception $e) {
-
       return ['status' => FALSE, 'message' => $e->getMessage()];
     }
   }

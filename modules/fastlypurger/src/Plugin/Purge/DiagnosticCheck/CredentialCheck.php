@@ -28,6 +28,8 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
   protected $config;
 
   /**
+   * The Fastly state store.
+   *
    * @var \Drupal\fastly\State
    */
   protected $state;
@@ -71,7 +73,11 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
   public function run() {
 
     // This runs on every page - probably want to avoid a web service call here.
-    // $valid_purge_credentials = (!empty($this->config->get('api_key'))) ? $this->state->validatePurgeCredentials($this->config->get('api_key')) : FALSE;
+    //
+    // $valid_purge_credentials = (!empty($this->config->get('api_key')))
+    // ? $this->state->validatePurgeCredentials($this->config->get('api_key'))
+    // : FALSE;
+    //
     // $this->state->setPurgeCredentialsState($valid_purge_credentials);
     $purge_credentials_state = $this->state->getPurgeCredentialsState();
 

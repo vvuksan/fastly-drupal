@@ -23,7 +23,9 @@ function fastly_help($route_name, RouteMatchInterface $route_match) {
   }
 }
 
-function fastly_hook_page_attachments() {
-  $variables['#attached']['library'][] = 'fastly/fastly';
+/**
+ * Implements hook_page_attachments().
+ */
+function fastly_page_attachments(array &$attachments) {
+  $attachments['#attached']['library'][] = 'fastly/fastly';
 }
-
