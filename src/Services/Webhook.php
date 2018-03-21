@@ -64,7 +64,7 @@ class Webhook {
    * Sends request to WebHookURL.
    *
    * @param string $message
-   *   Webhook message, should be passed through t() or SafeMarkup::format first.
+   *   Webhook message, pass through t() or SafeMarkup::format first.
    * @param string $type
    *   Webhook type.
    *

@@ -144,7 +144,7 @@ class VclHandler {
    *
    * @var string
    */
-  protected $base_url;
+  protected $baseUrl;
 
   /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
@@ -210,7 +210,7 @@ class VclHandler {
     $this->serviceId = $config->get('service_id');
     $this->apiKey = $config->get('api_key');
     $this->logger = $logger;
-    $this->base_url = $requestStack->getCurrentRequest()->getHost();
+    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
 
     $connection = $this->api->testFastlyApiConnection();
 
@@ -414,7 +414,7 @@ class VclHandler {
       }
 
       $message = '*New Error/Maintenance page has updated and activated under config version ' . $this->lastClonedVersion;
-      $this->webhook->sendWebHook($message . " on " . $this->base_url, "maintenance_page");
+      $this->webhook->sendWebHook($message . " on " . $this->baseUrl, "maintenance_page");
 
       return TRUE;
     }
@@ -546,7 +546,7 @@ class VclHandler {
         $message = 'VCL updated, but not activated.';
         $this->logger->info($message);
       }
-      $this->webhook->sendWebHook($message . " on " . $this->base_url, "vcl_update");
+      $this->webhook->sendWebHook($message . " on " . $this->baseUrl, "vcl_update");
 
     }
     catch (Exception $e) {
@@ -1001,7 +1001,6 @@ class VclHandler {
    *
    * @param string $message
    *   Error message.
-   *
    */
   public function addError($message) {
     $this->errors[] = $message;

@@ -19,8 +19,14 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class Api {
 
-  protected $base_url;
   use StringTranslationTrait;
+
+  /**
+   * Host of current request.
+   *
+   * @var string
+   */
+  protected $baseUrl;
 
   /**
    * The Fastly logger channel.
@@ -89,7 +95,7 @@ class Api {
     $this->logger = $logger;
     $this->state = $state;
     $this->webhook = $webhook;
-    $this->base_url = $requestStack->getCurrentRequest()->getHost();
+    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -180,7 +186,7 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          $this->webhook->sendWebHook('Successfully purged / invalidated all content ' . ' on ' . $this->base_url . '.', 'purge_all');
+          $this->webhook->sendWebHook('Successfully purged / invalidated all content ' . ' on ' . $this->baseUrl . '.', 'purge_all');
           return TRUE;
         }
         else {
@@ -258,16 +264,16 @@ class Api {
   public function purgeKeys(array $keys = []) {
     if ($this->state->getPurgeCredentialsState()) {
       try {
-        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => join(" ", $keys)]);
+        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keys)]);
         $result = $this->json($response);
 
         if (count($result) > 0) {
 
-          $this->webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
-            $this->base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
+          $this->webhook->sendWebHook('Successfully purged following key(s) *' . implode(" ", $keys) . " on " .
+            $this->baseUrl . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+            '%key' => implode(" ", $keys),
 
             '%purge_method' => $this->purgeMethod,
           ]);
@@ -275,11 +281,11 @@ class Api {
         }
         else {
 
-          $this->webhook->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " .
+          $this->webhook->sendWebHook('Unable to purge following key(s) *' . implode(" ", $keys) . ". Purge Method: " .
             $this->purgeMethod, 'purge_keys');
 
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+            '%key' => implode(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
         }
@@ -364,7 +370,7 @@ class Api {
    * @throws \GuzzleHttp\Exception\RequestException
    *   RequestException.
    */
-  protected function VQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
+  protected function vQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
     try {
       if (empty($data['headers'])) {
         $data['headers'] = $headers;
@@ -459,7 +465,7 @@ class Api {
       $data['form_params'] = $data;
     }
 
-    return $this->VQuery($uri, $data, $method, $headers);
+    return $this->vQuery($uri, $data, $method, $headers);
   }
 
   /**
