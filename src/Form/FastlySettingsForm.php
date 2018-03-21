@@ -422,7 +422,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
-    $this->webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->baseUrl, "config_save");
+    $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
 
     parent::submitForm($form, $form_state);
   }
@@ -515,7 +515,9 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     }
     else {
       $message = $this->t("Maintenance page uploaded successfuly.");
-      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated") . " on " . $this->baseUrl, "config_save");
+
+      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
+
       $this->submitForm($form, $form_state);
     }
     $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));

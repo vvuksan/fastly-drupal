@@ -310,7 +310,7 @@ class VclHandler {
         unset($single_vcl_data['vcl_dir']);
       }
       else {
-        $message = 'VCL file does not exist.';
+        $message = $this->t('VCL file does not exist.');
         $this->addError($message);
         $this->logger->info($message);
         return FALSE;
@@ -323,7 +323,7 @@ class VclHandler {
       }
     }
     else {
-      $message = 'VCL type not set.';
+      $message = $this->t('VCL type not set.');
       $this->addError($message);
       $this->logger->info($message);
       return FALSE;
@@ -345,7 +345,7 @@ class VclHandler {
     try {
       $clone = $this->cloneLastActiveVersion();
       if (FALSE === $clone) {
-        $this->addError('Unable to clone last version');
+        $this->addError($this->t('Unable to clone last version'));
         return FALSE;
       }
 
@@ -372,13 +372,13 @@ class VclHandler {
       $createResponse = $this->createResponse($this->lastClonedVersion, $response);
 
       if (!$createResponse) {
-        $this->addError('Failed to create a RESPONSE object.');
+        $this->addError($this->t('Failed to create a RESPONSE object.'));
         return FALSE;
       }
 
       $validate = $this->validateVersion($this->lastClonedVersion);
       if (!$validate) {
-        $this->addError('Failed to validate service version: ' . $this->lastClonedVersion);
+        $this->addError($this->t('Failed to validate service version: @last_cloned_version', ['@last_cloned_version' => $this->lastClonedVersion]));
         return FALSE;
       }
 
@@ -413,13 +413,12 @@ class VclHandler {
         return FALSE;
       }
 
-      $message = '*New Error/Maintenance page has updated and activated under config version ' . $this->lastClonedVersion;
-      $this->webhook->sendWebHook($message . " on " . $this->baseUrl, "maintenance_page");
+      $this->webhook->sendWebHook($this->t('*New Error/Maintenance page has updated and activated under config version @last_cloned_version', ['@last_cloned_version' => $this->lastClonedVersion]), "maintenance_page");
 
       return TRUE;
     }
     catch (\Exception $e) {
-      $this->addError($e->getMessage());
+      $this->addError($this->t('@message', ['@message' => $e->getMessage()]));
       return FALSE;
     }
   }
@@ -441,26 +440,26 @@ class VclHandler {
     $errors = $this->getErrors();
     if (!empty($errors)) {
       foreach ($errors as $error) {
-        drupal_set_message(t($error), 'error');
+        drupal_set_message($error, 'error');
       }
       return FALSE;
     }
 
     // Check if last version is fetched.
     if ($this->lastVersionData === FALSE) {
-      $this->addError('Last version does not exist');
+      $this->addError($this->t('Last version does not exist'));
       return FALSE;
     }
 
     // Check if any of the data is set.
     if (empty($this->vclData) && empty($this->conditionData) && empty($this->settingData)) {
-      $this->addError('No update data set, please specify, vcl, condition or setting data');
+      $this->addError($this->t('No update data set, please specify, vcl, condition or setting data'));
       return FALSE;
     }
 
     try {
       if (FALSE === $this->cloneLastActiveVersion()) {
-        $this->addError('Unable to clone last version');
+        $this->addError($this->t('Unable to clone last version'));
         return FALSE;
       }
 
@@ -473,7 +472,7 @@ class VclHandler {
       if (!empty($this->conditionData)) {
         $conditions = $this->prepareCondition();
         if (FALSE === $conditions) {
-          $this->addError('Unable to insert new condition');
+          $this->addError($this->t('Unable to insert new condition'));
           return FALSE;
         }
         $requests = array_merge($requests, $conditions);
@@ -484,7 +483,7 @@ class VclHandler {
       }
 
       if (!$this->validateVersion()) {
-        $this->addError('Version not validated');
+        $this->addError($this->t('Version not validated'));
         return FALSE;
       }
 
@@ -519,9 +518,8 @@ class VclHandler {
       foreach ($responses as $response) {
         if ($response->getStatusCode() != "200") {
           $pass = FALSE;
-          $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
-          $message = 'VCL update failed : ' . json_decode($response->getBody());
-          $this->logger->critical($message);
+          $this->addError($this->t('Some of the API requests failed, enable debugging and check logs for more information.'));
+          $this->logger->critical('VCL update failed : @body', ['@body' => json_decode($response->getBody())]);
         }
       }
 
@@ -531,30 +529,25 @@ class VclHandler {
 
         $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
         if ($response->getStatusCode() != "200") {
-          $pass = FALSE;
-          $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
-          $message = 'Activation of new version failed : ' . $response->getBody();
-          $this->logger->critical($message);
+          $this->addError($this->t('Some of the API requests failed, enable debugging and check logs for more information.'));
+          $this->logger->critical('Activation of new version failed : @body', ['@body' => $response->getBody()]);
         }
         else {
-          $message = 'VCL updated, version activated : ' . $this->lastClonedVersion;
-          $this->logger->info($message);
-
+          $this->logger->info('VCL updated, version activated : ', ['@last_cloned_version' => $this->lastClonedVersion]);
         }
       }
       elseif ($pass && !$activate) {
-        $message = 'VCL updated, but not activated.';
+        $message = $this->t('VCL updated, but not activated.');
         $this->logger->info($message);
       }
-      $this->webhook->sendWebHook($message . " on " . $this->baseUrl, "vcl_update");
-
+      $this->webhook->sendWebHook($this->t('VCL updated, but not activated on %base_url', ['%base_url' => $this->baseUrl]), "vcl_update");
     }
     catch (Exception $e) {
-      $this->addError('Some of the API requests failed, enable debugging and check logs for more information.');
-      $message = 'VCL update failed : ' . $e->getMessage();
-      $this->logger->critical($message);
+      $this->addError($this->t('Some of the API requests failed, enable debugging and check logs for more information.'));
+      $this->logger->critical('VCL update failed : @message', ['@message' => $e->getMessage()]);
       foreach ($this->getErrors() as $error) {
-        drupal_set_message(t($error), 'error');
+        // $error should have been passed through t() before $this->setError.
+        drupal_set_message($error, 'error');
       }
       return FALSE;
     }
@@ -580,7 +573,7 @@ class VclHandler {
           unset($single_vcl_data['vcl_dir']);
         }
         else {
-          $message = 'VCL file does not exist.';
+          $message = $this->t('VCL file does not exist.');
           $this->addError($message);
           $this->logger->info($message);
 
@@ -596,7 +589,7 @@ class VclHandler {
         }
       }
       else {
-        $message = 'VCL type not set.';
+        $message = $this->t('VCL type not set.');
         $this->addError($message);
         $this->logger->info($message);
         return FALSE;
@@ -758,7 +751,7 @@ class VclHandler {
         empty($single_condition_data['type']) ||
         empty($single_condition_data['priority'])
       ) {
-        $message = 'Condition data not properly set.';
+        $message = $this->t('Condition data not properly set.');
         $this->addError($message);
         $this->logger->critical($message);
         return FALSE;
@@ -876,7 +869,7 @@ class VclHandler {
         empty($single_setting_data['action']) ||
         empty($single_setting_data['request_condition'])
       ) {
-        $message = 'Setting data not properly set.';
+        $message = $this->t('Setting data not properly set.');
         $this->addError($message);
         $this->logger->critical($message);
         return FALSE;
