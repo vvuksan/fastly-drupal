@@ -60,7 +60,7 @@ class FastlySettingsForm extends ConfigFormBase {
    *
    * @var string
    */
-  protected $base_url;
+  protected $baseUrl;
 
   /**
    * Constructs a FastlySettingsForm object.
@@ -84,7 +84,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $this->state = $state;
     $this->vclHandler = $vclHandler;
     $this->webhook = $webhook;
-    $this->base_url = $requestStack->getCurrentRequest()->getHost();
+    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -139,9 +139,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more 
-information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
-href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#description' => $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']),
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -159,7 +157,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
       '#required' => TRUE,
-      '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
+      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly.'),
       // Hide while no API key is set.
       '#states' => [
         'invisible' => [
@@ -174,7 +172,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
-      '#description' => t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
     ];
 
     $form['vcl']['vcl_snippets'] = [
@@ -205,7 +203,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#title' => $this->t('Error/Maintenance'),
       '#default_value' => $config->get('error_maintenance'),
       '#required' => FALSE,
-      '#description' => t('Custom error / maintenance page content'),
+      '#description' => $this->t('Custom error / maintenance page content'),
       '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];
@@ -214,7 +212,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'button',
       '#value' => $this->t('Upload error maintenance page'),
       '#required' => FALSE,
-      '#description' => t('Upload error maintenance page'),
+      '#description' => $this->t('Upload error maintenance page'),
       '#ajax' => [
         'callback' => [$this, 'uploadMaintenance'],
         'event' => 'click-custom-upload-error-maintenance',
@@ -260,7 +258,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'button',
       '#value' => $this->t('Purge / Invalidate all content'),
       '#required' => FALSE,
-      '#description' => t('Purge all'),
+      '#description' => $this->t('Purge all'),
       '#ajax' => [
         'callback' => [$this, 'purgeAll'],
         'event' => 'click-custom-purge-all',
@@ -288,7 +286,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     $form['stale_content']['stale_while_revalidate_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -310,7 +308,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
       '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
-href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -348,25 +346,25 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#title' => $this->t('Webhook URL'),
       '#default_value' => $webhook_url,
       '#required' => FALSE,
-      '#description' => t("Incoming WebHook URL"),
+      '#description' => $this->t("Incoming WebHook URL"),
       '#states' => [
         'visible' => [
           ':input[name="webhook_enabled"]' => ['checked' => TRUE],
         ],
         'required' => [
-          ':input[name="webhook_enabled"]' => ['checked' => true],
+          ':input[name="webhook_enabled"]' => ['checked' => TRUE],
         ],
       ],
     ];
 
     $form['integrations']['webhook']['webhook_notifications'] = [
-      '#type'           => 'select',
-      '#title'          => 'Send notifications for this events',
-      '#description'    => 'Chose which nofification to push to your webhook',
-      '#options'        => $this->getEventsNotificationOptions(),
-      '#default_value'  => $config->get('webhook_notifications'),
-      '#multiple'       => TRUE,
-      '#size'           => 5,
+      '#type' => 'select',
+      '#title' => $this->t('Send notifications for this events'),
+      '#description' => $this->t('Chose which notification to push to your webhook'),
+      '#options' => $this->getEventsNotificationOptions(),
+      '#default_value' => $config->get('webhook_notifications'),
+      '#multiple' => TRUE,
+      '#size' => 5,
     ];
 
     return parent::buildForm($form, $form_state);
@@ -422,7 +420,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
-    $this->webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->base_url, "config_save");
+    $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
 
     parent::submitForm($form, $form_state);
   }
@@ -515,7 +513,9 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     }
     else {
       $message = $this->t("Maintenance page uploaded successfuly.");
-      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated") . " on " . $this->base_url, "config_save");
+
+      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
+
       $this->submitForm($form, $form_state);
     }
     $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));
