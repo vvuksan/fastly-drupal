@@ -186,17 +186,15 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          $this->webhook->sendWebHook('Successfully purged / invalidated all content ' . ' on ' . $this->baseUrl . '.', 'purge_all');
+          $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on %base_url.", ['%base_url' => $this->baseUrl]), "purge_all");
           return TRUE;
         }
         else {
-          $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', [
-            '%status' => $result['status'],
-          ]);
+          $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', ['%status' => $result['status']]);
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical($e->getMessage());
+        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
       }
     }
     return FALSE;
@@ -246,7 +244,7 @@ class Api {
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical($e->getMessage());
+        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
       }
     }
     return FALSE;
@@ -269,20 +267,26 @@ class Api {
 
         if (count($result) > 0) {
 
-          $this->webhook->sendWebHook('Successfully purged following key(s) *' . implode(" ", $keys) . " on " .
-            $this->baseUrl . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
+          $message = $this->t('Successfully purged following key(s) * @keys on %base_url. Purge Method: @purge_method', [
+            '@keys' => implode(" ", $keys),
+            '%base_url' => $this->baseUrl,
+            '@purge_method' => $this->purgeMethod,
+          ]);
+          $this->webhook->sendWebHook($message, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
             '%key' => implode(" ", $keys),
-
             '%purge_method' => $this->purgeMethod,
           ]);
           return TRUE;
         }
         else {
 
-          $this->webhook->sendWebHook('Unable to purge following key(s) *' . implode(" ", $keys) . ". Purge Method: " .
-            $this->purgeMethod, 'purge_keys');
+          $message = $this->t('Unable to purge following key(s) * @keys. Purge Method: @purge_method', [
+            '@keys' => implode(" ", $keys),
+            '@purge_method' => $this->purgeMethod,
+          ]);
+          $this->webhook->sendWebHook($message, 'purge_keys');
 
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
             '%key' => implode(" ", $keys),
@@ -291,7 +295,7 @@ class Api {
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical($e->getMessage());
+        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
       }
     }
     return FALSE;
@@ -347,7 +351,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
-      $this->logger->critical($e->getMessage());
+      $this->logger->critical('@message', ['@message' => $e->getMessage()]);
     }
     return new Response();
   }
@@ -403,7 +407,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
-      $this->logger->critical($e->getMessage());
+      $this->logger->critical('@message', ['@message' => $e->getMessage()]);
     }
 
     return new Response();
@@ -476,7 +480,10 @@ class Api {
    */
   public function testFastlyApiConnection() {
     if (empty($this->host) || empty($this->serviceId) || empty($this->apiKey)) {
-      return ['status' => FALSE, 'message' => 'Please enter credentials first'];
+      return [
+        'status' => FALSE,
+        'message' => $this->t('Please enter credentials first'),
+      ];
     }
 
     $url = '/service/' . $this->serviceId;
@@ -503,7 +510,10 @@ class Api {
         $this->logger->critical($message);
       }
 
-      return ['status' => $status, 'message' => $message];
+      return [
+        'status' => $status,
+        'message' => $message,
+      ];
 
     }
     catch (Exception $e) {
