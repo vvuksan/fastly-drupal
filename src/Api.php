@@ -194,7 +194,7 @@ class Api {
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
+        $this->logger->critical($e->getMessage());
       }
     }
     return FALSE;
@@ -244,7 +244,7 @@ class Api {
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
+        $this->logger->critical($e->getMessage());
       }
     }
     return FALSE;
@@ -295,7 +295,7 @@ class Api {
         }
       }
       catch (RequestException $e) {
-        $this->logger->critical('@message', ['@message' => $e->getMessage()]);
+        $this->logger->critical($e->getMessage());
       }
     }
     return FALSE;
@@ -351,7 +351,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
-      $this->logger->critical('@message', ['@message' => $e->getMessage()]);
+      $this->logger->critical($e->getMessage());
     }
     return new Response();
   }
@@ -407,7 +407,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
-      $this->logger->critical('@message', ['@message' => $e->getMessage()]);
+      $this->logger->critical($e->getMessage());
     }
 
     return new Response();
