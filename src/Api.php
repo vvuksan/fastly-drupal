@@ -491,23 +491,39 @@ class Api {
       'Fastly-Key' => $this->apiKey,
       'Accept' => 'application/json',
     ];
-    try {
 
+    try {
+      $message = '';
       $response = $this->vclQuery($url, [], "GET", $headers);
 
       if ($response->getStatusCode() == "200") {
         $status = TRUE;
         $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection Successful on service *' . $service_name . "*";
+
+        if (!empty($response_body->name)) {
+          $args = ['%service_name' => $response_body->name];
+          $message = $this->t('Connection Successful on service %service_name', $args);
+        }
       }
       else {
-
         $status = FALSE;
         $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection not Successful on service *' . $service_name . "*" . " status : " . $response->getStatusCode();
-        $this->logger->critical($message);
+
+        if (!empty($response_body->name)) {
+          $args = [
+            '%name]' => $response_body->name,
+            '@status' => $response->getStatusCode(),
+          ];
+          $message = $this->t('Connection not Successful on service %name - @status', $args);
+          $this->logger->critical($message);
+        }
+        else {
+          $args = [
+            '@status' => $response->getStatusCode(),
+          ];
+          $message = $this->t('Connection not Successful on service - status : @status', $args);
+          $this->logger->critical($message);
+        }
       }
 
       return [
