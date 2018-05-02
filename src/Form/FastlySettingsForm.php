@@ -121,6 +121,9 @@ class FastlySettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('fastly.settings');
 
+    // Validate API credentials set directly in settings files.
+    $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
+
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
 
     $form['account_settings'] = [
@@ -128,6 +131,10 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Account settings'),
       '#open' => TRUE,
     ];
+
+    $purge_credentials_status_message = $purge_credentials_are_valid
+      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form.")
+      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $form['service_settings'] = [
       '#type' => 'details',
@@ -138,8 +145,8 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
-      '#required' => TRUE,
-      '#description' => $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']),
+      '#required' => !$purge_credentials_are_valid,
+      '#description' => $purge_credentials_status_message,
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -148,7 +155,7 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
     ];
 
-    $service_options = $this->getServiceOptions($api_key);
+    $service_options = $this->getServiceOptions();
 
     $form['service_settings']['service_id'] = [
       '#type' => 'select',
@@ -156,7 +163,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
-      '#required' => TRUE,
+      '#required' => !$purge_credentials_are_valid,
       '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly.'),
       // Hide while no API key is set.
       '#states' => [
@@ -381,7 +388,18 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if (!$this->api->validatePurgeCredentials($form_state->getValue('api_key'))) {
+    // Get and use the API token value from this form for validation.
+    $apiKey = $form_state->getValue('api_key');
+    if (empty($apiKey) && !$this->api->validatePurgeCredentials()) {
+      $form_state->setErrorByName('api_key', $this->t('Please enter an API token.'));
+    }
+
+    if(!empty($apiKey)) {
+      $this->api->setApiKey($apiKey);
+    }
+
+    // Verify API token has adequate scope to use this form.
+    if (!$this->api->validatePurgeToken()) {
       $form_state->setErrorByName('api_key', $this->t('Invalid API token. Make sure the token you are trying has at least <em>global:read</em>, <em>purge_all</em>, and <em>purge_all</em> scopes.'));
     }
   }
@@ -428,18 +446,19 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
   /**
    * Retrieves options for the Fastly service.
    *
-   * @param string $api_key
-   *   API key.
-   *
    * @return array
    *   Array of service ids mapped to service names.
    */
-  protected function getServiceOptions($api_key) {
-    if (empty($this->api->apiKey)) {
+  protected function getServiceOptions() {
+    if (empty($this->api->getApiKey())) {
       return [];
     }
 
     $services = $this->api->getServices();
+    if (empty($services)) {
+      return [];
+    }
+
     $service_options = [];
     foreach ($services as $service) {
       $service_options[$service->id] = $service->name;

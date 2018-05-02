@@ -18,12 +18,12 @@ function fastly_requirements($phase) {
     // Check API token to be sure it has not been removed from
     // Fastly or expired.
     $api = \Drupal::service('fastly.api');
-    $config = \Drupal::config('fastly.settings');
     $state = \Drupal::service('fastly.state');
-    $purge_credentials_state = (!empty($config->get('api_key'))) ? $api->validatePurgeCredentials($config->get('api_key')) : FALSE;
-    $state->setPurgeCredentialsState($purge_credentials_state);
 
-    if (!$purge_credentials_state) {
+    $purge_credentials_are_valid = $api->validatePurgeCredentials();
+    $state->setPurgeCredentialsState($purge_credentials_are_valid);
+
+    if (!$purge_credentials_are_valid) {
       $link_to_settings = Url::fromRoute('fastly.settings')->toString();
       $message = t('Missing valid purge credentials for Fastly. Please go <a href=":link_to_settings">here</a> to set.', [':link_to_settings' => $link_to_settings]);
 
