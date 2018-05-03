@@ -22,6 +22,20 @@ class Api {
   use StringTranslationTrait;
 
   /**
+   * Fastly API Key.
+   *
+   * @var string
+   */
+  protected $apiKey;
+
+  /**
+   * Fastly Service ID.
+   *
+   * @var string
+   */
+  protected $serviceId;
+
+  /**
    * Host of current request.
    *
    * @var string
@@ -99,6 +113,13 @@ class Api {
   }
 
   /**
+   * Get API key.
+   */
+  public function getApiKey() {
+    return $this->apiKey;
+  }
+
+  /**
    * Set API key.
    *
    * @param string $api_key
@@ -109,19 +130,51 @@ class Api {
   }
 
   /**
-   * Used to validate API key.
+   * Set Service Id.
+   *
+   * @param string $service_id
+   *   Fastly Service Id.
+   */
+  public function setServiceId($service_id) {
+    $this->serviceId = $service_id;
+  }
+
+  /**
+   * Get a single token based on the access_token used in the request..
+   */
+  public function getToken() {
+    $response = $this->query('/tokens/self');
+    return $this->json($response);
+  }
+
+  /**
+   * Gets a list of services for the current customer.
+   */
+  public function getServices() {
+    $response = $this->query('/service');
+    return $this->json($response);
+  }
+
+  /**
+   * Gets Fastly user associated with an API key.
+   */
+  public function getCurrentUser() {
+    $response = $this->query('/current_user');
+    return $this->json($response);
+  }
+
+  /**
+   * Used to validate an API Token's scope for purging capabilities.
    *
    * @return bool
-   *   FALSE if any corrupt data is passed or token scope is inadequate.
+   *   FALSE if any corrupt data is passed or token is inadequate for purging.
    */
-  public function validateApiKey() {
+  public function validatePurgeToken() {
     try {
-      $response = $this->query('tokens/self');
-      if ($response->getStatusCode() != 200) {
-        return FALSE;
-      }
-      $json = $this->json($response);
-      if (!empty($json->scopes)) {
+
+      $token = $this->getToken();
+
+      if (!empty($token->scopes)) {
         // GET /tokens/self will return scopes for the passed token, but that
         // alone is not enough to know if a token can perform purge actions.
         // Global scope tokens require the engineer or superuser role.
@@ -129,26 +182,27 @@ class Api {
         // Purge tokens require both purge_all and purge_select.
         $valid_purge_scopes = ['purge_all', 'purge_select'];
 
-        if (array_intersect($valid_purge_scopes, $json->scopes) === $valid_purge_scopes) {
+        if (array_intersect($valid_purge_scopes, $token->scopes) === $valid_purge_scopes) {
           return TRUE;
         }
-        elseif (in_array($potentially_valid_purge_scopes, $json->scopes, TRUE)) {
+        elseif (in_array($potentially_valid_purge_scopes, $token->scopes, TRUE)) {
           try {
-            $response = $this->query('current_user');
-            if ($response->getStatusCode() != 200) {
-              return FALSE;
-            }
-            $json = $this->json($response);
-            if (!empty($json->role)) {
-              if ($json->role === 'engineer' || $json->role === 'superuser') {
+
+            $current_user = $this->getCurrentUser();
+
+            if (!empty($current_user->role)) {
+              if ($current_user->role === 'engineer' || $current_user->role === 'superuser') {
                 return TRUE;
               }
-              elseif ($json->role === 'billing' || $json->role === 'user') {
+              elseif ($current_user->role === 'billing' || $current_user->role === 'user') {
                 return FALSE;
               }
               else {
                 return FALSE;
               }
+            }
+            else {
+              return FALSE;
             }
           }
           catch (\Exception $e) {
@@ -159,6 +213,9 @@ class Api {
           return FALSE;
         }
       }
+      else {
+        return FALSE;
+      }
     }
     catch (\Exception $e) {
       return FALSE;
@@ -166,11 +223,43 @@ class Api {
   }
 
   /**
-   * Gets a list of services for the current customer.
+   * Used to validate if an Api token has access to a service.
+   *
+   * @return bool
+   *   FALSE if API token does not have access to a provided Service Id.
    */
-  public function getServices() {
-    $response = $this->query('/service');
-    return $this->json($response);
+  public function validateTokenServiceAccess() {
+    if (empty($this->serviceId)) {
+      return FALSE;
+    }
+
+    $token = $this->getToken();
+
+    if (isset($token->services) && empty($token->services)) {
+      return TRUE;
+    }
+    elseif (in_array($this->serviceId, $token->services, TRUE)) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Used to validate API token for purge related scope.
+   *
+   * @return bool
+   *   TRUE if API token is capable of necessary purge actions, FALSE otherwise.
+   */
+  public function validatePurgeCredentials() {
+    if (empty($this->apiKey) || empty($this->serviceId)) {
+      return FALSE;
+    }
+    if ($this->validatePurgeToken() && $this->validateTokenServiceAccess()) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
@@ -424,20 +513,6 @@ class Api {
    */
   public function json(ResponseInterface $response) {
     return json_decode($response->getBody());
-  }
-
-  /**
-   * Used to validate API token for purge related scope.
-   *
-   * @return bool
-   *   TRUE if API token is capable of necessary purge actions, FALSE otherwise.
-   */
-  public function validatePurgeCredentials($apiKey = '') {
-    if (empty($apiKey)) {
-      return FALSE;
-    }
-    $this->setApiKey($apiKey);
-    return $this->validateApiKey();
   }
 
   /**
