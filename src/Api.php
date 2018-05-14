@@ -4,6 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Form\FastlySettingsForm;
 use Drupal\fastly\Services\Webhook;
 use GuzzleHttp\ClientInterface;
@@ -18,7 +19,28 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class Api {
 
-  protected $base_url;
+  use StringTranslationTrait;
+
+  /**
+   * Fastly API Key.
+   *
+   * @var string
+   */
+  protected $apiKey;
+
+  /**
+   * Fastly Service ID.
+   *
+   * @var string
+   */
+  protected $serviceId;
+
+  /**
+   * Host of current request.
+   *
+   * @var string
+   */
+  protected $baseUrl;
 
   /**
    * The Fastly logger channel.
@@ -87,7 +109,14 @@ class Api {
     $this->logger = $logger;
     $this->state = $state;
     $this->webhook = $webhook;
-    $this->base_url = $requestStack->getCurrentRequest()->getHost();
+    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
+  }
+
+  /**
+   * Get API key.
+   */
+  public function getApiKey() {
+    return $this->apiKey;
   }
 
   /**
@@ -101,19 +130,51 @@ class Api {
   }
 
   /**
-   * Used to validate API key.
+   * Set Service Id.
+   *
+   * @param string $service_id
+   *   Fastly Service Id.
+   */
+  public function setServiceId($service_id) {
+    $this->serviceId = $service_id;
+  }
+
+  /**
+   * Get a single token based on the access_token used in the request..
+   */
+  public function getToken() {
+    $response = $this->query('/tokens/self');
+    return $this->json($response);
+  }
+
+  /**
+   * Gets a list of services for the current customer.
+   */
+  public function getServices() {
+    $response = $this->query('/service');
+    return $this->json($response);
+  }
+
+  /**
+   * Gets Fastly user associated with an API key.
+   */
+  public function getCurrentUser() {
+    $response = $this->query('/current_user');
+    return $this->json($response);
+  }
+
+  /**
+   * Used to validate an API Token's scope for purging capabilities.
    *
    * @return bool
-   *   FALSE if any corrupt data is passed or token scope is inadequate.
+   *   FALSE if any corrupt data is passed or token is inadequate for purging.
    */
-  public function validateApiKey() {
+  public function validatePurgeToken() {
     try {
-      $response = $this->query('tokens/self');
-      if ($response->getStatusCode() != 200) {
-        return FALSE;
-      }
-      $json = $this->json($response);
-      if (!empty($json->scopes)) {
+
+      $token = $this->getToken();
+
+      if (!empty($token->scopes)) {
         // GET /tokens/self will return scopes for the passed token, but that
         // alone is not enough to know if a token can perform purge actions.
         // Global scope tokens require the engineer or superuser role.
@@ -121,26 +182,27 @@ class Api {
         // Purge tokens require both purge_all and purge_select.
         $valid_purge_scopes = ['purge_all', 'purge_select'];
 
-        if (array_intersect($valid_purge_scopes, $json->scopes) === $valid_purge_scopes) {
+        if (array_intersect($valid_purge_scopes, $token->scopes) === $valid_purge_scopes) {
           return TRUE;
         }
-        elseif (in_array($potentially_valid_purge_scopes, $json->scopes, TRUE)) {
+        elseif (in_array($potentially_valid_purge_scopes, $token->scopes, TRUE)) {
           try {
-            $response = $this->query('current_user');
-            if ($response->getStatusCode() != 200) {
-              return FALSE;
-            }
-            $json = $this->json($response);
-            if (!empty($json->role)) {
-              if ($json->role === 'engineer' || $json->role === 'superuser') {
+
+            $current_user = $this->getCurrentUser();
+
+            if (!empty($current_user->role)) {
+              if ($current_user->role === 'engineer' || $current_user->role === 'superuser') {
                 return TRUE;
               }
-              elseif ($json->role === 'billing' || $json->role === 'user') {
+              elseif ($current_user->role === 'billing' || $current_user->role === 'user') {
                 return FALSE;
               }
               else {
                 return FALSE;
               }
+            }
+            else {
+              return FALSE;
             }
           }
           catch (\Exception $e) {
@@ -151,6 +213,9 @@ class Api {
           return FALSE;
         }
       }
+      else {
+        return FALSE;
+      }
     }
     catch (\Exception $e) {
       return FALSE;
@@ -158,11 +223,43 @@ class Api {
   }
 
   /**
-   * Gets a list of services for the current customer.
+   * Used to validate if an Api token has access to a service.
+   *
+   * @return bool
+   *   FALSE if API token does not have access to a provided Service Id.
    */
-  public function getServices() {
-    $response = $this->query('/service');
-    return $this->json($response);
+  public function validateTokenServiceAccess() {
+    if (empty($this->serviceId)) {
+      return FALSE;
+    }
+
+    $token = $this->getToken();
+
+    if (isset($token->services) && empty($token->services)) {
+      return TRUE;
+    }
+    elseif (in_array($this->serviceId, $token->services, TRUE)) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  /**
+   * Used to validate API token for purge related scope.
+   *
+   * @return bool
+   *   TRUE if API token is capable of necessary purge actions, FALSE otherwise.
+   */
+  public function validatePurgeCredentials() {
+    if (empty($this->apiKey) || empty($this->serviceId)) {
+      return FALSE;
+    }
+    if ($this->validatePurgeToken() && $this->validateTokenServiceAccess()) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
@@ -178,13 +275,11 @@ class Api {
         $result = $this->json($response);
         if ($result->status === 'ok') {
           $this->logger->info('Successfully purged all on Fastly.');
-          $this->webhook->sendWebHook('Successfully purged / invalidated all content ' . ' on ' . $this->base_url . '.', 'purge_all');
+          $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on %base_url.", ['%base_url' => $this->baseUrl]), "purge_all");
           return TRUE;
         }
         else {
-          $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', [
-            '%status' => $result['status'],
-          ]);
+          $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', ['%status' => $result['status']]);
         }
       }
       catch (RequestException $e) {
@@ -256,28 +351,34 @@ class Api {
   public function purgeKeys(array $keys = []) {
     if ($this->state->getPurgeCredentialsState()) {
       try {
-        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => join(" ", $keys)]);
+        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keys)]);
         $result = $this->json($response);
 
         if (count($result) > 0) {
 
-          $this->webhook->sendWebHook('Successfully purged following key(s) *' . join(" ", $keys) . " on " .
-            $this->base_url . ". Purge Method: " . $this->purgeMethod, 'purge_keys');
+          $message = $this->t('Successfully purged following key(s) * @keys on %base_url. Purge Method: @purge_method', [
+            '@keys' => implode(" ", $keys),
+            '%base_url' => $this->baseUrl,
+            '@purge_method' => $this->purgeMethod,
+          ]);
+          $this->webhook->sendWebHook($message, 'purge_keys');
 
           $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
-
+            '%key' => implode(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
           return TRUE;
         }
         else {
 
-          $this->webhook->sendWebHook('Unable to purge following key(s) *' . join(" ", $keys) . ". Purge Method: " .
-            $this->purgeMethod, 'purge_keys');
+          $message = $this->t('Unable to purge following key(s) * @keys. Purge Method: @purge_method', [
+            '@keys' => implode(" ", $keys),
+            '@purge_method' => $this->purgeMethod,
+          ]);
+          $this->webhook->sendWebHook($message, 'purge_keys');
 
           $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
-            '%key' => join(" ", $keys),
+            '%key' => implode(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
         }
@@ -362,7 +463,7 @@ class Api {
    * @throws \GuzzleHttp\Exception\RequestException
    *   RequestException.
    */
-  protected function VQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
+  protected function vQuery($uri, array $data = [], $method = 'GET', array $headers = []) {
     try {
       if (empty($data['headers'])) {
         $data['headers'] = $headers;
@@ -374,7 +475,7 @@ class Api {
         if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
-        $data['headers']['http_errors'] = true;
+        $data['headers']['http_errors'] = TRUE;
       }
       $uri = ltrim($uri, '/');
       $uri = $this->host . $uri;
@@ -385,7 +486,7 @@ class Api {
         case 'POST':
         case 'PURGE':
         case 'PUT':
-          $data["http_errors"] = false;
+          $data["http_errors"] = FALSE;
           return $this->httpClient->request($method, $uri, $data);
 
         default:
@@ -412,20 +513,6 @@ class Api {
    */
   public function json(ResponseInterface $response) {
     return json_decode($response->getBody());
-  }
-
-  /**
-   * Used to validate API token for purge related scope.
-   *
-   * @return bool
-   *   TRUE if API token is capable of necessary purge actions, FALSE otherwise.
-   */
-  public function validatePurgeCredentials($apiKey = '') {
-    if (empty($apiKey)) {
-      return FALSE;
-    }
-    $this->setApiKey($apiKey);
-    return $this->validateApiKey();
   }
 
   /**
@@ -457,7 +544,7 @@ class Api {
       $data['form_params'] = $data;
     }
 
-    return $this->VQuery($uri, $data, $method, $headers);
+    return $this->vQuery($uri, $data, $method, $headers);
   }
 
   /**
@@ -468,7 +555,10 @@ class Api {
    */
   public function testFastlyApiConnection() {
     if (empty($this->host) || empty($this->serviceId) || empty($this->apiKey)) {
-      return ['status' => FALSE, 'message' => 'Please enter credentials first'];
+      return [
+        'status' => FALSE,
+        'message' => $this->t('Please enter credentials first'),
+      ];
     }
 
     $url = '/service/' . $this->serviceId;
@@ -476,26 +566,45 @@ class Api {
       'Fastly-Key' => $this->apiKey,
       'Accept' => 'application/json',
     ];
-    try {
 
+    try {
+      $message = '';
       $response = $this->vclQuery($url, [], "GET", $headers);
 
       if ($response->getStatusCode() == "200") {
         $status = TRUE;
         $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection Successful on service *' . $service_name . "*";
+
+        if (!empty($response_body->name)) {
+          $args = ['%service_name' => $response_body->name];
+          $message = $this->t('Connection Successful on service %service_name', $args);
+        }
       }
       else {
-
         $status = FALSE;
         $response_body = json_decode($response->getBody());
-        $service_name = $response_body->name;
-        $message = 'Connection not Successful on service *' . $service_name . "*" . " status : " . $response->getStatusCode();
-        $this->logger->critical($message);
+
+        if (!empty($response_body->name)) {
+          $args = [
+            '%name]' => $response_body->name,
+            '@status' => $response->getStatusCode(),
+          ];
+          $message = $this->t('Connection not Successful on service %name - @status', $args);
+          $this->logger->critical($message);
+        }
+        else {
+          $args = [
+            '@status' => $response->getStatusCode(),
+          ];
+          $message = $this->t('Connection not Successful on service - status : @status', $args);
+          $this->logger->critical($message);
+        }
       }
 
-      return ['status' => $status, 'message' => $message];
+      return [
+        'status' => $status,
+        'message' => $message,
+      ];
 
     }
     catch (Exception $e) {

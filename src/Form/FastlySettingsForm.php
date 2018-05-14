@@ -60,7 +60,7 @@ class FastlySettingsForm extends ConfigFormBase {
    *
    * @var string
    */
-  protected $base_url;
+  protected $baseUrl;
 
   /**
    * Constructs a FastlySettingsForm object.
@@ -84,7 +84,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $this->state = $state;
     $this->vclHandler = $vclHandler;
     $this->webhook = $webhook;
-    $this->base_url = $requestStack->getCurrentRequest()->getHost();
+    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -121,6 +121,9 @@ class FastlySettingsForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('fastly.settings');
 
+    // Validate API credentials set directly in settings files.
+    $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
+
     $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
 
     $form['account_settings'] = [
@@ -128,6 +131,10 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Account settings'),
       '#open' => TRUE,
     ];
+
+    $purge_credentials_status_message = $purge_credentials_are_valid
+      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form.")
+      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $form['service_settings'] = [
       '#type' => 'details',
@@ -138,10 +145,8 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
-      '#required' => TRUE,
-      '#description' => t("You can find your personal API tokens on your Fastly Account Settings page. See <a href='https://docs.fastly.com/guides/account-management-and-security/using-api-tokens'>using API tokens</a> for more 
-information. It is recommended that the token you provide has at least <em>global:read</em>, <em>purge_select</em>, and <em>purge_all</em> scopes. If you don't have an account yet, please visit <a 
-href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly."),
+      '#required' => !$purge_credentials_are_valid,
+      '#description' => $purge_credentials_status_message,
       // Update the listed services whenever the API key is modified.
       '#ajax' => [
         'callback' => '::updateServices',
@@ -150,7 +155,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       ],
     ];
 
-    $service_options = $this->getServiceOptions($api_key);
+    $service_options = $this->getServiceOptions();
 
     $form['service_settings']['service_id'] = [
       '#type' => 'select',
@@ -158,8 +163,8 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
       '#default_value' => $config->get('service_id'),
-      '#required' => TRUE,
-      '#description' => t('A Service represents the configuration for your website to be served through Fastly.'),
+      '#required' => !$purge_credentials_are_valid,
+      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly.'),
       // Hide while no API key is set.
       '#states' => [
         'invisible' => [
@@ -174,7 +179,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
-      '#description' => t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
     ];
 
     $form['vcl']['vcl_snippets'] = [
@@ -205,7 +210,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#title' => $this->t('Error/Maintenance'),
       '#default_value' => $config->get('error_maintenance'),
       '#required' => FALSE,
-      '#description' => t('Custom error / maintenance page content'),
+      '#description' => $this->t('Custom error / maintenance page content'),
       '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];
@@ -214,7 +219,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'button',
       '#value' => $this->t('Upload error maintenance page'),
       '#required' => FALSE,
-      '#description' => t('Upload error maintenance page'),
+      '#description' => $this->t('Upload error maintenance page'),
       '#ajax' => [
         'callback' => [$this, 'uploadMaintenance'],
         'event' => 'click-custom-upload-error-maintenance',
@@ -260,7 +265,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
       '#type' => 'button',
       '#value' => $this->t('Purge / Invalidate all content'),
       '#required' => FALSE,
-      '#description' => t('Purge all'),
+      '#description' => $this->t('Purge all'),
       '#ajax' => [
         'callback' => [$this, 'purgeAll'],
         'event' => 'click-custom-purge-all',
@@ -288,7 +293,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
 
     $form['stale_content']['stale_while_revalidate_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -310,7 +315,7 @@ href='https://www.fastly.com/signup'>https://www.fastly.com/signup</a> on Fastly
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
       '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
-href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">here</a>.'),
+href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
         'visible' => [
@@ -348,25 +353,25 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       '#title' => $this->t('Webhook URL'),
       '#default_value' => $webhook_url,
       '#required' => FALSE,
-      '#description' => t("Incoming WebHook URL"),
+      '#description' => $this->t("Incoming WebHook URL"),
       '#states' => [
         'visible' => [
           ':input[name="webhook_enabled"]' => ['checked' => TRUE],
         ],
         'required' => [
-          ':input[name="webhook_enabled"]' => ['checked' => true],
+          ':input[name="webhook_enabled"]' => ['checked' => TRUE],
         ],
       ],
     ];
 
     $form['integrations']['webhook']['webhook_notifications'] = [
-      '#type'           => 'select',
-      '#title'          => 'Send notifications for this events',
-      '#description'    => 'Chose which nofification to push to your webhook',
-      '#options'        => $this->getEventsNotificationOptions(),
-      '#default_value'  => $config->get('webhook_notifications'),
-      '#multiple'       => TRUE,
-      '#size'           => 5,
+      '#type' => 'select',
+      '#title' => $this->t('Send notifications for this events'),
+      '#description' => $this->t('Chose which notification to push to your webhook'),
+      '#options' => $this->getEventsNotificationOptions(),
+      '#default_value' => $config->get('webhook_notifications'),
+      '#multiple' => TRUE,
+      '#size' => 5,
     ];
 
     return parent::buildForm($form, $form_state);
@@ -383,7 +388,18 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    if (!$this->api->validatePurgeCredentials($form_state->getValue('api_key'))) {
+    // Get and use the API token value from this form for validation.
+    $apiKey = $form_state->getValue('api_key');
+    if (empty($apiKey) && !$this->api->validatePurgeCredentials()) {
+      $form_state->setErrorByName('api_key', $this->t('Please enter an API token.'));
+    }
+
+    if(!empty($apiKey)) {
+      $this->api->setApiKey($apiKey);
+    }
+
+    // Verify API token has adequate scope to use this form.
+    if (!$this->api->validatePurgeToken()) {
       $form_state->setErrorByName('api_key', $this->t('Invalid API token. Make sure the token you are trying has at least <em>global:read</em>, <em>purge_all</em>, and <em>purge_all</em> scopes.'));
     }
   }
@@ -422,7 +438,7 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->save();
 
-    $this->webhook->sendWebHook($this->t("Fastly module configuration changed") . " on " . $this->base_url, "config_save");
+    $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
 
     parent::submitForm($form, $form_state);
   }
@@ -430,18 +446,19 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
   /**
    * Retrieves options for the Fastly service.
    *
-   * @param string $api_key
-   *   API key.
-   *
    * @return array
    *   Array of service ids mapped to service names.
    */
-  protected function getServiceOptions($api_key) {
-    if (empty($this->api->apiKey)) {
+  protected function getServiceOptions() {
+    if (empty($this->api->getApiKey())) {
       return [];
     }
 
     $services = $this->api->getServices();
+    if (empty($services)) {
+      return [];
+    }
+
     $service_options = [];
     foreach ($services as $service) {
       $service_options[$service->id] = $service->name;
@@ -515,7 +532,9 @@ href="https://docs.fastly.com/guides/performance-tuning/serving-stale-content">h
     }
     else {
       $message = $this->t("Maintenance page uploaded successfuly.");
-      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated") . " on " . $this->base_url, "config_save");
+
+      $this->webhook->sendWebHook($this->t("Fastly Error / Maintenance page updated on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
+
       $this->submitForm($form, $form_state);
     }
     $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));
