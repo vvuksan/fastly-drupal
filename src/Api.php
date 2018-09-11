@@ -354,7 +354,7 @@ class Api {
         $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keys)]);
         $result = $this->json($response);
 
-        if (is_array($result) && count($result) > 0) {
+        if (count($result) > 0) {
 
           $message = $this->t('Successfully purged following key(s) * @keys on %base_url. Purge Method: @purge_method', [
             '@keys' => implode(" ", $keys),
