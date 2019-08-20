@@ -278,6 +278,13 @@ class FastlySettingsForm extends ConfigFormBase {
       '#suffix' => '<span class="purge-all-message"></span>',
     ];
 
+    $form['purge']['purge_logging'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable logging for purges'),
+      '#description' => $this->t("Add a log entry whenever a purge is successful."),
+      '#default_value' => $config->get('purge_logging'),
+    ];
+
     $form['stale_content'] = [
       '#type' => 'details',
       '#title' => $this->t('Stale content options'),
@@ -429,6 +436,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
+      ->set('purge_logging', $form_state->getValue('purge_logging'))
       ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))

@@ -103,6 +103,7 @@ class Api {
     $this->apiKey = $config->get('api_key');
     $this->serviceId = $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
+    $this->purgeLogging = $config->get('purge_logging');
     $this->connectTimeout = $connectTimeout;
     $this->host = $host;
     $this->httpClient = $http_client;
@@ -274,7 +275,9 @@ class Api {
         $response = $this->query('service/' . $this->serviceId . '/purge_all', [], 'POST');
         $result = $this->json($response);
         if ($result->status === 'ok') {
-          $this->logger->info('Successfully purged all on Fastly.');
+          if ($this->purgeLogging) {
+            $this->logger->info('Successfully purged all on Fastly.');
+          }
           $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on %base_url.", ['%base_url' => $this->baseUrl]), "purge_all");
           return TRUE;
         }
@@ -319,10 +322,12 @@ class Api {
         $response = $this->query('purge/' . $url, [], 'POST');
         $result = $this->json($response);
         if ($result->status === 'ok') {
-          $this->logger->info('Successfully purged URL %url. Purge Method: %purge_method.', [
-            '%url' => $url,
-            '%purge_method' => $this->purgeMethod,
-          ]);
+          if ($this->purgeLogging) {
+            $this->logger->info('Successfully purged URL %url. Purge Method: %purge_method.', [
+              '%url' => $url,
+              '%purge_method' => $this->purgeMethod,
+            ]);
+          }
           return TRUE;
         }
         else {
@@ -363,10 +368,12 @@ class Api {
           ]);
           $this->webhook->sendWebHook($message, 'purge_keys');
 
-          $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-            '%key' => implode(" ", $keys),
-            '%purge_method' => $this->purgeMethod,
-          ]);
+          if ($this->purgeLogging) {
+            $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+              '%key' => implode(" ", $keys),
+              '%purge_method' => $this->purgeMethod,
+            ]);
+          }
           return TRUE;
         }
         else {
