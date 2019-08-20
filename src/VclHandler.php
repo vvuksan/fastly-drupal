@@ -440,7 +440,7 @@ class VclHandler {
     $errors = $this->getErrors();
     if (!empty($errors)) {
       foreach ($errors as $error) {
-        drupal_set_message($error, 'error');
+        \Drupal::messenger()->addError($error);
       }
       return FALSE;
     }
@@ -547,7 +547,7 @@ class VclHandler {
       $this->logger->critical('VCL update failed : @message', ['@message' => $e->getMessage()]);
       foreach ($this->getErrors() as $error) {
         // $error should have been passed through t() before $this->setError.
-        drupal_set_message($error, 'error');
+        \Drupal::messenger()->addError($error);
       }
       return FALSE;
     }
