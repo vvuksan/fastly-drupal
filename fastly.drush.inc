@@ -21,7 +21,7 @@ function fastly_drush_command() {
   $items['fastly-purge-url'] = [
     'description' => 'Purge URL from fastly caches.',
     'arguments' => [
-      'path' => 'A full URL to purge from Fastly',
+      'url' => 'A full URL to purge from Fastly',
     ],
     'drupal dependencies' => ['fastly'],
     'aliases' => ['fastly:purge-url'],
@@ -46,7 +46,7 @@ function drush_fastly_purge_all($tags = '') {
 /**
  * Call back function to purge a single URL at Fastly from drush.
  */
-function drush_fastly_purge_path($url = '') {
+function drush_fastly_purge_url($url = '') {
   $api = Drupal::service('fastly.api');
   if (!empty($url)) {
     $api->purgeUrl($url);
