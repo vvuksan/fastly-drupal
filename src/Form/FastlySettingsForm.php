@@ -142,7 +142,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
     ];
     $form['account_settings']['api_key'] = [
-      '#type' => 'textfield',
+      '#type' => 'password',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => !$purge_credentials_are_valid,
