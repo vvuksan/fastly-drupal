@@ -43,6 +43,10 @@ function fastly_init() {
   $surrogate_keys = array();
   $full_url = '';
   foreach ($path_segments as $segment) {
+    // Munge any control characters, whitespace or invalid UTF-8 in the path.
+    // Non-ASCII characters in HTTP headers are non-standard but work with
+    // Fastly.
+    $segment = preg_replace('/[\x00-\x20\x7F]/u', '-', $segment);
     if (empty($surrogate_keys)) {
       $full_url = $segment;
     }
