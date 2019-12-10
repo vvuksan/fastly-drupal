@@ -31,7 +31,7 @@ class Webhook {
       );
 
     $webhookUrl = variable_get('fastly_webhook_url');
-    $webhookActions = variable_get('fastly_webhook_events');
+    $webhookActions = variable_get('fastly_webhook_events', array());
 
 
     if(in_array($action, $webhookActions)) {
