@@ -26,3 +26,9 @@
     set beresp.http.Cache-Control = "no-store, no-cache, must-revalidate, max-age=0";
     unset beresp.http.Fastly-Drupal-HTML;
   }
+
+  # Drupal can respond with Vary on Cookie, which is bad for CHR. 
+  # Remove cookie from the Vary header, as we handle request cookies already in vcl_recv. 
+  if ( beresp.http.Vary:cookie ) {
+    unset beresp.http.Vary:cookie;
+  }
