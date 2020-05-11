@@ -142,7 +142,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
     ];
     $form['account_settings']['api_key'] = [
-      '#type' => 'password',
+      '#type' => 'textfield',
       '#title' => $this->t('API key'),
       '#default_value' => $api_key,
       '#required' => !$purge_credentials_are_valid,
@@ -179,7 +179,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
-      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
     ];
 
     $form['vcl']['vcl_snippets'] = [
