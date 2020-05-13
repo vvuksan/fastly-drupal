@@ -131,7 +131,13 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Account settings'),
       '#open' => TRUE,
     ];
-
+    $form['account_settings']['site_id'] = [
+      '#type' => 'machine_name',
+      '#title' => $this->t('Site ID'),
+      '#default_value' => $config->get('site_id'),
+      '#required' => FALSE,
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_CACHE_TAG_PREFIX to set this also."),
+    ];
     $purge_credentials_status_message = $purge_credentials_are_valid
       ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form.")
       : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
@@ -314,7 +320,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a
 href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
@@ -436,6 +442,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
+      ->set('site_id', $form_state->getValue('site_id'))
       ->save();
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");

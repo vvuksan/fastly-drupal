@@ -68,8 +68,14 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
    *   The hashes to use instead in the header.
    */
   public static function cacheTagsToHashes(array $cache_tags) {
+    //@todo move this function to separate service
+    $siteCode = getenv('FASTLY_CACHE_TAG_PREFIX');
+    if (!$siteCode) {
+      $siteCode = \Drupal::configFactory()->get('fastly.settings')->get('site_id');
+    }
     $hashes = [];
     foreach ($cache_tags as $cache_tag) {
+      $cache_tag = $siteCode ? $siteCode . ':' . $cache_tag : $cache_tag;
       $hashes[] = substr(md5($cache_tag), 0, 3);
     }
     return $hashes;

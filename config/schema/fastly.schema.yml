@@ -5,6 +5,9 @@ fastly.settings:
     api_key:
       type: string
       label: 'Fastly API key'
+    site_id:
+      type: string
+      label: 'Fastly Site ID'
     service_id:
       type: string
       label: 'Fastly Service ID'
