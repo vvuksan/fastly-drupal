@@ -2,6 +2,7 @@
 
 namespace Drupal\fastly\EventSubscriber;
 
+use Drupal\fastly\CacheTagsHash;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -22,13 +23,24 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
   protected $logger;
 
   /**
+   * CacheTagsHash service.
+   *
+   * @var \Drupal\fastly\CacheTagsHash
+   */
+  protected $cacheTagsHash;
+
+  /**
    * Constructs a new CacheTagsHeaderLimitDetector object.
    *
    * @param \Psr\Log\LoggerInterface $logger
    *   The Fastly logger channel.
+   * @param \Drupal\fastly\CacheTagsHash $cache_tags_hash
+   *   The Fastly logger channel.
+   *
    */
-  public function __construct(LoggerInterface $logger) {
+  public function __construct(LoggerInterface $logger, CacheTagsHash $cache_tags_hash) {
     $this->logger = $logger;
+    $this->cacheTagsHash = $cache_tags_hash;
   }
 
   /**
@@ -48,7 +60,7 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
       $surrogate_key_header_value = implode(' ', $response->getCacheableMetadata()->getCacheTags());
 
       $cache_tags = explode(' ', $surrogate_key_header_value);
-      $hashes = static::cacheTagsToHashes($cache_tags);
+      $hashes = $this->cacheTagsHash->cacheTagsToHashes($cache_tags);
       $surrogate_key_header_value = implode(' ', $hashes);
 
       $response->headers->set('Surrogate-Key', $surrogate_key_header_value);
@@ -61,6 +73,9 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
    * Used when the Surrogate-Key/X-Drupal-Cache-Tags header size otherwise
    * exceeds 16 KB.
    *
+   * @deprecated Deprecated and will be removed in future versions. Use
+   *   \Drupal::service('fastly.cache_tags.hash')->cacheTagsToHashes($cache_tags); instead.
+   *
    * @param string[] $cache_tags
    *   The cache tags in the header.
    *
@@ -68,17 +83,7 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
    *   The hashes to use instead in the header.
    */
   public static function cacheTagsToHashes(array $cache_tags) {
-    //@todo move this function to separate service
-    $siteCode = getenv('FASTLY_CACHE_TAG_PREFIX');
-    if (!$siteCode) {
-      $siteCode = \Drupal::configFactory()->get('fastly.settings')->get('site_id');
-    }
-    $hashes = [];
-    foreach ($cache_tags as $cache_tag) {
-      $cache_tag = $siteCode ? $siteCode . ':' . $cache_tag : $cache_tag;
-      $hashes[] = substr(md5($cache_tag), 0, 3);
-    }
-    return $hashes;
+    return \Drupal::service('fastly.cache_tags.hash')->cacheTagsToHashes($cache_tags);
   }
 
   /**

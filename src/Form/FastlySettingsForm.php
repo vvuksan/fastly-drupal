@@ -8,6 +8,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
+use Drupal\fastly\CacheTagsHashInterface;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
 use Drupal\fastly\Services\Webhook;
@@ -250,6 +251,15 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
     ];
 
+    $key_length = (int) $config->get('cache_tag_hash_length') ?: CacheTagsHashInterface::CACHE_TAG_HASH_LENGTH;
+    $form['purge']['purge_options']['cache_tag_hash_length'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Cache tag hash length'),
+      '#description' => $this->t('For larger sites, it may be necessary to increase the length of the hashed cache tags (eg. <code>d0f</code>) that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable FASTLY_CACHE_TAG_HASH_LENGTH.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(16, $key_length)]),
+      '#default_value' => $key_length,
+    ];
+
+
     $form['purge']['purge_options']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
@@ -408,6 +418,15 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     if (!$this->api->validatePurgeToken()) {
       $form_state->setErrorByName('api_key', $this->t('Invalid API token. Make sure the token you are trying has at least <em>global:read</em>, <em>purge_all</em>, and <em>purge_all</em> scopes.'));
     }
+
+    // Validate key length for hashed cache tags.
+    $keyLength = $form_state->getValue('cache_tag_hash_length');
+    if ($keyLength < 3) {
+      $form_state->setErrorByName('cache_tag_hash_length', $this->t('Setting a key length for hashed cache tags smaller than 3 is not supported. The address space for an 2-char hexadecimal string is only 16^2 = 256 values, which will make collisions very likely.'));
+    }
+    elseif ($keyLength > 7) {
+      $form_state->setErrorByName('cache_tag_hash_length', $this->t('Setting a key length for hashed cache tags greate than 7 is not supported. With 7 hexadecimal chars, the address space is 256 million values, which should be plenty to avoid a significant number of hash collisions.'));
+    }
   }
 
   /**
@@ -443,6 +462,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->set('site_id', $form_state->getValue('site_id'))
+      ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
       ->save();
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
