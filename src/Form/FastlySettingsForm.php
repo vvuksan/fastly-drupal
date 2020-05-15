@@ -141,8 +141,8 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'machine_name',
       '#title' => $this->t('Site ID'),
       '#default_value' => $config->get('site_id'),
-      '#required' => TRUE,
-      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_SITE_ID to set this also."),
+      '#required' => FALSE,
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_SITE_ID to set this also. If nothing is set in either config or env variable 'site1' will be added by default."),
     ];
     $purge_credentials_status_message = $purge_credentials_are_valid
       ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by FASTLY_API_TOKEN environment variable")

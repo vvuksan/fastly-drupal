@@ -42,13 +42,13 @@ class CacheTagsHash implements CacheTagsHashInterface {
   public function cacheTagsToHashes(array $cache_tags) {
     $hashes = [];
     $siteId = getenv('FASTLY_SITE_ID') ?? $this->config->get('site_id');
+    $siteId = $siteId ?? self::FASTLY_DEFAULT_SITE_ID;
     $cache_tags_length = getenv('FASTLY_CACHE_TAG_HASH_LENGTH') ?? $this->config->get('cache_tag_hash_length');
     $cache_tags_length = $cache_tags_length ?? self::CACHE_TAG_HASH_LENGTH;
 
     // Adding site id hash as standalone hash to every header
-    if ($siteId) {
-      $hashes[] = self::hashInput($siteId, $cache_tags_length);
-    }
+    $hashes[] = self::hashInput($siteId, $cache_tags_length);
+
     foreach ($cache_tags as $cache_tag) {
       $cache_tag = $siteId ? $siteId . ':' . $cache_tag : $cache_tag;
       $hashes[] = self::hashInput($cache_tag, $cache_tags_length);
