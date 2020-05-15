@@ -125,7 +125,12 @@ class FastlySettingsForm extends ConfigFormBase {
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
 
-    $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+    if(getenv('FASTLY_API_TOKEN')) {
+      $api_key = getenv('FASTLY_API_TOKEN');
+    }
+    else {
+      $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+    }
 
     $form['account_settings'] = [
       '#type' => 'details',
@@ -136,12 +141,12 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'machine_name',
       '#title' => $this->t('Site ID'),
       '#default_value' => $config->get('site_id'),
-      '#required' => FALSE,
-      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_CACHE_TAG_PREFIX to set this also."),
+      '#required' => TRUE,
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_SITE_ID to set this also."),
     ];
     $purge_credentials_status_message = $purge_credentials_are_valid
-      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form.")
-      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
+      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by FASTLY_API_TOKEN environment variable")
+      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by FASTLY_API_TOKEN environment variable", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $form['service_settings'] = [
       '#type' => 'details',
@@ -169,9 +174,9 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Service'),
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
-      '#default_value' => $config->get('service_id'),
+      '#default_value' => getenv('FASTLY_API_SERVICE') ?? $config->get('service_id'),
       '#required' => !$purge_credentials_are_valid,
-      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly.'),
+      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
       // Hide while no API key is set.
       '#states' => [
         'invisible' => [
@@ -330,7 +335,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
 href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
