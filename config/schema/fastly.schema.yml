@@ -5,6 +5,9 @@ fastly.settings:
     api_key:
       type: string
       label: 'Fastly API key'
+    cache_tag_hash_length:
+      type: integer
+      label: 'Cache tag hash length'
     site_id:
       type: string
       label: 'Fastly Site ID'
