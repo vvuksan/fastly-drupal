@@ -46,14 +46,30 @@ class CacheTagsHash implements CacheTagsHashInterface {
     $cache_tags_length = $cache_tags_length ?? self::CACHE_TAG_HASH_LENGTH;
 
     // Adding site id hash as standalone hash to every header
-    if (!$siteId) {
-      $hashes[] = substr(md5($siteId), 0, $cache_tags_length);
+    if ($siteId) {
+      $hashes[] = self::hashInput($siteId, $cache_tags_length);
     }
     foreach ($cache_tags as $cache_tag) {
       $cache_tag = $siteId ? $siteId . ':' . $cache_tag : $cache_tag;
-      $hashes[] = substr(md5($cache_tag), 0, $cache_tags_length);
+      $hashes[] = self::hashInput($cache_tag, $cache_tags_length);
     }
     return $hashes;
+  }
+
+  /**
+   * Create a hash with the given input and length.
+   *
+   * @param string $input
+   *   The input string to be hashed.
+   * @param int $length
+   *   The length of the hash.
+   *
+   * @return string
+   *   Cryptographic hash with the given length.
+   */
+  protected static function hashInput($input, $length) {
+    //@todo Improve logic for smarter hashing algorithm.
+    return substr(md5($input), 0, $length);
   }
 
 }
