@@ -12,6 +12,13 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 class CacheTagsHash implements CacheTagsHashInterface {
 
   /**
+   * ConfigFactory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
    * Fastly settings.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
@@ -24,6 +31,7 @@ class CacheTagsHash implements CacheTagsHashInterface {
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    */
   public function __construct(ConfigFactoryInterface $config_factory) {
+    $this->configFactory = $config_factory;
     $this->config = $config_factory->get('fastly.settings');
   }
 
@@ -41,10 +49,15 @@ class CacheTagsHash implements CacheTagsHashInterface {
    */
   public function cacheTagsToHashes(array $cache_tags) {
     $hashes = [];
-    $siteId = getenv('FASTLY_SITE_ID') ?? $this->config->get('site_id');
-    $siteId = $siteId ?? self::FASTLY_DEFAULT_SITE_ID;
-    $cache_tags_length = getenv('FASTLY_CACHE_TAG_HASH_LENGTH') ?? $this->config->get('cache_tag_hash_length');
-    $cache_tags_length = $cache_tags_length ?? self::CACHE_TAG_HASH_LENGTH;
+    $siteId = getenv('FASTLY_SITE_ID') ?: $this->config->get('site_id');
+    if (!$siteId) {
+      $siteId = substr(md5(microtime()), 0, 7);
+      $config = $this->configFactory->getEditable('fastly.settings');
+      $config->set('site_id', $siteId)
+        ->save(TRUE);
+    }
+    $cache_tags_length = getenv('FASTLY_CACHE_TAG_HASH_LENGTH') ?: $this->config->get('cache_tag_hash_length');
+    $cache_tags_length = $cache_tags_length ?: self::CACHE_TAG_HASH_LENGTH;
 
     // Adding site id hash as standalone hash to every header
     $hashes[] = self::hashInput($siteId, $cache_tags_length);

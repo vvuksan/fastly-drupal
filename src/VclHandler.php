@@ -207,8 +207,8 @@ class VclHandler {
     $this->conditionData = !empty($data['condition']) ? $data['condition'] : FALSE;
     $this->settingData = !empty($data['setting']) ? $data['setting'] : FALSE;
     $this->hostname = $host;
-    $this->serviceId = getenv('FASTLY_API_SERVICE') ?? $config->get('service_id');
-    $this->apiKey = getenv('FASTLY_API_TOKEN') ?? $config->get('api_key');
+    $this->serviceId = getenv('FASTLY_API_SERVICE') ?: $config->get('service_id');
+    $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
     $this->logger = $logger;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
 

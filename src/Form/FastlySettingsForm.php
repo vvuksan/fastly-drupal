@@ -142,7 +142,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Site ID'),
       '#default_value' => $config->get('site_id'),
       '#required' => FALSE,
-      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites on fastly. Note: You can use env variable FASTLY_SITE_ID to set this also. If nothing is set in either config or env variable 'site1' will be added by default."),
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites in the same service in Fastly. Note: You can use the environment variable <code>FASTLY_SITE_ID</code> to set this also. If nothing is set in either config or env variable 'site1' will be added by default."),
     ];
     $purge_credentials_status_message = $purge_credentials_are_valid
       ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by FASTLY_API_TOKEN environment variable")
@@ -174,7 +174,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Service'),
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
-      '#default_value' => getenv('FASTLY_API_SERVICE') ?? $config->get('service_id'),
+      '#default_value' => getenv('FASTLY_API_SERVICE') ?: $config->get('service_id'),
       '#required' => !$purge_credentials_are_valid,
       '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
       // Hide while no API key is set.
@@ -259,8 +259,10 @@ class FastlySettingsForm extends ConfigFormBase {
     $key_length = (int) $config->get('cache_tag_hash_length') ?: CacheTagsHashInterface::CACHE_TAG_HASH_LENGTH;
     $form['purge']['purge_options']['cache_tag_hash_length'] = [
       '#type' => 'number',
+      '#min' => 4,
+      '#max' => 5,
       '#title' => $this->t('Cache tag hash length'),
-      '#description' => $this->t('For larger sites, it may be necessary to increase the length of the hashed cache tags (eg. <code>d0f</code>) that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable FASTLY_CACHE_TAG_HASH_LENGTH.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(16, $key_length)]),
+      '#description' => $this->t('For larger sites, it may be necessary to increase the length of the hashed cache tags (eg. <code>d0f</code>) that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable FASTLY_CACHE_TAG_HASH_LENGTH.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
       '#default_value' => $key_length,
     ];
 
@@ -422,15 +424,6 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     // Verify API token has adequate scope to use this form.
     if (!$this->api->validatePurgeToken()) {
       $form_state->setErrorByName('api_key', $this->t('Invalid API token. Make sure the token you are trying has at least <em>global:read</em>, <em>purge_all</em>, and <em>purge_all</em> scopes.'));
-    }
-
-    // Validate key length for hashed cache tags.
-    $keyLength = $form_state->getValue('cache_tag_hash_length');
-    if ($keyLength < 3) {
-      $form_state->setErrorByName('cache_tag_hash_length', $this->t('Setting a key length for hashed cache tags smaller than 3 is not supported. The address space for an 2-char hexadecimal string is only 16^2 = 256 values, which will make collisions very likely.'));
-    }
-    elseif ($keyLength > 7) {
-      $form_state->setErrorByName('cache_tag_hash_length', $this->t('Setting a key length for hashed cache tags greate than 7 is not supported. With 7 hexadecimal chars, the address space is 256 million values, which should be plenty to avoid a significant number of hash collisions.'));
     }
   }
 

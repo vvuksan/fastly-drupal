@@ -109,8 +109,8 @@ class Api {
   public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, CacheTagsHash $cache_tags_hash) {
 
     $config = $config_factory->get('fastly.settings');
-    $this->apiKey = getenv('FASTLY_API_TOKEN') ?? $config->get('api_key');
-    $this->serviceId = getenv('FASTLY_API_SERVICE') ?? $config->get('service_id');
+    $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
+    $this->serviceId = getenv('FASTLY_API_SERVICE') ?: $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
     $this->connectTimeout = $connectTimeout;
     $this->host = $host;
