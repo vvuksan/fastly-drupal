@@ -68,8 +68,9 @@ class CacheTagsHash implements CacheTagsHashInterface {
    *   Cryptographic hash with the given length.
    */
   protected static function hashInput($input, $length) {
-    //@todo Improve logic for smarter hashing algorithm.
-    return substr(md5($input), 0, $length);
+    $hex = md5($input);
+    $hash = base64_encode(pack('H*', $hex));
+    return substr($hash, 0, $length);
   }
 
 }
