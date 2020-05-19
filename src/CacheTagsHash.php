@@ -2,6 +2,7 @@
 
 namespace Drupal\fastly;
 
+use Drupal\Component\Utility\Random;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
@@ -51,7 +52,9 @@ class CacheTagsHash implements CacheTagsHashInterface {
     $hashes = [];
     $siteId = getenv('FASTLY_SITE_ID') ?: $this->config->get('site_id');
     if (!$siteId) {
-      $siteId = substr(md5(microtime()), 0, 7);
+      // Create random 8 character string and save it to config.
+      $random = new Random();
+      $siteId = $random->string();
       $config = $this->configFactory->getEditable('fastly.settings');
       $config->set('site_id', $siteId)
         ->save(TRUE);
