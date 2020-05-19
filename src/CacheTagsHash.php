@@ -84,9 +84,7 @@ class CacheTagsHash implements CacheTagsHashInterface {
    *   Cryptographic hash with the given length.
    */
   protected static function hashInput($input, $length) {
-    $hex = md5($input);
-    $hash = base64_encode(pack('H*', $hex));
-    return substr($hash, 0, $length);
+    return substr(base64_encode(md5($input, true)), 0, $length);
   }
 
 }
