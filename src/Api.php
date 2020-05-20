@@ -273,15 +273,40 @@ class Api {
   }
 
   /**
-   * Purge whole service.
+   * Purge whole site/service.
+   *
+   * @param bool $siteOnly
+   *   Set to FALSE if you want to purge entire service otherwise it will purge
+   *   entire site only.
    *
    * @return bool
    *   FALSE if purge failed, TRUE is successful.
-   *   */
-  public function purgeAll() {
-    // This will return only hash from FASTLY SITE ID and purge only site id hash.
-    $hashes = $this->cacheTagsHash->cacheTagsToHashes([]);
-    return $this->purgeKeys($hashes);
+   */
+  public function purgeAll($siteOnly = TRUE) {
+    if ($siteOnly) {
+      // This will return only hash from FASTLY SITE ID and purge only site id hash.
+      $hashes = $this->cacheTagsHash->cacheTagsToHashes([]);
+      return $this->purgeKeys($hashes);
+    }
+    else {
+      if ($this->state->getPurgeCredentialsState()) {
+        try {
+          $response = $this->query('service/' . $this->serviceId . '/purge_all', [], 'POST');
+          $result = $this->json($response);
+          if ($result->status === 'ok') {
+            $this->logger->info('Successfully purged all on Fastly.');
+            $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on @base_url.", ['@base_url' => $this->baseUrl]), "purge_all");
+            return TRUE;
+          }
+          else {
+            $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', ['%status' => $result['status']]);
+          }
+        } catch (RequestException $e) {
+          $this->logger->critical($e->getMessage());
+        }
+      }
+      return FALSE;
+    }
   }
 
   /**

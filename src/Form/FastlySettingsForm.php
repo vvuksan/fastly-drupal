@@ -281,14 +281,32 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['purge']['purge_actions'] = [
       '#type' => 'details',
       '#title' => $this->t('Purge actions'),
+      '#description' => $this->t('Purge / invalidate all site content: affects this site only. <br><b>WARNING: PURGE WHOLE SERVICE ACTION WILL DESTROY THE ENTIRE CACHE FOR ALL SITES IN THE CURRENT FASTLY SERVICE.</b>'),
       '#open' => TRUE,
+    ];
+
+    $form['purge']['purge_actions']['purge_all_keys'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Purge / Invalidate all site content'),
+      '#required' => FALSE,
+      '#description' => $this->t('Purge all'),
+      '#ajax' => [
+        'callback' => [$this, 'purgeAllByKeys'],
+        'event' => 'click-custom-purge-all-keys',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
+      ],
+      '#suffix' => '<span class="purge-all-message-keys"></span>',
     ];
 
     $form['purge']['purge_actions']['purge_all'] = [
       '#type' => 'button',
-      '#value' => $this->t('Purge / Invalidate all content'),
+      '#value' => $this->t('Purge whole service'),
       '#required' => FALSE,
-      '#description' => $this->t('Purge all'),
+      '#description' => $this->t('Purge whole service'),
       '#ajax' => [
         'callback' => [$this, 'purgeAll'],
         'event' => 'click-custom-purge-all',
@@ -337,7 +355,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a
 href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
@@ -525,12 +543,12 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
    */
   public function purgeAll(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $purge = $this->api->purgeAll();
+    $purge = $this->api->purgeAll(FALSE);
     if (!$purge) {
       $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
     }
     else {
-      $message = $this->t("All content is purged / invalidated successfuly.");
+      $message = $this->t("Whole service purged successfully.");
     }
     $response->addCommand(new HtmlCommand('.purge-all-message', $message));
     return $response;
@@ -564,6 +582,30 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     }
     $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));
 
+    return $response;
+  }
+
+  /**
+   * Purge all.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse.
+   */
+  public function purgeAllByKeys(array $form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+    $purge = $this->api->purgeAll();
+    if (!$purge) {
+      $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
+    }
+    else {
+      $message = $this->t("All site content is purged / invalidated successfully.");
+    }
+    $response->addCommand(new HtmlCommand('.purge-all-message-keys', $message));
     return $response;
   }
 

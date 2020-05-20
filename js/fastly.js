@@ -9,10 +9,17 @@
 
     $("#edit-purge-all").click(function (e) {
         e.preventDefault();
-        if (confirm('Are you sure you want to purge/invalidate all content?')) {
+        if (confirm('Are you sure you want to purge whole service content?')) {
             $("#edit-purge-all").trigger("click-custom-purge-all");
         }
 
+    });
+
+    $("#edit-purge-all-keys").click(function (e) {
+      e.preventDefault();
+      if (confirm('Are you sure you want to purge/invalidate all content?')) {
+        $("#edit-purge-all-keys").trigger("click-custom-purge-all-keys");
+      }
     });
 
     $("#edit-upload-error-maintenance").click(function (e) {
