@@ -142,11 +142,11 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Site ID'),
       '#default_value' => $config->get('site_id'),
       '#required' => FALSE,
-      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites in the same service in Fastly. Note: You can use the environment variable <code>FASTLY_SITE_ID</code> to set this also. If nothing is set in either config or env variable 'site1' will be added by default."),
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites in the same service in Fastly. Note: You can use the environment variable <code>FASTLY_SITE_ID</code> to set this also. If nothing is set in either config or environment variable then one will be randomly generated for you."),
     ];
     $purge_credentials_status_message = $purge_credentials_are_valid
-      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by FASTLY_API_TOKEN environment variable")
-      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by FASTLY_API_TOKEN environment variable", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
+      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.")
+      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $form['service_settings'] = [
       '#type' => 'details',
@@ -262,7 +262,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#min' => 4,
       '#max' => 5,
       '#title' => $this->t('Cache tag hash length'),
-      '#description' => $this->t('For larger sites, it may be necessary to increase the length of the hashed cache tags (eg. <code>d0f</code>) that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable FASTLY_CACHE_TAG_HASH_LENGTH.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
+      '#description' => $this->t('For sites with more content, it may be necessary to increase the length of the hashed cache tags that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable <code>FASTLY_CACHE_TAG_HASH_LENGTH</code>.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
       '#default_value' => $key_length,
     ];
 
@@ -287,7 +287,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['purge']['purge_actions']['purge_all_keys'] = [
       '#type' => 'button',
-      '#value' => $this->t('Purge / Invalidate all site content'),
+      '#value' => $this->t('Purge / invalidate all site content'),
       '#required' => FALSE,
       '#description' => $this->t('Purge all'),
       '#ajax' => [
@@ -548,7 +548,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
     }
     else {
-      $message = $this->t("Whole service purged successfully.");
+      $message = $this->t("Entire service purged successfully.");
     }
     $response->addCommand(new HtmlCommand('.purge-all-message', $message));
     return $response;
