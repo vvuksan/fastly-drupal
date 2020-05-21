@@ -179,7 +179,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
-      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Not required but highly recommended.'),
+      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
     ];
 
     $form['vcl']['vcl_snippets'] = [

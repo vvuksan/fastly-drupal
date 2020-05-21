@@ -278,7 +278,7 @@ class Api {
           if ($this->purgeLogging) {
             $this->logger->info('Successfully purged all on Fastly.');
           }
-          $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on %base_url.", ['%base_url' => $this->baseUrl]), "purge_all");
+          $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on @base_url.", ['@base_url' => $this->baseUrl]), "purge_all");
           return TRUE;
         }
         else {
@@ -359,11 +359,11 @@ class Api {
         $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keys)]);
         $result = $this->json($response);
 
-        if (count($result) > 0) {
+        if (!empty($result)) {
 
-          $message = $this->t('Successfully purged following key(s) * @keys on %base_url. Purge Method: @purge_method', [
+          $message = $this->t('Successfully purged following key(s) *@keys* on @base_url. Purge Method: @purge_method', [
             '@keys' => implode(" ", $keys),
-            '%base_url' => $this->baseUrl,
+            '@base_url' => $this->baseUrl,
             '@purge_method' => $this->purgeMethod,
           ]);
           $this->webhook->sendWebHook($message, 'purge_keys');
@@ -384,7 +384,7 @@ class Api {
           ]);
           $this->webhook->sendWebHook($message, 'purge_keys');
 
-          $this->logger->critical('Unable to purge the key %key was purged from Fastly. Purge Method: %purge_method.', [
+          $this->logger->critical('Unable to purge following key(s) %key from Fastly. Purge Method: %purge_method.', [
             '%key' => implode(" ", $keys),
             '%purge_method' => $this->purgeMethod,
           ]);
