@@ -278,7 +278,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#suffix' => '<span class="purge-all-message"></span>',
     ];
 
-    $form['purge']['purge_logging'] = [
+    $form['purge']['purge_options']['purge_logging'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable logging for purges'),
       '#description' => $this->t("Add a log entry whenever a purge is successful."),
