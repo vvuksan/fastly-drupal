@@ -5,6 +5,7 @@
  * Install, update, and uninstall functions for the Fastly module.
  */
 
+use Drupal\Core\Link;
 use Drupal\Core\Url;
 
 /**
@@ -35,4 +36,14 @@ function fastly_requirements($phase) {
     }
   }
   return $requirements;
+}
+
+/**
+ * Purge cache after module update.
+ */
+function fastly_update_8001(&$sandbox) {
+  $link = Link::createFromRoute('/admin/config/services/fastly','fastly.settings');
+  return t("Cache tag hashing algorithm has changed with the latest module version so you'll need to purge your entire service cache manually. You can do that by either visiting fastly settings form (@link) and clicking on 'Purge whole service' action or going directly to your fastly dashboard and do it from there.", [
+    '@link' =>  $link->toString()
+  ]);
 }
