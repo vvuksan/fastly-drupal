@@ -3,6 +3,7 @@
 namespace Drupal\fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Services\Webhook;
 use Psr\Log\LoggerInterface;
@@ -147,6 +148,13 @@ class VclHandler {
   protected $baseUrl;
 
   /**
+   * Messenger.
+   *
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  protected $messenger;
+
+  /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -161,8 +169,10 @@ class VclHandler {
    *   The Fastly webhook service.
    * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
    *   The request stack object.
+   * @param \Drupal\Core\Messenger\Messenger $messenger
+   *   Messenger.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger) {
     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
     $data = [
       'vcl' => [
@@ -207,8 +217,8 @@ class VclHandler {
     $this->conditionData = !empty($data['condition']) ? $data['condition'] : FALSE;
     $this->settingData = !empty($data['setting']) ? $data['setting'] : FALSE;
     $this->hostname = $host;
-    $this->serviceId = $config->get('service_id');
-    $this->apiKey = $config->get('api_key');
+    $this->serviceId = getenv('FASTLY_API_SERVICE') ?: $config->get('service_id');
+    $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
     $this->logger = $logger;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
 
@@ -236,6 +246,8 @@ class VclHandler {
     if ($this->lastVersionData) {
       $this->lastActiveVersionNum = $this->lastVersionData->number;
     }
+
+    $this->messenger = $messenger;
 
   }
 
@@ -440,7 +452,7 @@ class VclHandler {
     $errors = $this->getErrors();
     if (!empty($errors)) {
       foreach ($errors as $error) {
-        drupal_set_message($error, 'error');
+        $this->messenger->addError($error);
       }
       return FALSE;
     }
@@ -547,7 +559,7 @@ class VclHandler {
       $this->logger->critical('VCL update failed : @message', ['@message' => $e->getMessage()]);
       foreach ($this->getErrors() as $error) {
         // $error should have been passed through t() before $this->setError.
-        drupal_set_message($error, 'error');
+        $this->messenger->addError($error);
       }
       return FALSE;
     }
