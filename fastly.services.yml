@@ -34,7 +34,7 @@ services:
     arguments: ['fastly']
   fastly.vclhandler:
     class: Drupal\fastly\VclHandler
-    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly', '@fastly.services.webhook', '@request_stack']
+    arguments: ['@config.factory', '%fastly.host%', '@fastly.api', '@logger.channel.fastly', '@fastly.services.webhook', '@request_stack', '@messenger']
   fastly.services.webhook:
     class: Drupal\fastly\Services\Webhook
     arguments: ['@config.factory', '@http_client', '@logger.channel.fastly', '%fastly.webhook_connect_timeout%','@request_stack']
