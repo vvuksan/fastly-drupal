@@ -14,6 +14,9 @@ fastly.settings:
     service_id:
       type: string
       label: 'Fastly Service ID'
+    purge_logging:
+      type: boolean
+      label: 'Fastly purge logging'
     purge_method:
       type: string
       label: 'Fastly Purge Method'
