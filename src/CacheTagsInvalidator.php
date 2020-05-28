@@ -47,6 +47,10 @@ class CacheTagsInvalidator implements CacheTagsInvalidatorInterface {
       $this->api->purgeAll();
       return;
     }
+    // Ignore config:fastly.settings.
+    if (in_array('config:fastly.settings', $tags)) {
+      return;
+    }
 
     // Also invalidate the cache tags as hashes, to automatically also work for
     // responses that exceed the 16 KB header limit.
