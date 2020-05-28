@@ -50,24 +50,11 @@ class CacheTagsHash implements CacheTagsHashInterface {
    */
   public function cacheTagsToHashes(array $cache_tags) {
     $hashes = [];
-    $siteId = getenv('FASTLY_SITE_ID') ?: $this->config->get('site_id');
-    if (!$siteId) {
-      // Create random 8 character string and save it to config.
-      $random = new Random();
-      $siteId = $random->string();
-      $config = $this->configFactory->getEditable('fastly.settings');
-      $config->set('site_id', $siteId)
-        ->save(TRUE);
-    }
-    $cache_tags_length = getenv('FASTLY_CACHE_TAG_HASH_LENGTH') ?: $this->config->get('cache_tag_hash_length');
-    $cache_tags_length = $cache_tags_length ?: self::CACHE_TAG_HASH_LENGTH;
-
-    // Adding site id hash as standalone hash to every header
-    $hashes[] = self::hashInput($siteId, $cache_tags_length);
+    $siteId = $this->getSiteId();
 
     foreach ($cache_tags as $cache_tag) {
       $cache_tag = $siteId ? $siteId . ':' . $cache_tag : $cache_tag;
-      $hashes[] = self::hashInput($cache_tag, $cache_tags_length);
+      $hashes[] = $this->hashInput($cache_tag);
     }
     return $hashes;
   }
@@ -77,14 +64,32 @@ class CacheTagsHash implements CacheTagsHashInterface {
    *
    * @param string $input
    *   The input string to be hashed.
-   * @param int $length
-   *   The length of the hash.
    *
    * @return string
    *   Cryptographic hash with the given length.
    */
-  protected static function hashInput($input, $length) {
-    return substr(base64_encode(md5($input, true)), 0, $length);
+  public function hashInput($input) {
+    $cache_tags_length = getenv('FASTLY_CACHE_TAG_HASH_LENGTH') ?: $this->config->get('cache_tag_hash_length');
+    $cache_tags_length = $cache_tags_length ?: self::CACHE_TAG_HASH_LENGTH;
+    return substr(base64_encode(md5($input, true)), 0, $cache_tags_length);
+  }
+
+  /**
+   * Get site id.
+   *
+   * @return array|false|mixed|string
+   */
+  public function getSiteId() {
+    $siteId = getenv('FASTLY_SITE_ID') ?: $this->config->get('site_id');
+    if (!$siteId) {
+      // Create random 8 character string and save it to config.
+      $random = new Random();
+      $siteId = $random->string();
+      $config = $this->configFactory->getEditable('fastly.settings');
+      $config->set('site_id', $siteId)
+        ->save(TRUE);
+    }
+    return $siteId;
   }
 
 }

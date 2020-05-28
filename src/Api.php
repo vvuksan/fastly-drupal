@@ -286,8 +286,9 @@ class Api {
   public function purgeAll($siteOnly = TRUE) {
     if ($siteOnly) {
       // This will return only hash from FASTLY SITE ID and purge only site id hash.
-      $hashes = $this->cacheTagsHash->cacheTagsToHashes([]);
-      return $this->purgeKeys($hashes);
+      $siteId = $this->cacheTagsHash->getSiteId();
+      $siteIdHash = $this->cacheTagsHash->hashInput($siteId);
+      return $this->purgeKeys([$siteIdHash]);
     }
     else {
       if ($this->state->getPurgeCredentialsState()) {
