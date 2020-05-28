@@ -7,5 +7,12 @@
   "support": {
     "issues": "http://drupal.org/project/issues/fastly",
     "source": "http://cgit.drupalcode.org/fastly"
+  },
+  "extra": {
+    "drush": {
+      "services": {
+        "drush.services.yml": "^9"
+      }
+    }
   }
 }
