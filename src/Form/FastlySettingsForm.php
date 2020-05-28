@@ -431,6 +431,9 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Get and use the API token value from this form for validation.
     $apiKey = $form_state->getValue('api_key');
+    if (!$apiKey) {
+      $apiKey = $this->requestStack->getCurrentRequest()->get('api_key');
+    }
     if (empty($apiKey) && !$this->api->validatePurgeCredentials()) {
       $form_state->setErrorByName('api_key', $this->t('Please enter an API token.'));
     }
