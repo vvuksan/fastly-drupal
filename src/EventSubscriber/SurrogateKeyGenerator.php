@@ -61,6 +61,9 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
 
       $cache_tags = explode(' ', $surrogate_key_header_value);
       $hashes = $this->cacheTagsHash->cacheTagsToHashes($cache_tags);
+      $siteId = $this->cacheTagsHash->getSiteId();
+      $siteIdHash = $this->cacheTagsHash->hashInput($siteId);
+      $hashes[] = $siteIdHash;
       $surrogate_key_header_value = implode(' ', $hashes);
 
       $response->headers->set('Surrogate-Key', $surrogate_key_header_value);
