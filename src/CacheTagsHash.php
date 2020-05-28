@@ -3,6 +3,7 @@
 namespace Drupal\fastly;
 
 use Drupal\Component\Utility\Random;
+use Drupal\Core\Config\Config;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
 /**
@@ -85,9 +86,11 @@ class CacheTagsHash implements CacheTagsHashInterface {
       // Create random 8 character string and save it to config.
       $random = new Random();
       $siteId = $random->string();
-      $config = $this->configFactory->getEditable('fastly.settings');
-      $config->set('site_id', $siteId)
-        ->save(TRUE);
+      if($this->configFactory->get('fastly.settings')){
+        $config = $this->configFactory->getEditable('fastly.settings');
+        $config->set('site_id', $siteId)
+          ->save(TRUE);
+      }
     }
     return $siteId;
   }
