@@ -1,0 +1,6 @@
+services:
+  fastly.commands:
+    class: 'Drupal\fastly\Commands\FastlyCommands'
+    arguments: ['@fastly.api', '@fastly.cache_tags.hash']
+    tags:
+    - { name: drush.command }
