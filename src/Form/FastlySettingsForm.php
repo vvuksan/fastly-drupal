@@ -8,6 +8,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
+use Drupal\fastly\CacheTagsHashInterface;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
 use Drupal\fastly\Services\Webhook;
@@ -124,17 +125,28 @@ class FastlySettingsForm extends ConfigFormBase {
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
 
-    $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+    if(getenv('FASTLY_API_TOKEN')) {
+      $api_key = getenv('FASTLY_API_TOKEN');
+    }
+    else {
+      $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+    }
 
     $form['account_settings'] = [
       '#type' => 'details',
       '#title' => $this->t('Account settings'),
       '#open' => TRUE,
     ];
-
+    $form['account_settings']['site_id'] = [
+      '#type' => 'machine_name',
+      '#title' => $this->t('Site ID'),
+      '#default_value' => $config->get('site_id'),
+      '#required' => FALSE,
+      '#description' => $this->t("Site identifier which is being prepended to cache tags. Use this if you have multiple sites in the same service in Fastly. Note: You can use the environment variable <code>FASTLY_SITE_ID</code> to set this also. If nothing is set in either config or environment variable then one will be randomly generated for you."),
+    ];
     $purge_credentials_status_message = $purge_credentials_are_valid
-      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form.")
-      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
+      ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.")
+      : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $form['service_settings'] = [
       '#type' => 'details',
@@ -162,9 +174,9 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Service'),
       '#options' => $service_options,
       '#empty_option' => $this->t('- Select -'),
-      '#default_value' => $config->get('service_id'),
+      '#default_value' => getenv('FASTLY_API_SERVICE') ?: $config->get('service_id'),
       '#required' => !$purge_credentials_are_valid,
-      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly.'),
+      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
       // Hide while no API key is set.
       '#states' => [
         'invisible' => [
@@ -244,6 +256,17 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
     ];
 
+    $key_length = (int) $config->get('cache_tag_hash_length') ?: CacheTagsHashInterface::CACHE_TAG_HASH_LENGTH;
+    $form['purge']['purge_options']['cache_tag_hash_length'] = [
+      '#type' => 'number',
+      '#min' => 4,
+      '#max' => 5,
+      '#title' => $this->t('Cache tag hash length'),
+      '#description' => $this->t('For sites with more content, it may be necessary to increase the length of the hashed cache tags that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable <code>FASTLY_CACHE_TAG_HASH_LENGTH</code>.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
+      '#default_value' => $key_length,
+    ];
+
+
     $form['purge']['purge_options']['purge_method'] = [
       '#type' => 'radios',
       '#title' => $this->t('Purge method'),
@@ -258,14 +281,32 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['purge']['purge_actions'] = [
       '#type' => 'details',
       '#title' => $this->t('Purge actions'),
+      '#description' => $this->t('Purge / invalidate all site content: affects this site only. <br><b>WARNING: PURGE WHOLE SERVICE ACTION WILL DESTROY THE ENTIRE CACHE FOR ALL SITES IN THE CURRENT FASTLY SERVICE.</b>'),
       '#open' => TRUE,
+    ];
+
+    $form['purge']['purge_actions']['purge_all_keys'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Purge / invalidate all site content'),
+      '#required' => FALSE,
+      '#description' => $this->t('Purge all'),
+      '#ajax' => [
+        'callback' => [$this, 'purgeAllByKeys'],
+        'event' => 'click-custom-purge-all-keys',
+      ],
+      '#attached' => [
+        'library' => [
+          'fastly/fastly',
+        ],
+      ],
+      '#suffix' => '<span class="purge-all-message-keys"></span>',
     ];
 
     $form['purge']['purge_actions']['purge_all'] = [
       '#type' => 'button',
-      '#value' => $this->t('Purge / Invalidate all content'),
+      '#value' => $this->t('Purge whole service'),
       '#required' => FALSE,
-      '#description' => $this->t('Purge all'),
+      '#description' => $this->t('Purge whole service'),
       '#ajax' => [
         'callback' => [$this, 'purgeAll'],
         'event' => 'click-custom-purge-all',
@@ -276,6 +317,13 @@ class FastlySettingsForm extends ConfigFormBase {
         ],
       ],
       '#suffix' => '<span class="purge-all-message"></span>',
+    ];
+
+    $form['purge']['purge_options']['purge_logging'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable logging for purges'),
+      '#description' => $this->t("Add a log entry whenever a purge is successful."),
+      '#default_value' => $config->get('purge_logging'),
     ];
 
     $form['stale_content'] = [
@@ -314,7 +362,7 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['stale_content']['stale_if_error_value'] = [
       '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a 
+      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a
 href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
       '#default_value' => $config->get('stale_if_error_value') ?: 604800,
       '#states' => [
@@ -429,6 +477,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
+      ->set('purge_logging', $form_state->getValue('purge_logging'))
       ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
@@ -436,6 +485,8 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
+      ->set('site_id', $form_state->getValue('site_id'))
+      ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
       ->save();
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
@@ -500,12 +551,12 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
    */
   public function purgeAll(array $form, FormStateInterface $form_state) {
     $response = new AjaxResponse();
-    $purge = $this->api->purgeAll();
+    $purge = $this->api->purgeAll(FALSE);
     if (!$purge) {
       $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
     }
     else {
-      $message = $this->t("All content is purged / invalidated successfuly.");
+      $message = $this->t("Entire service purged successfully.");
     }
     $response->addCommand(new HtmlCommand('.purge-all-message', $message));
     return $response;
@@ -539,6 +590,30 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     }
     $response->addCommand(new HtmlCommand('.error-maintenance-message', $message));
 
+    return $response;
+  }
+
+  /**
+   * Purge all.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse.
+   */
+  public function purgeAllByKeys(array $form, FormStateInterface $form_state) {
+    $response = new AjaxResponse();
+    $purge = $this->api->purgeAll();
+    if (!$purge) {
+      $message = $this->t("Something went wrong while purging / invalidating content. Please, check logs for more info.");
+    }
+    else {
+      $message = $this->t("All site content is purged / invalidated successfully.");
+    }
+    $response->addCommand(new HtmlCommand('.purge-all-message-keys', $message));
     return $response;
   }
 

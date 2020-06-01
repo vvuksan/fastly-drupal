@@ -79,6 +79,13 @@ class Api {
   protected $webhook;
 
   /**
+   * CacheTagsHash service.
+   *
+   * @var \Drupal\fastly\CacheTagsHash
+   */
+  protected $cacheTagsHash;
+
+  /**
    * Messenger.
    *
    * @var \Drupal\Core\Messenger\Messenger
@@ -104,13 +111,18 @@ class Api {
    *   The Fastly webhook service.
    * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
    *   The request stack object.
+   * @param \Drupal\fastly\CacheTagsHash $cache_tags_hash
+   *   CacheTagsHash service.
+   * @param \Drupal\Core\Messenger\Messenger $messenger
+   *   Messenger service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, Messenger $messenger) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, CacheTagsHash $cache_tags_hash, Messenger $messenger) {
 
     $config = $config_factory->get('fastly.settings');
-    $this->apiKey = $config->get('api_key');
-    $this->serviceId = $config->get('service_id');
+    $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
+    $this->serviceId = getenv('FASTLY_API_SERVICE') ?: $config->get('service_id');
     $this->purgeMethod = $config->get('purge_method');
+    $this->purgeLogging = $config->get('purge_logging');
     $this->connectTimeout = $connectTimeout;
     $this->host = $host;
     $this->httpClient = $http_client;
@@ -118,6 +130,7 @@ class Api {
     $this->state = $state;
     $this->webhook = $webhook;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
+    $this->cacheTagsHash = $cache_tags_hash;
     $this->messenger = $messenger;
   }
 
@@ -272,30 +285,43 @@ class Api {
   }
 
   /**
-   * Purge whole service.
+   * Purge whole site/service.
+   *
+   * @param bool $siteOnly
+   *   Set to FALSE if you want to purge entire service otherwise it will purge
+   *   entire site only.
    *
    * @return bool
    *   FALSE if purge failed, TRUE is successful.
-   *   */
-  public function purgeAll() {
-    if ($this->state->getPurgeCredentialsState()) {
-      try {
-        $response = $this->query('service/' . $this->serviceId . '/purge_all', [], 'POST');
-        $result = $this->json($response);
-        if ($result->status === 'ok') {
-          $this->logger->info('Successfully purged all on Fastly.');
-          $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on @base_url.", ['@base_url' => $this->baseUrl]), "purge_all");
-          return TRUE;
-        }
-        else {
-          $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', ['%status' => $result['status']]);
-        }
-      }
-      catch (RequestException $e) {
-        $this->logger->critical($e->getMessage());
-      }
+   */
+  public function purgeAll($siteOnly = TRUE) {
+    if ($siteOnly) {
+      // This will return only hash from FASTLY SITE ID and purge only site id hash.
+      $siteId = $this->cacheTagsHash->getSiteId();
+      $siteIdHash = $this->cacheTagsHash->hashInput($siteId);
+      return $this->purgeKeys([$siteIdHash]);
     }
-    return FALSE;
+    else {
+      if ($this->state->getPurgeCredentialsState()) {
+        try {
+          $response = $this->query('service/' . $this->serviceId . '/purge_all', [], 'POST');
+          $result = $this->json($response);
+          if ($result->status === 'ok') {
+            if ($this->purgeLogging) {
+              $this->logger->info('Successfully purged all on Fastly.');
+            }
+            $this->webhook->sendWebHook($this->t("Successfully purged / invalidated all content on @base_url.", ['@base_url' => $this->baseUrl]), "purge_all");
+            return TRUE;
+          }
+          else {
+            $this->logger->critical('Unable to purge all on Fastly. Response status: %status.', ['%status' => $result['status']]);
+          }
+        } catch (RequestException $e) {
+          $this->logger->critical($e->getMessage());
+        }
+      }
+      return FALSE;
+    }
   }
 
   /**
@@ -328,10 +354,12 @@ class Api {
         $response = $this->query('purge/' . $url, [], 'POST');
         $result = $this->json($response);
         if ($result->status === 'ok') {
-          $this->logger->info('Successfully purged URL %url. Purge Method: %purge_method.', [
-            '%url' => $url,
-            '%purge_method' => $this->purgeMethod,
-          ]);
+          if ($this->purgeLogging) {
+            $this->logger->info('Successfully purged URL %url. Purge Method: %purge_method.', [
+              '%url' => $url,
+              '%purge_method' => $this->purgeMethod,
+            ]);
+          }
           return TRUE;
         }
         else {
@@ -372,10 +400,12 @@ class Api {
           ]);
           $this->webhook->sendWebHook($message, 'purge_keys');
 
-          $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-            '%key' => implode(" ", $keys),
-            '%purge_method' => $this->purgeMethod,
-          ]);
+          if ($this->purgeLogging) {
+            $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+              '%key' => implode(" ", $keys),
+              '%purge_method' => $this->purgeMethod,
+            ]);
+          }
           return TRUE;
         }
         else {

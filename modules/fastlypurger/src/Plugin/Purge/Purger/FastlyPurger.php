@@ -4,7 +4,7 @@ namespace Drupal\fastlypurger\Plugin\Purge\Purger;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\fastly\Api;
-use Drupal\fastly\EventSubscriber\SurrogateKeyGenerator;
+use Drupal\fastly\CacheTagsHash;
 use Drupal\purge\Plugin\Purge\Purger\PurgerBase;
 use Drupal\purge\Plugin\Purge\Purger\PurgerInterface;
 use Drupal\purge\Plugin\Purge\Invalidation\InvalidationInterface;
@@ -38,6 +38,13 @@ class FastlyPurger extends PurgerBase implements PurgerInterface {
   protected $config;
 
   /**
+   * CacheTagsHash service.
+   *
+   * @var \Drupal\fastly\CacheTagsHash
+   */
+  protected $cacheTagsHash;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -46,7 +53,8 @@ class FastlyPurger extends PurgerBase implements PurgerInterface {
       $plugin_id,
       $plugin_definition,
       $container->get('config.factory'),
-      $container->get('fastly.api')
+      $container->get('fastly.api'),
+      $container->get('fastly.cache_tags.hash')
     );
   }
 
@@ -63,15 +71,18 @@ class FastlyPurger extends PurgerBase implements PurgerInterface {
    *   The factory for configuration objects.
    * @param \Drupal\fastly\Api $api
    *   Fastly API for Drupal.
+   * @param \Drupal\fastly\CacheTagsHash $cache_tags_hash
+   *   CacheTagsHash service.
    *
    * @throws \LogicException
    *   Thrown if $configuration['id'] is missing, see Purger\Service::createId.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $config, Api $api) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $config, Api $api, CacheTagsHash $cache_tags_hash) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->config = $config->get('fastly.settings');
     $this->api = $api;
+    $this->cacheTagsHash = $cache_tags_hash;
   }
 
   /**
@@ -161,7 +172,7 @@ class FastlyPurger extends PurgerBase implements PurgerInterface {
     // @TODO: Does Fastly have a limit per purge we need to consider (32k)?
     // Also invalidate the cache tags as hashes, to automatically also work for
     // responses that exceed the 16 KB header limit.
-    $hashes = SurrogateKeyGenerator::cacheTagsToHashes($tags);
+    $hashes = $this->cacheTagsHash->cacheTagsToHashes($tags);
     $invalidation_state = $this->invalidateItems('tags', $hashes);
     $this->updateState($invalidations, $invalidation_state);
   }
