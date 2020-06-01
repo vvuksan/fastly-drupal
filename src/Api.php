@@ -4,6 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Form\FastlySettingsForm;
 use Drupal\fastly\Services\Webhook;
@@ -78,6 +79,13 @@ class Api {
   protected $webhook;
 
   /**
+   * Messenger.
+   *
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  protected $messenger;
+
+  /**
    * Constructs a \Drupal\fastly\Api object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -97,7 +105,7 @@ class Api {
    * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
    *   The request stack object.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, Messenger $messenger) {
 
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = $config->get('api_key');
@@ -110,6 +118,7 @@ class Api {
     $this->state = $state;
     $this->webhook = $webhook;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
+    $this->messenger = $messenger;
   }
 
   /**
@@ -440,6 +449,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
+      $this->messenger->addError($e->getMessage());
       $this->logger->critical($e->getMessage());
     }
     return new Response();
