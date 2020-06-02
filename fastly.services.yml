@@ -5,7 +5,7 @@ parameters:
 services:
   fastly.api:
     class: Drupal\fastly\Api
-    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%', '@fastly.services.webhook', '@request_stack', '@fastly.cache_tags.hash']
+    arguments: ['@config.factory', '%fastly.host%', '@http_client', '@logger.channel.fastly', '@fastly.state', '%fastly.connect_timeout%', '@fastly.services.webhook', '@request_stack', '@fastly.cache_tags.hash', '@messenger']
   fastly.cache_tags.hash:
     class: Drupal\fastly\CacheTagsHash
     arguments: ['@config.factory', '@logger.channel.fastly']

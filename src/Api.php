@@ -4,6 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Form\FastlySettingsForm;
 use Drupal\fastly\Services\Webhook;
@@ -85,6 +86,13 @@ class Api {
   protected $cacheTagsHash;
 
   /**
+   * Messenger.
+   *
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  protected $messenger;
+
+  /**
    * Constructs a \Drupal\fastly\Api object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -105,8 +113,10 @@ class Api {
    *   The request stack object.
    * @param \Drupal\fastly\CacheTagsHash $cache_tags_hash
    *   CacheTagsHash service.
+   * @param \Drupal\Core\Messenger\Messenger $messenger
+   *   Messenger service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, CacheTagsHash $cache_tags_hash) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, ClientInterface $http_client, LoggerInterface $logger, State $state, $connectTimeout, Webhook $webhook, RequestStack $requestStack, CacheTagsHash $cache_tags_hash, Messenger $messenger) {
 
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
@@ -121,6 +131,7 @@ class Api {
     $this->webhook = $webhook;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
     $this->cacheTagsHash = $cache_tags_hash;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -468,6 +479,7 @@ class Api {
       }
     }
     catch (\Exception $e) {
+      $this->messenger->addError($e->getMessage());
       $this->logger->critical($e->getMessage());
     }
     return new Response();
