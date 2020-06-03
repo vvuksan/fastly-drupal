@@ -36,7 +36,7 @@ Module Features
 ---------------
 
 1. Account Sign In. If you are already an authenticated Fastly user,
-You can simply enter an API token and a list of service will show up in a 
+You can simply enter an API token and a list of service will show up in a
 drop down.
 
 2. Automated Purging. Content will be automatically purged when updated/created.
@@ -52,7 +52,7 @@ How To Install The Module?
 
 3. Enter your Fastly API token in the settings form and then select your service.
 
-4. *IMPORTANT* Make sure you click Upload Fastly VCL snippets. Although this step is not 
+4. *IMPORTANT* Make sure you click Upload Fastly VCL snippets. Although this step is not
 required it improves caching and enables features such as serve stale on errors etc.
 
 If you find a problem, incorrect comment, obsolete or improper code or such,
@@ -66,7 +66,33 @@ See https://docs.fastly.com/guides/securing-communications for a list showing
 different options available. If you are using TLS, you should add the following
 lines of code to your settings.php
 
-// Enable Faslty TLS connections.
+// Enable Fastly TLS connections.
 if (!empty($_SERVER['HTTP_FASTLY_SSL'])) {
   $_SERVER['HTTPS'] = 'on';
 }
+
+FASTLY API TOKEN
+________________
+You can change it in settings form or you can use environment variable FASTLY_API_TOKEN to set it also.
+
+FASTLY SERVICE ID
+_________________
+A Service represents the configuration for your website to be served through Fastly. You can override this with
+FASTLY_API_SERVICE environment variable
+
+FASTLY SITE ID
+______________
+Site identifier which is being prepended to cache tags. You can change it in settings form. Use this if you have
+multiple sites in the same service in Fastly. Note: You can use the environment variable FASTLY_SITE_ID
+to set this also. If nothing is set in either config or environment variable then one will be randomly generated for
+you.
+
+FASTLY CACHE TAG HASH LENGTH
+____________________________
+
+For sites with more content, it may be necessary to increase the length of the hashed cache tags that are used for the
+<code>Surrogate-Key</code> header and when purging content. You can change it in settings form.
+This is due to hash collisions (https://en.wikipedia.org/wiki/Hash_table#Collision_resolution) which will result in
+excessive purging of content if the key length is too short.
+Note that this number should not be as large as the total number of cache tags in your site, just high enough to
+avoid most collisions during purging. Also you can override this with environment variable FASTLY_CACHE_TAG_HASH_LENGTH.
