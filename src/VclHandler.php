@@ -551,6 +551,7 @@ class VclHandler {
       elseif ($pass && !$activate) {
         $message = $this->t('VCL updated, but not activated.');
         $this->logger->info($message);
+        return $message;
       }
       $this->webhook->sendWebHook($this->t('VCL updated, but not activated on %base_url', ['%base_url' => $this->baseUrl]), "vcl_update");
     }
@@ -563,7 +564,7 @@ class VclHandler {
       }
       return FALSE;
     }
-    return $message;
+    return TRUE;
   }
 
   /**
