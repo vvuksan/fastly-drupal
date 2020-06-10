@@ -187,6 +187,97 @@ class FastlySettingsForm extends ConfigFormBase {
       '#suffix' => '</div>',
     ];
 
+    $form['io'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Image optimizer'),
+      '#description' => $this->t('Turn on image optimizations and configure basic image settings. More details can be found <a target="_blank" href=":image_optimizer">here</a> ',[':image_optimizer' => 'https://docs.fastly.com/en/guides/about-fastly-image-optimizer#setting-up-image-optimization']),
+      '#open' => TRUE,
+    ];
+
+    $form['io']['image_optimization'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable image optimization'),
+      '#default_value' => $config->get('image_optimization')
+    ];
+    $form['io']['webp'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Auto WebP?'),
+      '#default_value' => $config->get('webp'),
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['webp_quality'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default WebP (lossy) quality.'),
+      '#min' => 1,
+      '#max' => 100,
+      '#step' => 1,
+      '#default_value' => $config->get('webp_quality') ?: 85,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['jpeg_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Default JPEG format.'),
+      '#options' => [
+        'auto' => 'auto',
+        'baseline' => 'baseline',
+        'progressive' => 'progressive'
+      ],
+      '#default_value' => $config->get('jpeg_type') ?: 'auto',
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['jpeg_quality'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default JPEG quality.'),
+      '#min' => 1,
+      '#max' => 100,
+      '#step' => 1,
+      '#default_value' => $config->get('jpeg_quality') ?: 85,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['upscale'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow upscaling?'),
+      '#default_value' => $config->get('upscale'),
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['resize_filter'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Resize filter?'),
+      '#options' => [
+        'lanczos3' => 'lanczos3',
+        'lanczos2' => 'lanczos2',
+        'bicubic' => 'bicubic',
+        'bilinear' => 'bilinear',
+        'nearest' => 'nearest',
+      ],
+      '#default_value' => $config->get('resize_filter') ?: 'lanczos3',
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+
     $form['vcl'] = [
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
@@ -471,6 +562,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
+    $originalImageOptimization =  $this->config('fastly.settings')->get('image_optimization');
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
@@ -487,7 +579,28 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->set('site_id', $form_state->getValue('site_id'))
       ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
+      ->set('image_optimization', $form_state->getValue('image_optimization'))
+      ->set('webp', $form_state->getValue('webp'))
+      ->set('webp_quality', $form_state->getValue('webp_quality'))
+      ->set('jpeg_type', $form_state->getValue('jpeg_type'))
+      ->set('jpeg_quality', $form_state->getValue('jpeg_quality'))
+      ->set('upscale', $form_state->getValue('upscale'))
+      ->set('resize_filter', $form_state->getValue('resize_filter'))
       ->save();
+
+    //if optimisation is turned on then trigger optimization
+    if ($form_state->getValue('image_optimization')) {
+      $this->vclHandler->setImageOptimization([
+        'webp' => boolval($form_state->getValue('webp')),
+        'webp_quality' => $form_state->getValue('webp_quality'),
+        'jpeg_type' => $form_state->getValue('jpeg_type'),
+        'jpeg_quality' => $form_state->getValue('jpeg_quality'),
+        'upscale' => boolval($form_state->getValue('upscale')),
+        'resize_filter' => $form_state->getValue('resize_filter'),
+      ]);
+    } elseif ($originalImageOptimization && !$form_state->getValue('image_optimization')){
+      $this->vclHandler->removeImageOptimization();
+    }
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
 

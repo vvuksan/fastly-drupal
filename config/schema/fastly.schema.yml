@@ -8,6 +8,15 @@ fastly.settings:
     cache_tag_hash_length:
       type: integer
       label: 'Cache tag hash length'
+    image_optimization:
+      type: boolean
+      label: 'Enable image optimization'
+    jpeg_quality:
+      type: integer
+      label: 'Default JPEG quality'
+    jpeg_type:
+      type: string
+      label: 'Default JPEG format'
     site_id:
       type: string
       label: 'Fastly Site ID'
@@ -20,6 +29,9 @@ fastly.settings:
     purge_method:
       type: string
       label: 'Fastly Purge Method'
+    resize_filter:
+      type: string
+      label: 'Resize filter'
     stale_while_revalidate:
        type: boolean
        label: 'Fastly stale while revalidate'
@@ -32,6 +44,9 @@ fastly.settings:
     stale_if_error_value:
       type: integer
       label: 'Fastly stale if error value'
+    upscale:
+      type: boolean
+      label: 'Allow upscaling'
     webhook_notifications:
       type: array
       label: 'Webhook notifications'
@@ -41,3 +56,9 @@ fastly.settings:
     webhook_url:
       type: string
       label: 'Webhook URL'
+    webp:
+      type: boolean
+      label: 'Auto WebP'
+    webp_quality:
+      type: integer
+      label: 'Default WebP (lossy) quality'
