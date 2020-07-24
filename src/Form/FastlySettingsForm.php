@@ -199,17 +199,22 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Enable image optimization'),
       '#default_value' => $config->get('image_optimization')
     ];
-    $form['io']['webp'] = [
+    $form['io']['advanced'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced settings'),
+      '#open' => FALSE,
+    ];
+    $form['io']['advanced']['webp'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Auto WebP?'),
-      '#default_value' => $config->get('webp'),
+      '#default_value' => $config->get('webp') ?: TRUE,
       '#states' => [
         'visible' => array(
           ':input[name="image_optimization"]' => array('checked' => TRUE),
         ),
       ]
     ];
-    $form['io']['webp_quality'] = [
+    $form['io']['advanced']['webp_quality'] = [
       '#type' => 'number',
       '#title' => $this->t('Default WebP (lossy) quality.'),
       '#min' => 1,
@@ -222,7 +227,7 @@ class FastlySettingsForm extends ConfigFormBase {
         ),
       ]
     ];
-    $form['io']['jpeg_type'] = [
+    $form['io']['advanced']['jpeg_type'] = [
       '#type' => 'select',
       '#title' => $this->t('Default JPEG format.'),
       '#options' => [
@@ -237,7 +242,7 @@ class FastlySettingsForm extends ConfigFormBase {
         ),
       ]
     ];
-    $form['io']['jpeg_quality'] = [
+    $form['io']['advanced']['jpeg_quality'] = [
       '#type' => 'number',
       '#title' => $this->t('Default JPEG quality.'),
       '#min' => 1,
@@ -250,17 +255,17 @@ class FastlySettingsForm extends ConfigFormBase {
         ),
       ]
     ];
-    $form['io']['upscale'] = [
+    $form['io']['advanced']['upscale'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Allow upscaling?'),
-      '#default_value' => $config->get('upscale'),
+      '#default_value' => $config->get('upscale') ?: FALSE,
       '#states' => [
         'visible' => array(
           ':input[name="image_optimization"]' => array('checked' => TRUE),
         ),
       ]
     ];
-    $form['io']['resize_filter'] = [
+    $form['io']['advanced']['resize_filter'] = [
       '#type' => 'select',
       '#title' => $this->t('Resize filter?'),
       '#options' => [
