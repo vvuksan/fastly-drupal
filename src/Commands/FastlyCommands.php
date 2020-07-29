@@ -47,7 +47,7 @@ class FastlyCommands extends DrushCommands {
       $this->output()->writeln("<info>Successfully purged/invalidated all site content on Fastly.</info>");
     }
     else {
-      $this->output()->writeln("<error>Unable to purged/invalidate all site content site on Fastly.</error>");
+      $this->output()->writeln("<error>Unable to purge/invalidate all site content site on Fastly.</error>");
     }
   }
 
