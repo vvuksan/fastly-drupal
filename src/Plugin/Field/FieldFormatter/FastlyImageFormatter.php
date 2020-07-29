@@ -257,26 +257,6 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
         'webp' => 'webp',
       ],
     ];
-    $element['enable'] = [
-      '#title' => t('Enable upscaling'),
-      '#type' => 'select',
-      '#description' => $this->t('The enable parameter enables image upscaling functionality that is disabled by default. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/enable']),
-      '#default_value' => $this->getSetting('enable'),
-      '#empty_option' => t('None'),
-      '#options' => [
-        'upscale' => 'upscale',
-      ],
-    ];
-    $element['disable'] = [
-      '#title' => t('Disable upscaling'),
-      '#type' => 'select',
-      '#description' => $this->t('The disable parameter disables image upscaling functionality that is enabled by default. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/disable']),
-      '#default_value' => $this->getSetting('disable'),
-      '#empty_option' => t('None'),
-      '#options' => [
-        'upscale' => 'upscale',
-      ],
-    ];
     $element['resize-filter'] = [
       '#title' => t('Resize filter'),
       '#type' => 'select',
@@ -431,8 +411,6 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
       'quality',
       'optimize',
       'auto',
-      'enable',
-      'disable',
       'resize-filter',
       'pad'
     ];
