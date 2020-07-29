@@ -37,17 +37,17 @@ class FastlyCommands extends DrushCommands {
   }
 
   /**
-   * Purge whole service.
+   * Purge/invalidate all site content.
    *
    * @command fastly:purge:all
    * @aliases fpall
    */
   public function purgeAll() {
     if ($this->api->purgeAll()) {
-      $this->output()->writeln("<info>Successfully purged all on Fastly.</info>");
+      $this->output()->writeln("<info>Successfully purged/invalidated all site content on Fastly.</info>");
     }
     else {
-      $this->output()->writeln("<error>Unable to purge all on Fastly.</error>");
+      $this->output()->writeln("<error>Unable to purged/invalidate all site content site on Fastly.</error>");
     }
   }
 
@@ -92,6 +92,21 @@ class FastlyCommands extends DrushCommands {
     }
     else {
       $this->output()->writeln("<error>Unable to purged key(s) on Fastly.</error>");
+    }
+  }
+
+  /**
+   * Purge whole service.
+   *
+   * @command fastly:purge:service
+   * @aliases fpservice
+   */
+  public function purgeService(){
+    if ($this->api->purgeAll(FALSE)) {
+      $this->output()->writeln("<info>Successfully purged whole service on Fastly.</info>");
+    }
+    else {
+      $this->output()->writeln("<error>Unable to purge whole service on Fastly.</error>");
     }
   }
 
