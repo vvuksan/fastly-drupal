@@ -197,6 +197,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['io']['image_optimization'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable image optimization'),
+      '#description' => $this->t('Enabling image optimization will upload VCL file which will add X-Fastly-Imageopto-Api header to all images and thus enable Fastly Image optimization API.'),
       '#default_value' => $config->get('image_optimization')
     ];
     $form['io']['advanced'] = [

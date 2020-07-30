@@ -136,13 +136,39 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
       '#step' => 0.01,
       '#default_value' => $this->getSetting('height'),
     ];
+
+    $element['quality'] = [
+      '#title' => t('Quality'),
+      '#type' => 'number',
+      '#description' => $this->t('Parameter enables control over the compression level for lossy file-formatted images. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/quality']),
+      '#default_value' => $this->getSetting('quality'),
+    ];
+
+    $element['optimize'] = [
+      '#title' => t('Optimize'),
+      '#type' => 'select',
+      '#description' => $this->t('Automatically applies optimal quality compression to produce an output image with as much visual fidelity as possible, while minimizing the file size. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/enable']),
+      '#default_value' => $this->getSetting('optimize'),
+      '#empty_option' => t('None'),
+      '#options' => [
+        'low' => 'low',
+        'medium' => 'medium',
+        'high' => 'high'
+      ],
+    ];
+
     $element['dpr'] = [
       '#title' => t('Device pixel ratio'),
-      '#type' => 'number',
+      '#type' => 'select',
       '#description' => $this->t('Parameter adds the ability to serve correctly sized images for devices that expose a device pixel ratio. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/dpr']),
-      '#min' => 0,
-      '#max' => 10000,
-      '#step' => 0.01,
+      '#options' => [
+        '1' => '1x',
+        '1.5' => '1.5x',
+        '2' => '2',
+        '3' => '3',
+        '4' => '4',
+      ],
+      '#empty_option' => t('None'),
       '#default_value' => $this->getSetting('dpr'),
     ];
     $element['fit'] = [
@@ -226,27 +252,6 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
     ];
 
     //@todo frame
-
-    $element['quality'] = [
-      '#title' => t('Quality'),
-      '#type' => 'number',
-      '#description' => $this->t('Parameter enables control over the compression level for lossy file-formatted images. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/quality']),
-      '#default_value' => $this->getSetting('quality'),
-    ];
-    //@todo quality second parameter if auto=webp
-
-    $element['optimize'] = [
-      '#title' => t('Optimize'),
-      '#type' => 'select',
-      '#description' => $this->t('Automatically applies optimal quality compression to produce an output image with as much visual fidelity as possible, while minimizing the file size. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/enable']),
-      '#default_value' => $this->getSetting('optimize'),
-      '#empty_option' => t('None'),
-      '#options' => [
-        'low' => 'low',
-        'medium' => 'medium',
-        'high' => 'high'
-      ],
-    ];
     $element['auto'] = [
       '#title' => t('Automatic optimization'),
       '#type' => 'select',
@@ -365,6 +370,9 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
       $query = [];
       foreach($settings as $option){
         if ($value = $this->getSetting($option)) {
+          if($value && ($option == 'width' || $option == 'height')) {
+            $item->set($option, $value);
+          }
           $query[$option] = $value;
         }
       }
@@ -381,10 +389,10 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
         '#item_attributes' => $item_attributes,
         '#image_style' => '',
         '#url' => $url,
-        /*'#cache' => [
+        '#cache' => [
           'tags' => $cache_tags,
           'contexts' => $cache_contexts,
-        ],*/
+        ],
       ];
     }
 
