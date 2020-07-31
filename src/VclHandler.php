@@ -1093,7 +1093,7 @@ class VclHandler {
       if($this->checkIfVclExists(self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS)){
         $this->updateImageOptimization($params);
       }else{
-        $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations';
+        $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
         $data['type'] = 'recv';
         // Set vcl for image optimizer.
         $requests = $this->prepareSingleVcl($data, self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS);
@@ -1163,11 +1163,17 @@ class VclHandler {
     return $req ? TRUE : FALSE;
   }
 
+  /**
+   * Remove Image optimization feature.
+   *
+   * @return bool
+   */
   public function removeImageOptimization(){
     $this->cloneLastActiveVersion();
     $data['name'] = self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS . '_recv';
     if($this->getSnippetId($data)){
       $this->removeSnippet($this->lastClonedVersion, $data['name']);
+      //@todo also remove optimize feature if existing
     }
     // Activate Version.
     $this->prepareActivateVersion();

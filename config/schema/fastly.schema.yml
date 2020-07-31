@@ -17,6 +17,9 @@ fastly.settings:
     jpeg_type:
       type: string
       label: 'Default JPEG format'
+    optimize:
+      type: string
+      label: 'Optimal quality compression'
     site_id:
       type: string
       label: 'Fastly Site ID'
