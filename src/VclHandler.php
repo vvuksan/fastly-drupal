@@ -1173,7 +1173,6 @@ class VclHandler {
     $data['name'] = self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS . '_recv';
     if($this->getSnippetId($data)){
       $this->removeSnippet($this->lastClonedVersion, $data['name']);
-      //@todo also remove optimize feature if existing
     }
     // Activate Version.
     $this->prepareActivateVersion();
