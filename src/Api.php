@@ -525,7 +525,9 @@ class Api {
         case 'GET':
         case 'POST':
         case 'PURGE':
+        case 'PATCH':
         case 'PUT':
+        case 'DELETE':
           $data["http_errors"] = FALSE;
           return $this->httpClient->request($method, $uri, $data);
 
