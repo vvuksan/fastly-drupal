@@ -385,7 +385,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['purge']['purge_options']['cache_tag_hash_length'] = [
       '#type' => 'number',
       '#min' => 4,
-      '#max' => 5,
+      '#max' => 10,
       '#title' => $this->t('Cache tag hash length'),
       '#description' => $this->t('For sites with more content, it may be necessary to increase the length of the hashed cache tags that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable <code>FASTLY_CACHE_TAG_HASH_LENGTH</code>.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
       '#default_value' => $key_length,
