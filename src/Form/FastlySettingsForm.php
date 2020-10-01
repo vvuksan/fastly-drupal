@@ -122,6 +122,11 @@ class FastlySettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('fastly.settings');
+    if ($config->get('image_optimization') == 1){
+      if(!$this->api->ioEnabled($config->get('service_id'))){
+        $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
+      }
+    }
 
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
@@ -569,6 +574,12 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
 
     if(!empty($apiKey)) {
       $this->api->setApiKey($apiKey);
+    }
+
+    if ($form_state->getValue('image_optimization') == 1) {
+      if(!$this->api->ioEnabled($form_state->getValue('service_id'))){
+        $form_state->setErrorByName('image_optimization',$this->t('You cannot enable Fastly image optimization in configuration until you have it available on service!'));
+      }
     }
 
     // Verify API token has adequate scope to use this form.
