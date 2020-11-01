@@ -1,0 +1,10 @@
+if (req.restarts == 0) {
+  unset req.http.x-edge-module-timeout;
+}
+
+{% for rule in rules %}
+if (req.url ~ "{{ rule.pattern }}") {
+  set req.http.x-pass = "1";
+  set req.http.x-edge-module-timeout = "{{ rule.timeout }}";
+}
+{% endfor %}

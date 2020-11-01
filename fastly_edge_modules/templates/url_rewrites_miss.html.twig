@@ -1,0 +1,5 @@
+{% for rule in rules %}
+if (req.backend.is_origin && req.url.path == "{{ rule.source }}") {
+  set bereq.url = "{{ rule.destination }}";
+}
+{% endfor %}

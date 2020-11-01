@@ -1,0 +1,9 @@
+if (obj.status == 921 && obj.response == "[modly:countryblock]") {
+  set obj.status = 403;
+  set obj.response = "Forbidden";
+  if (req.http.Fastly-Debug) {
+    set obj.http.Fastly-Country-Block = client.geo.country_code;
+  }
+  synthetic "";
+  return (deliver);
+}

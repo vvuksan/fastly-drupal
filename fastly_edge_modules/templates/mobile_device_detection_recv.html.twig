@@ -1,0 +1,10 @@
+# Mobile device detection for mobile themes
+set req.http.X-UA-Device = "desktop";
+
+if (req.http.User-Agent ~ "(?i)ip(hone|od)") {
+  set req.http.X-UA-Device = "mobile";
+} elsif (req.http.User-Agent ~ "(?i)android.*(mobile|mini)") {
+  set req.http.X-UA-Device = "mobile";
+} elsif (req.http.User-Agent ~ "(?i)tizen.*mobile") {
+  set req.http.X-UA-Device = "mobile";
+}
