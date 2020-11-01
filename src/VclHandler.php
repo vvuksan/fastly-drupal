@@ -24,6 +24,11 @@ class VclHandler {
   const ERROR_PAGE_RESPONSE_OBJECT = 'drupalmodule_error_page_response_object';
 
   /**
+   * Fastly image optimizer basic image settings
+   */
+  const IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS = 'drupalmodule_image_optimizer';
+
+  /**
    * The Fastly API.
    *
    * @var \Drupal\fastly\Api
@@ -1078,6 +1083,122 @@ class VclHandler {
   }
 
   /**
+   * Set image optimization.
+   *
+   * @return bool
+   */
+  public function setImageOptimization($params = []){
+
+    try {
+      $this->cloneLastActiveVersion();
+      //Check if optimization on fastly is turned on and if vcl exists
+      if($this->checkIfVclExists(self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS)){
+        $this->updateImageOptimization($params);
+      }else{
+        $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
+        $data['type'] = 'recv';
+        // Set vcl for image optimizer.
+        $requests = $this->prepareSingleVcl($data, self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS);
+        $request = reset($requests);
+        $response = $this->vclRequestWrapper($request['url'], [], $request['data'], $request['type']);
+        if ($response->getStatusCode() != "200") {
+          $this->messenger->addError($response->getBody());
+          return FALSE;
+        }
+        // Set default settings.
+        $id = $this->serviceId . '-' . $this->lastClonedVersion . '-imageopto';
+        # Set parameters.
+        $imageParams = [
+          'data' => [
+            'id'            => $id,
+            'type'          => 'io_settings',
+            'attributes'    => $params
+          ]
+        ];
+        $params['body'] = json_encode($imageParams);
+
+        $this->configureImageOptimizationDefaultConfigOptions(
+          $params,
+          $this->lastClonedVersion
+        );
+
+        unset($responses);
+
+        // Activate Version.
+        $this->prepareActivateVersion();
+        $request = $this->prepareActivateVersion();
+        $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+        if ($response->getStatusCode() != "200") {
+          $this->messenger->addError($response->getBody());
+          return FALSE;
+        }
+      }
+    } catch (\Exception $e) {
+      $this->logger->error($e->getMessage());
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Configure the image optimization default config options
+   *
+   * @param $params
+   * @param $version
+   * @return bool|mixed
+   */
+  public function configureImageOptimizationDefaultConfigOptions($params, $version)
+  {
+    $url = '/service/' . $this->serviceId . '/version/'. $version . '/io_settings';
+    return $this->vclRequestWrapper($url, [], $params, 'PATCH');
+  }
+
+  /**
+   * Check image optimizer status.
+   *
+   * @return bool
+   */
+  public function checkImageOptimizerStatus()
+  {
+    $url = '/service/' . $this->serviceId . '/dynamic_io_settings';
+    $req = $this->vclGetWrapper($url);
+    return $req ? TRUE : FALSE;
+  }
+
+  /**
+   * Remove Image optimization feature.
+   *
+   * @return bool
+   */
+  public function removeImageOptimization(){
+    $this->cloneLastActiveVersion();
+    $data['name'] = self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS . '_recv';
+    if($this->getSnippetId($data)){
+      $this->removeSnippet($this->lastClonedVersion, $data['name']);
+    }
+    // Activate Version.
+    $this->prepareActivateVersion();
+    $request = $this->prepareActivateVersion();
+    $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+    if ($response->getStatusCode() != "200") {
+      $this->messenger->addError($response->getBody());
+      return FALSE;
+    }
+  }
+
+  /**
+   * Remove snippet.
+   *
+   * @param $version
+   * @param $name
+   */
+  public function removeSnippet($version, $name){
+    $url = '/service/' . $this->serviceId . '/version/'. $version . '/snippet/' . $name;
+    return $this->vclRequestWrapper($url, [], [], 'DELETE');
+  }
+
+
+  /**
    * Get all snippets.
    *
    * @param null $version
@@ -1111,18 +1232,6 @@ class VclHandler {
       return FALSE;
     }
     return TRUE;
-  }
-
-
-  /**
-   * Remove snippet.
-   *
-   * @param $version
-   * @param $name
-   */
-  public function removeSnippet($version, $name){
-    $url = '/service/' . $this->serviceId . '/version/'. $version . '/snippet/' . $name;
-    return $this->vclRequestWrapper($url, [], [], 'DELETE');
   }
 
   /**

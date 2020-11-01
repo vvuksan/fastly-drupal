@@ -4,6 +4,7 @@ namespace Drupal\fastly\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\HtmlCommand;
+use Drupal\Core\Ajax\OpenModalDialogCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -121,6 +122,11 @@ class FastlySettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('fastly.settings');
+    if ($config->get('image_optimization') == 1){
+      if(!$this->api->ioEnabled($config->get('service_id'))){
+        $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
+      }
+    }
 
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
@@ -185,6 +191,130 @@ class FastlySettingsForm extends ConfigFormBase {
       ],
       '#prefix' => '<div id="edit-service-wrapper">',
       '#suffix' => '</div>',
+    ];
+
+    $form['io'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Image optimizer'),
+      '#description' => $this->t('Turn on image optimizations and configure basic image settings. More details can be found <a target="_blank" href=":image_optimizer">here</a> ',[':image_optimizer' => 'https://docs.fastly.com/en/guides/about-fastly-image-optimizer#setting-up-image-optimization']),
+      '#open' => TRUE,
+    ];
+
+    $form['io']['image_optimization'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable image optimization'),
+      '#description' => $this->t('Enabling image optimization will upload VCL file which will add X-Fastly-Imageopto-Api header to all images and thus enable Fastly Image optimization API.'),
+      '#default_value' => $config->get('image_optimization'),
+       '#ajax' => array(
+        'callback' => array($this, 'updateIOCallback'),
+        'event' => 'change',
+      ),
+      '#attached' => [
+        'library' => [
+          'core/jquery',
+          'core/drupal.dialog.ajax',
+        ],
+      ],
+    ];
+    $form['io']['optimize'] = [
+      '#title' => t('Optimize'),
+      '#type' => 'select',
+      '#description' => $this->t('Automatically applies optimal quality compression to produce an output image with as much visual fidelity as possible, while minimizing the file size. More details <a href=":url" target="_blank">here</a>.', [':url' => 'https://docs.fastly.com/en/image-optimization-api/enable']),
+      '#default_value' => $config->get('optimize'),
+      '#empty_option' => t('None'),
+      '#options' => [
+        'low' => 'low',
+        'medium' => 'medium',
+        'high' => 'high'
+      ],
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced settings'),
+      '#open' => FALSE,
+    ];
+    $form['io']['advanced']['webp'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Auto WebP?'),
+      '#default_value' => $config->get('webp') ?: TRUE,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced']['webp_quality'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default WebP (lossy) quality.'),
+      '#min' => 1,
+      '#max' => 100,
+      '#step' => 1,
+      '#default_value' => $config->get('webp_quality') ?: 85,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced']['jpeg_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Default JPEG format.'),
+      '#options' => [
+        'auto' => 'auto',
+        'baseline' => 'baseline',
+        'progressive' => 'progressive'
+      ],
+      '#default_value' => $config->get('jpeg_type') ?: 'auto',
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced']['jpeg_quality'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default JPEG quality.'),
+      '#min' => 1,
+      '#max' => 100,
+      '#step' => 1,
+      '#default_value' => $config->get('jpeg_quality') ?: 85,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced']['upscale'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow upscaling?'),
+      '#default_value' => $config->get('upscale') ?: FALSE,
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
+    ];
+    $form['io']['advanced']['resize_filter'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Resize filter?'),
+      '#options' => [
+        'lanczos3' => 'lanczos3',
+        'lanczos2' => 'lanczos2',
+        'bicubic' => 'bicubic',
+        'bilinear' => 'bilinear',
+        'nearest' => 'nearest',
+      ],
+      '#default_value' => $config->get('resize_filter') ?: 'lanczos3',
+      '#states' => [
+        'visible' => array(
+          ':input[name="image_optimization"]' => array('checked' => TRUE),
+        ),
+      ]
     ];
 
     $form['vcl'] = [
@@ -260,7 +390,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['purge']['purge_options']['cache_tag_hash_length'] = [
       '#type' => 'number',
       '#min' => 4,
-      '#max' => 5,
+      '#max' => 10,
       '#title' => $this->t('Cache tag hash length'),
       '#description' => $this->t('For sites with more content, it may be necessary to increase the length of the hashed cache tags that are used for the <code>Surrogate-Key</code> header and when purging content. This is due to <a href=":hash_collisions">hash collisions</a> which will result in excessive purging of content if the key length is too short. The current key length of <strong>%key_length</strong> can provide %hash_total unique cache keys. Note that this number should not be as large as the total number of cache tags in your site, just high enough to avoid most collisions during purging. Also you can override this with environment variable <code>FASTLY_CACHE_TAG_HASH_LENGTH</code>.', [':hash_collisions' => 'https://en.wikipedia.org/wiki/Hash_table#Collision_resolution', '%key_length' => $key_length, '%hash_total' => pow(64, $key_length)]),
       '#default_value' => $key_length,
@@ -446,10 +576,21 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       $this->api->setApiKey($apiKey);
     }
 
+    if ($form_state->getValue('image_optimization') == 1) {
+      if(!$this->api->ioEnabled($form_state->getValue('service_id'))){
+        $form_state->setErrorByName('image_optimization',$this->t('You cannot enable Fastly image optimization in configuration until you have it available on service!'));
+      }
+    }
+
     // Verify API token has adequate scope to use this form.
     if (!$this->api->validatePurgeToken()) {
       $form_state->setErrorByName('api_key', $this->t('Invalid API token. Make sure the token you are trying has at least <em>global:read</em>, <em>purge_all</em>, and <em>purge_all</em> scopes.'));
     }
+
+    if ($form_state->getValue('image_optimization') && !$form_state->getValue('optimize')) {
+      $form_state->setErrorByName('optimize', $this->t('You need to set default optimization of images to low, medium or high.'));
+    }
+
   }
 
   /**
@@ -471,6 +612,8 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
+    $originalImageOptimization =  $this->config('fastly.settings')->get('image_optimization');
+    $originalOptimizeDefaults =  $this->config('fastly.settings')->get('optimize');
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
@@ -487,7 +630,43 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->set('site_id', $form_state->getValue('site_id'))
       ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
+      ->set('image_optimization', $form_state->getValue('image_optimization'))
+      ->set('webp', $form_state->getValue('webp'))
+      ->set('webp_quality', $form_state->getValue('webp_quality'))
+      ->set('jpeg_type', $form_state->getValue('jpeg_type'))
+      ->set('jpeg_quality', $form_state->getValue('jpeg_quality'))
+      ->set('upscale', $form_state->getValue('upscale'))
+      ->set('resize_filter', $form_state->getValue('resize_filter'))
+      ->set('optimize', $form_state->getValue('optimize'))
       ->save();
+
+    //if optimisation is turned on then trigger optimization
+    if ($form_state->getValue('image_optimization')) {
+      $this->vclHandler->setImageOptimization([
+        'webp' => boolval($form_state->getValue('webp')),
+        'webp_quality' => $form_state->getValue('webp_quality'),
+        'jpeg_type' => $form_state->getValue('jpeg_type'),
+        'jpeg_quality' => $form_state->getValue('jpeg_quality'),
+        'upscale' => boolval($form_state->getValue('upscale')),
+        'resize_filter' => $form_state->getValue('resize_filter'),
+        'optimize' => $form_state->getValue('optimize')
+      ]);
+    } elseif ($originalImageOptimization && !$form_state->getValue('image_optimization')){
+      $this->vclHandler->removeImageOptimization();
+    }
+    // Reattach Image Optimization with new settings.
+    if($originalImageOptimization && $originalOptimizeDefaults && $originalOptimizeDefaults != $form_state->getValue('optimize')){
+      $this->vclHandler->removeImageOptimization();
+      $this->vclHandler->setImageOptimization([
+        'webp' => boolval($form_state->getValue('webp')),
+        'webp_quality' => $form_state->getValue('webp_quality'),
+        'jpeg_type' => $form_state->getValue('jpeg_type'),
+        'jpeg_quality' => $form_state->getValue('jpeg_quality'),
+        'upscale' => boolval($form_state->getValue('upscale')),
+        'resize_filter' => $form_state->getValue('resize_filter'),
+        'optimize' => $form_state->getValue('optimize')
+      ]);
+    }
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
 
@@ -615,6 +794,38 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
     }
     $response->addCommand(new HtmlCommand('.purge-all-message-keys', $message));
     return $response;
+  }
+
+  /**
+   * Image optimization
+   * @param array $form
+   * @param FormStateInterface $form_state
+   * @return AjaxResponse
+   */
+  public function updateIOCallback(array $form, FormStateInterface $form_state) {
+    $triggering_element = $form_state->getTriggeringElement();
+    $ajax_response = new AjaxResponse();
+    $form['#attached']['library'][] = 'core/jquery';
+    $form['#attached']['library'][] = 'core/drupal.dialog.ajax';
+    $image_optimizer = $form_state->getValue('image_optimization');
+    if($image_optimizer){
+      $title = $this->t('Are you sure you want to enable Image optimizer?');
+      $content = $this->t('Enabling image optimization will upload VCL file which will add X-Fastly-Imageopto-Api header to all images and thus enable Fastly Image optimization API. Please set default image optimization to low, medium or high');
+      $ajax_response->addCommand(new OpenModalDialogCommand($title, $content,[
+        'width' => '700',
+        'buttons' => [
+          'confirm' => [
+            'text' => $this->t('Yes'),
+            'onclick' => 'jQuery("#drupal-modal").dialog("close");',
+          ],
+          'cancel' => [
+            'text' => $this->t('No'),
+            'onclick' => 'jQuery("#drupal-modal").dialog("close"); jQuery("#edit-image-optimization").click();',
+          ]
+        ]
+      ]));
+    }
+    return $ajax_response;
   }
 
 }

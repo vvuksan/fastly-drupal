@@ -525,6 +525,7 @@ class Api {
         case 'GET':
         case 'POST':
         case 'PURGE':
+        case 'PATCH':
         case 'PUT':
         case 'DELETE':
           $data["http_errors"] = FALSE;
@@ -651,6 +652,33 @@ class Api {
     catch (Exception $e) {
       return ['status' => FALSE, 'message' => $e->getMessage()];
     }
+  }
+
+  /**
+   * Get Service Details.
+   *
+   * @param $serviceId
+   * @return \stdClass
+   */
+  public function getDetails($serviceId){
+    $response = $this->query('/service/'. $serviceId .'/details');
+    return $this->json($response);
+  }
+
+  /**
+   * Check if IO is enabled on service.
+   *
+   * @param $serviceId
+   * @return bool
+   */
+  public function ioEnabled($serviceId){
+    $response = $this->getDetails($serviceId);
+    if ($response instanceof \stdClass) {
+      if (property_exists($response, 'active_version') && property_exists($response->active_version, 'io_settings')) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
 }
