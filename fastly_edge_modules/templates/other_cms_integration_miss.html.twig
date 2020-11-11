@@ -1,0 +1,7 @@
+{% if override_backend_hostname == "DEFAULT" %}
+# Intentionally empty
+{% else %}
+if ( req.backend.is_origin && req.http.X-ExternalCMS ) {
+set bereq.http.host = "{{ override_backend_hostname }}";
+}
+{% endif %}

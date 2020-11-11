@@ -1,0 +1,4 @@
+# Add X-UA-Device Vary for HTML
+if ( beresp.http.Content-Type ~ "text/html" ) {
+  set beresp.http.Vary:X-UA-Device = "";
+}

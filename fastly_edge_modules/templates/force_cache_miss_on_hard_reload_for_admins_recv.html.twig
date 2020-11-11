@@ -1,0 +1,3 @@
+if ( req.http.Fastly-Client-IP ~ {{ acl }} && req.http.pragma ~ "no-cache" ) {
+  set req.hash_always_miss = true;
+}

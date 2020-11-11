@@ -1,0 +1,3 @@
+if (req.http.x-edge-module-timeout) {
+  set bereq.first_byte_timeout = std.atof(req.http.x-edge-module-timeout);
+}

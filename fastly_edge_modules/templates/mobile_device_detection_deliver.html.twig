@@ -1,0 +1,4 @@
+# Execute only on the edge nodes
+if ( fastly.ff.visits_this_service == 0 && !req.http.Fastly-Debug ) {
+  unset resp.http.Vary:X-UA-Device;
+}

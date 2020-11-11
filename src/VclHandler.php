@@ -2,10 +2,12 @@
 
 namespace Drupal\fastly;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Services\Webhook;
+use Drupal\fastly\Utility\FastlyEdgeModulesHelper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -319,14 +321,14 @@ class VclHandler {
    */
   public function prepareSingleVcl(array $single_vcl_data, $prefix = "drupalmodule") {
     if (!empty($single_vcl_data['type'])) {
-      $single_vcl_data['name'] = $prefix . '_' . $single_vcl_data['type'];
+      $single_vcl_data['name'] = $single_vcl_data['name'] ? $single_vcl_data['name'] : $prefix . '_' . $single_vcl_data['type'];
       $single_vcl_data['dynamic'] = 0;
-      $single_vcl_data['priority'] = 50;
-      if (file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
+      $single_vcl_data['priority'] = isset($single_vcl_data['priority']) ? $single_vcl_data['priority'] : 50;
+      if (isset($single_vcl_data['vcl_dir']) && file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
         $single_vcl_data['content'] = file_get_contents($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl');
         unset($single_vcl_data['vcl_dir']);
       }
-      else {
+      elseif (!$single_vcl_data['content']) {
         $message = $this->t('VCL file does not exist.');
         $this->addError($message);
         $this->logger->info($message);
@@ -1196,4 +1198,140 @@ class VclHandler {
   }
 
 
+  /**
+   * Get all snippets.
+   *
+   * @param null $version
+   * @return mixed
+   */
+  public function getAllSnippets($version = null)
+  {
+    $v = is_null($version) ? $this->getLastVersion()->number : $version;
+    $url =  $this->versionBaseUrl . "/" . $v . "/snippet";
+    $response = $this->vclGetWrapper($url, $this->headersGet);
+    $responseBody = (string) $response->getBody();
+    return json_decode($responseBody);
+  }
+
+  /**
+   * Remove edge module
+   */
+  public function removeEdgeModule($name, $version = NULL){
+    $this->cloneLastActiveVersion();
+    $version = is_null($version) ? $this->lastClonedVersion : $version;
+    $snippets = $this->getAllSnippets($version);
+    foreach($snippets as $snippet){
+      if (substr($snippet->name, 0, strlen(FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $name)) === FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $name) {
+        $this->removeSnippet($version, $snippet->name);
+      }
+    }
+    $request = $this->prepareActivateVersion();
+    $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+    if ($response->getStatusCode() != "200") {
+      $this->messenger->addError($response->getBody());
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Uploads Edge module to fastly.
+   *
+   * @param $name
+   *   Name of the module.
+   * @param $values
+   *   Values array for vcl template.
+   * @return bool
+   *   Successfull or not.
+   *
+   * @throws \Twig\Error\LoaderError
+   * @throws \Twig\Error\RuntimeError
+   * @throws \Twig\Error\SyntaxError
+   */
+  public function uploadEdgeModule($name, $values){
+    $this->cloneLastActiveVersion();
+
+    switch($name) {
+      case 'blackfire_integration':
+      case 'cors_headers':
+      case 'countryblock':
+      case 'datadome_integration':
+      case 'force_cache_miss_on_hard_reload_for_admins':
+      case 'increase_timeouts_long_jobs':
+      case 'mobile_device_detection':
+      case 'netacea_integration':
+      case 'disable_cache':
+      case 'other_cms_integration':
+      case 'redirect_hosts':
+      case 'url_rewrites':
+        // Load module config.
+        $moduleConfig = FastlyEdgeModulesHelper::getModules();
+        $moduleConfig = $moduleConfig[$name];
+        // Go through each vcl config upload it to fastly.
+        foreach($moduleConfig['vcl'] as $vcl) {
+          if(isset($vcl['priority'])){
+            $data['priority'] = $vcl['priority'];
+          }
+
+          $data['name'] = FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $name . '_' . $vcl['type'];
+
+          // load vcl template and render it
+          $path = drupal_get_path('module','fastly') . '/fastly_edge_modules/templates/';
+          $loader = new \Twig\Loader\ArrayLoader([
+            'template' => file_get_contents($path . $vcl['template'] . '.html.twig',TRUE),
+          ]);
+
+          $twig = new \Twig\Environment($loader);
+          $data['content'] = $twig->render('template', $values);
+
+          // Skip if template is empty.
+          if(empty($data['content'])){
+            continue;
+          }
+          $data['type'] = $vcl['type'];
+
+          $requests = $this->prepareSingleVcl($data,FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX);
+          foreach($requests as $request){
+            $request['headers'] = is_null($request['headers']) ? [] : $request['headers'];
+            $response = $this->vclRequestWrapper($request['url'], $request['headers'], $request['data'] , $request['type']);
+            if ($response->getStatusCode() != "200") {
+              return FALSE;
+            }
+          }
+        }
+        break;
+    }
+
+    // Activation of version.
+    $request = $this->prepareActivateVersion();
+    $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+    if ($response->getStatusCode() != "200") {
+      $this->messenger->addError($response->getBody());
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Get all Acls
+   *
+   * @return mixed
+   */
+  public function getAllAcls() {
+    $url = '/service/' . $this->serviceId . '/version/'. $this->getLastVersion()->number . '/acl';
+    $response = $this->vclRequestWrapper($url, [], [], 'GET');
+    return Json::decode($response->getBody());
+  }
+
+  /**
+   * Get all dictionaries.
+   *
+   * @return mixed
+   */
+  public function getAllDictionaries()
+  {
+    $url = '/service/' . $this->serviceId . '/version/'. $this->getLastVersion()->number . '/dictionary';
+    $response = $this->vclRequestWrapper($url, [], [], 'GET');
+    return Json::decode($response->getBody());
+  }
 }

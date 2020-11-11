@@ -65,3 +65,157 @@ fastly.settings:
     webp_quality:
       type: integer
       label: 'Default WebP (lossy) quality'
+
+fastly.edge_modules.blackfire_integration:
+  type: config_object
+  label: 'Blackfire integration'
+  mapping:
+    acl:
+      type: string
+      label: 'ACL'
+
+fastly.edge_modules.cors_headers:
+  type: config_object
+  label: 'Fastly Core Headers'
+  mapping:
+    origin:
+      type: string
+      label: 'Origins allowed'
+    cors_allowed_methods:
+      type: string
+      label: 'Allowed HTTP methods'
+    cors_allowed_origins_regex:
+      type: string
+      label: 'Regex matching origins'
+
+fastly.edge_modules.countryblock:
+  type: config_object
+  label: 'Fastly Country Block'
+  mapping:
+    countries:
+      type: string
+      label: 'Countries to block'
+
+fastly.edge_modules.datadome_integration:
+  type: config_object
+  label: 'Fastly Datadome Integration'
+  mapping:
+    datadome_api_key:
+      type: string
+      label: 'API Key'
+    datadome_exclusion_ext:
+      type: string
+      label: 'Exclusion regex'
+    datadome_connect_timeout:
+      type: integer
+      label: 'Connection timeout'
+    datadome_first_byte_timeout:
+      type: integer
+      label: 'First byte timeout'
+    datadome_between_bytes_timeout:
+      type: integer
+      label: 'Between bytes timeout'
+    logging_endpoint:
+      type: string
+      label: 'Logging Endpoint for Debugging'
+
+fastly.edge_modules.disable_cache:
+  type: config_object
+  label: 'Disable caching'
+  mapping:
+    rules:
+      type: sequence
+      label: 'Disable caching for'
+      sequence:
+        type: mapping
+        mapping:
+          pattern:
+            type: string
+            label: 'Path pattern'
+          mode:
+            type: string
+            label: 'Where to disable caching'
+
+fastly.edge_modules.force_cache_miss_on_hard_reload_for_admins:
+  type: config_object
+  label: 'Hard Reload cache bypass for set of admin IPs'
+  mapping:
+    acl:
+      type: string
+      label: 'ACL'
+
+fastly.edge_modules.increase_timeouts_long_jobs:
+  type: config_object
+  label: 'Increase timeouts for long running jobs'
+  mapping:
+    rules:
+     type: sequence
+     label: 'Timeout override rules'
+     sequence:
+       type: mapping
+       mapping:
+         pattern:
+           type: string
+           label: 'Path pattern'
+         timeout:
+           type: integer
+           label: 'Timeout in seconds'
+
+fastly.edge_modules.netacea_integration:
+  type: config_object
+  label: 'Fastly Netacea Integration'
+  mapping:
+    api_key:
+      type: string
+      label: 'Netacea API Key'
+    secret:
+      type: string
+      label: 'Netacea Secret'
+
+fastly.edge_modules.other_cms_integration:
+  type: config_object
+  label: 'Other CMS/backend integration'
+  mapping:
+    urls_dict:
+      type: string
+      label: 'URL prefixes Dictionary'
+    override_backend_hostname:
+      type: string
+      label: 'Override Backend Hostname'
+
+fastly.edge_modules.redirect_hosts:
+  type: config_object
+  label: 'Redirect one domain to another'
+  mapping:
+    rules:
+      type: sequence
+      label: 'Rules'
+      sequence:
+        type: mapping
+        mapping:
+          source:
+            type: string
+            label: 'Incoming Domain/Host'
+          destination:
+            type: string
+            label: 'Destination domain/host'
+          ignore_path:
+            type: boolean
+            label: 'Ignore path'
+
+fastly.edge_modules.url_rewrites:
+  type: config_object
+  label: 'URL rewrites'
+  mapping:
+    rules:
+      type: sequence
+      label: 'Rules'
+      sequence:
+        type: mapping
+        mapping:
+          source:
+            type: string
+            label: 'Source path'
+          destination:
+            type: string
+            label: 'Destination path'

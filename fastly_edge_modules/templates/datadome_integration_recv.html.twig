@@ -1,0 +1,65 @@
+# Configure the regular expression below to match URLs that
+# should be checked by DataDome
+if (fastly.ff.visits_this_service == 0 && req.restarts == 0 && !(req.url.path ~ "{{ datadome_exclusion_ext }}" && (req.method == "GET" || req.method == "HEAD"))) {
+
+set req.backend = datadome;
+# Configure the string below to include your DataDome API key
+set req.http.x-datadome-params:method = urlencode(req.method);
+set req.http.x-datadome-params:postparamlen = urlencode(req.http.content-length);
+set req.method = "GET";
+{% if logging_endpoint %}
+## Debug DataDome
+log {"syslog "} req.service_id {" {{ logging_endpoint }} :: "}
+" timestamp=%22" now
+"%22 client_ip=" req.http.Fastly-Client-IP
+" request=" req.method
+" host=" req.http.host
+" url=%22" cstr_escape(req.url)
+"%22 request_referer=%22" cstr_escape(req.http.Referer)
+"%22 request_user_agent=%22" cstr_escape(req.http.User-Agent)
+"%22 request_accept_language=%22" cstr_escape(req.http.Accept-Language)
+"%22 request_accept_charset=%22" cstr_escape(req.http.Accept-Charset)
+"%22 contentLength=" req.http.Content-Length
+" restarts=" req.restarts
+" DataDomeDebug=" "To_DataDome"
+" fastlyFF=" fastly.ff.visits_this_service;
+##
+{% endif %}
+return (pass);
+} else {
+if (req.http.x-datadome-params:method) {
+set req.method = urldecode(req.http.x-datadome-params:method);
+# After a restart, clustering is disabled. This re-enables it.
+set req.http.fastly-force-shield = "1";
+}
+unset req.http.x-datadome-params;
+{% if logging_endpoint %}
+## Debug DataDome
+log {"syslog "} req.service_id {" {{ logging_endpoint }} :: "}
+" timestamp=%22" now
+"%22 client_ip=" req.http.Fastly-Client-IP
+" request=" req.method
+" host=" req.http.host
+" url=%22" cstr_escape(req.url)
+"%22 request_referer=%22" cstr_escape(req.http.Referer)
+"%22 request_user_agent=%22" cstr_escape(req.http.User-Agent)
+"%22 request_accept_language=%22" cstr_escape(req.http.Accept-Language)
+"%22 request_accept_charset=%22" cstr_escape(req.http.Accept-Charset)
+"%22 contentLength=" req.http.Content-Length
+" restarts=" req.restarts
+" DataDomeDebug=" "Bypass_DataDome"
+" fastlyFF=" fastly.ff.visits_this_service;
+##
+{% endif %}
+}
+
+# we're using the first restart for datadome, update a part of fastly code
+# we can't replace whole macros because we haven't got any idea about backends
+if (req.restarts == 1) {
+if (!req.http.x-timer) {
+set req.http.x-timer = "S" time.start.sec "." time.start.usec_frac;
+}
+set req.http.x-timer = req.http.x-timer ",VS0";
+}
+
+set var.fastly_req_do_shield = (req.restarts <= 1);

@@ -1,0 +1,17 @@
+# Make sure X-ExternalCMS is not set before proceeding
+if ( req.restarts == 0 ) {
+remove req.http.X-ExternalCMS;
+}
+
+# Extract first part of the path from a URL
+if ( req.url.path ~ "^/?([^:/\s]+).*$" ) {
+# check if first part of the url is in the wordpress urls table
+if ( table.lookup({{ urls_dict }}, re.group.1, "NOTFOUND") != "NOTFOUND" ) {
+set req.http.X-ExternalCMS = "1";
+# There is an issue with load-scripts.php in Wordpress where the ordering of query arguments matter
+# in compressing the JS. By default Magento sorts query arguments. Here we undo the sorting for wp-admin URLs
+if ( req.url.path ~ "/wp-admin" ) {
+set req.url = req.http.Magento-Original-URL;
+}
+}
+}

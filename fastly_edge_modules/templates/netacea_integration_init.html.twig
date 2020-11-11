@@ -1,0 +1,305 @@
+backend F_MitSvc {
+  .between_bytes_timeout = 0.5s;
+  .connect_timeout = 1s;
+  .dynamic = true;
+  .first_byte_timeout = 1s;
+  .host = "mitigations.netacea.net";
+  .max_connections = 200;
+  .port = "443";
+  .share_key = "NETACEAmitigations";
+  .ssl = true;
+  .ssl_cert_hostname = "mitigations.netacea.net";
+  .ssl_check_cert = always;
+  .ssl_sni_hostname = "mitigations.netacea.net";
+  .probe = {
+    .dummy = true;
+    .initial = 5;
+    .request = "HEAD / HTTP/1.1"  "Host: mitigations.netacea.net" "Connection: close";
+    .threshold = 1;
+    .timeout = 2s;
+    .window = 5;
+  }
+}
+
+sub netacea_recv {
+  # Change this value to false to bypass Netacea
+  declare local var.netacea_mitSvc_enabled BOOL;
+  set var.netacea_mitSvc_enabled = true;
+
+  unset req.http.X-Netacea-UserId;
+
+  # Unset headers Netacea Set
+  unset req.http.netacea_processed;
+  if (req.restarts == 0) {
+    unset req.http.netacea_bctype_string;
+    unset req.http.netacea_best_mitigation;
+    unset req.http.netacea_match;
+    unset req.http.netacea_mitigate;
+    unset req.http.netacea_captcha;
+  } else {
+    if (req.http.netacea_best_mitigation == "block") {
+      error 403;
+    }
+  }
+
+  declare local var.netacea_mitSvc_forward BOOL;
+  declare local var.netacea_mitSvc_apiKey STRING;
+  declare local var.netacea_mitSvc_secret STRING;
+
+  set var.netacea_mitSvc_apiKey = "{{ api_key }}";
+  set var.netacea_mitSvc_secret = "{{ secret }}";
+
+  declare local var.netacea_mitSvc_exp STRING;
+  declare local var.netacea_mitSvc_sig STRING;
+  declare local var.netacea_mitSvc_userId STRING;
+  declare local var.netacea_valid_atacookie BOOL;
+  declare local var.netacea_mitigation_code STRING;
+
+  set var.netacea_mitSvc_forward = true;
+
+  if (req.http.Cookie:_mitata) {
+    if (req.http.Cookie:_mitata ~ "(.*)_\/@#\/(.*)_\/@#\/(.*)_\/@#\/((\d)(\d)(\d))") {
+      set var.netacea_valid_atacookie = true;
+      set var.netacea_mitSvc_sig = re.group.1;
+      set var.netacea_mitSvc_exp = re.group.2;
+      set var.netacea_mitSvc_userId = re.group.3;
+      set var.netacea_mitigation_code = re.group.4;
+      set req.http.netacea_match = re.group.5;
+      set req.http.netacea_mitigate = re.group.6;
+      set req.http.netacea_captcha = re.group.7;
+    } else {
+      set var.netacea_valid_atacookie = false;
+    }
+  }
+  if (req.restarts == 0) {
+    if (var.netacea_mitSvc_enabled) {
+      if (var.netacea_valid_atacookie) {
+        set var.netacea_mitSvc_forward = true;
+        if (!time.is_after(now, std.time(var.netacea_mitSvc_exp, now))) {
+          declare local var.netacea_mitSvc_stringValue STRING;
+          declare local var.netacea_mitSvc_HMAC STRING;
+          declare local var.netacea_mitSvc_B64 STRING;
+          set var.netacea_mitSvc_stringValue = var.netacea_mitSvc_exp + "_/@#/" + var.netacea_mitSvc_userId + "_/@#/" + var.netacea_mitigation_code;
+          set var.netacea_mitSvc_HMAC = digest.hmac_sha256(var.netacea_mitSvc_secret, var.netacea_mitSvc_stringValue);
+          if (var.netacea_mitSvc_HMAC ~ "0x(.*)") {
+            set var.netacea_mitSvc_HMAC = re.group.1;
+          }
+          set var.netacea_mitSvc_B64 = digest.base64(var.netacea_mitSvc_HMAC);
+          if (var.netacea_mitSvc_sig == var.netacea_mitSvc_B64) {
+            set var.netacea_mitSvc_forward = false;
+          }
+        }
+      }
+    } else {
+    set var.netacea_mitSvc_forward = false;
+    }
+  } else {
+  set var.netacea_mitSvc_forward = false;
+  }
+  set req.http.mitigation_user_id = var.netacea_mitSvc_userId;
+
+  if (var.netacea_mitSvc_forward) {
+    set req.backend = F_MitSvc;
+    if (req.backend.healthy) {
+      unset req.http.netacea_match;
+      unset req.http.netacea_mitigate;
+      unset req.http.netacea_captcha;
+
+      set req.http.netacea_origin_method = req.method;
+      set req.http.netacea_processed = "1";
+      set req.http.netacea_origin_host = req.http.host;
+      set req.http.X-Netacea-Client-IP = client.ip;
+      set req.http.netacea_origin_url = req.url;
+      if (req.url != "/AtaVerifyCaptcha") {
+        set req.method = "GET";
+        set req.url = "/";
+      }
+      set req.http.X-Netacea-Api-Key = var.netacea_mitSvc_apiKey;
+      return(pass);
+    }
+  }
+}
+
+sub netacea_deliver {
+  call netacea_calculate_best_mitigation;
+
+  if (req.http.netacea_processed == "1") {
+    set req.http.mit_status = resp.status;
+    if (resp.status != 200) {
+      // Unset these because we're not mitigating anything.
+      set req.http.netacea_best_mitigation = "";
+      set req.http.netacea_bctype_string = "";
+    }
+    set req.http.host = req.http.netacea_origin_host;
+    set req.url = req.http.netacea_origin_url;
+    set req.method = req.http.netacea_origin_method;
+    set req.http.netacea_cookies = resp.http.set-cookie;
+    set req.http.netacea_mitata_cookie_value = resp.http.x-netacea-mitata-value;
+    set req.http.netacea_mitata_cookie_expiry = resp.http.x-netacea-mitata-expiry;
+    set req.http.netacea_mitata_captcha_cookie_value = resp.http.x-netacea-mitatacaptcha-value;
+    set req.http.netacea_mitata_captcha_cookie_expiry = resp.http.x-netacea-mitatacaptcha-expiry;
+
+    unset req.http.netacea_mitSvc_forward;
+    unset req.http.netacea_origin_url;
+    unset req.http.netacea_origin_host;
+    unset req.http.netacea_origin_method;
+    unset req.http.x-netacea-api-key;
+    call set_netacea_cookies;
+    if (req.http.netacea_best_mitigation != "captcha") {
+      restart;
+    }
+    set resp.status = 403;
+    set resp.http.content-type = "text/html; charset=UTF-8";
+    return(deliver);
+  }
+  call set_netacea_cookies;
+}
+
+sub set_netacea_cookies {
+  # Builds netacea cookies
+  if (req.http.netacea_cookies) {
+    if (req.http.netacea_mitata_cookie_value && req.http.netacea_mitata_cookie_expiry) {
+      if (req.http.netacea_mitata_cookie_value ~ "(.*)_\/@#\/(.*)_\/@#\/(.*)_\/@#\/((\d)(\d)(\d))") {
+        set req.http.mitigation_user_id = re.group.3;
+      }
+      add resp.http.Set-Cookie= "_mitata=" + req.http.netacea_mitata_cookie_value + "; Max-Age=" + req.http.netacea_mitata_cookie_expiry + "; Path=/;";
+    }
+    if (req.http.netacea_mitata_captcha_cookie_value && req.http.netacea_mitata_captcha_cookie_expiry) {
+      add resp.http.Set-Cookie= "_mitatacaptcha=" + req.http.netacea_mitata_captcha_cookie_value + "; Max-Age=" + req.http.netacea_mitata_captcha_cookie_expiry + "; Path=/;";
+    }
+  }
+}
+
+table Netacea_Match_Dict {
+  "0": "",
+  "1": "ua",
+  "2": "ip",
+  "3": "visitor",
+  "4": "datacenter",
+  "5": "sev"
+}
+
+table Netacea_Mitigate_Dict {
+  "0": "",
+  "1": "blocked",
+  "2": "allow",
+  "3": "hardblocked"
+}
+
+table Netacea_Best_Mitigations_Dict {
+  "0": "",
+  "1": "block",
+  "2": "allow",
+  "3": "block"
+}
+
+table Netacea_Best_Mitigations_Captcha_Dict {
+  "1": "captcha",
+  "2": "",
+  "3": "captcha",
+  "4": "",
+  "5": "captcha"
+}
+
+table Netacea_Captcha_Dict {
+  "0": "",
+  "1": "captcha_serve",
+  "2": "captcha_pass",
+  "3": "captcha_fail",
+  "4": "captcha_cookiepass",
+  "5": "captcha_cookiefail",
+}
+
+sub netacea_calculate_best_mitigation {
+  if (!req.http.netacea_bctype_string) {
+    declare local var.netacea_match STRING;
+    declare local var.netacea_mitigate STRING;
+    declare local var.netacea_captcha STRING;
+    declare local var.netacea_match_string STRING;
+    declare local var.netacea_mitigate_string STRING;
+    declare local var.netacea_captcha_string STRING;
+    declare local var.netacea_captcha_mitigate_string STRING;
+
+    declare local var.netacea_best_mitigation STRING;
+    declare local var.netacea_bctype_string STRING;
+
+    if (resp.http.x-netacea-match) { # If netacea mitigation service returns a match, use this
+      set var.netacea_match = resp.http.x-netacea-match;
+    } elseif (req.http.netacea_match) { # If cookie has a match, use this
+      set var.netacea_match = req.http.netacea_match;
+    } else {
+      set var.netacea_match = "0";
+    }
+
+    if (resp.http.x-netacea-mitigate) { # If netacea mitigation service returns a mitigate, use this
+      set var.netacea_mitigate = resp.http.x-netacea-mitigate;
+    } elseif (req.http.netacea_mitigate) { # If cookie has a mitigate, use this
+      set var.netacea_mitigate = req.http.netacea_mitigate;
+    } else {
+      set var.netacea_mitigate = "0";
+    }
+
+    if (resp.http.x-netacea-captcha) { # If netacea mitigation service returns a captcha, use this
+      set var.netacea_captcha = resp.http.x-netacea-captcha;
+    } elseif (req.http.netacea_captcha) { # If cookie has a captcha, use this
+      set var.netacea_captcha = req.http.netacea_captcha;
+    } else {
+      set var.netacea_captcha = "0";
+    }
+
+
+    # IP, UA, Visitor, Datacentre etc
+    if (var.netacea_match) {
+      set var.netacea_match_string = table.lookup(Netacea_Match_Dict, var.netacea_match, "unknown");
+
+      if (var.netacea_match_string != "") {
+        set var.netacea_bctype_string = var.netacea_match_string + "_";
+      }
+    }
+
+    # BLOCK, TRUST, HARDBLOCK etc
+    if (var.netacea_mitigate) {
+      set var.netacea_mitigate_string = table.lookup(Netacea_Mitigate_Dict, var.netacea_mitigate, "unknown");
+
+      if (var.netacea_mitigate_string != "") {
+        set var.netacea_bctype_string = var.netacea_bctype_string + var.netacea_mitigate_string;
+      }
+
+      set var.netacea_best_mitigation = table.lookup(Netacea_Best_Mitigations_Dict, var.netacea_mitigate, "no-best-mitigation");
+      if (var.netacea_best_mitigation == "no-best-mitigation") {
+        set var.netacea_best_mitigation = "";
+      }
+    }
+
+    if (var.netacea_captcha) {
+      # 2 and 3 can only be set on /AtaVerifyCaptcha requests
+      # If it's not 2 or 3 then set them to the cookie variant
+      if (req.url != "/AtaVerifyCaptcha") {
+        if (var.netacea_captcha == "2") {
+          set var.netacea_captcha = "4";
+        } elseif (var.netacea_captcha == "3") {
+          set var.netacea_captcha = "5";
+        }
+      }
+      set var.netacea_captcha_string = table.lookup(Netacea_Captcha_Dict, var.netacea_captcha, "unknown");
+
+      if (var.netacea_captcha_string != "") {
+        set var.netacea_bctype_string = var.netacea_bctype_string + "," + var.netacea_captcha_string;
+      }
+      set var.netacea_captcha_mitigate_string = table.lookup(Netacea_Best_Mitigations_Captcha_Dict, var.netacea_captcha, "no-best-captcha-mitigation");
+      set req.http.captcha_mitigate_thing = var.netacea_captcha_mitigate_string;
+      if (var.netacea_captcha_mitigate_string != "no-best-captcha-mitigation") {
+        set var.netacea_best_mitigation = var.netacea_captcha_mitigate_string;
+      }
+    }
+
+    set req.http.netacea_bctype_string = var.netacea_bctype_string;
+    set req.http.netacea_best_mitigation = var.netacea_best_mitigation;
+
+    # Unset x-netacea headers
+    unset resp.http.x-netacea-match;
+    unset resp.http.x-netacea-mitigate;
+    unset resp.http.x-netacea-captcha;
+
+  }
+}
