@@ -20,9 +20,12 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class Api {
 
-  const FASTLY_MAX_HEADER_KEY_SIZE = 256;
-
   use StringTranslationTrait;
+
+  /**
+   * Fastly max header key size.
+   */
+  const FASTLY_MAX_HEADER_KEY_SIZE = 256;
 
   /**
    * Fastly API Key.
