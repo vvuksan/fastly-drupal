@@ -23,6 +23,11 @@ class Api {
   use StringTranslationTrait;
 
   /**
+   * Fastly max header key size.
+   */
+  const FASTLY_MAX_HEADER_KEY_SIZE = 256;
+
+  /**
    * Fastly API Key.
    *
    * @var string
@@ -388,38 +393,45 @@ class Api {
   public function purgeKeys(array $keys = []) {
     if ($this->state->getPurgeCredentialsState()) {
       try {
-        $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keys)]);
-        $result = $this->json($response);
-
-        if (!empty($result)) {
-
-          $message = $this->t('Successfully purged following key(s) *@keys* on @base_url. Purge Method: @purge_method', [
-            '@keys' => implode(" ", $keys),
-            '@base_url' => $this->baseUrl,
-            '@purge_method' => $this->purgeMethod,
-          ]);
-          $this->webhook->sendWebHook($message, 'purge_keys');
-
-          if ($this->purgeLogging) {
-            $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
-              '%key' => implode(" ", $keys),
+        $num = count($keys);
+        if ($num >= self::FASTLY_MAX_HEADER_KEY_SIZE ){
+          $parts = $num / self::FASTLY_MAX_HEADER_KEY_SIZE;
+          $additional = ($parts > (int)$parts) ? 1 : 0;
+          $parts = (int)$parts + (int)$additional;
+          $chunks = ceil($num/$parts);
+          $collection = array_chunk($keys, $chunks);
+        }else{
+          $collection = [$keys];
+        }
+        foreach($collection as $keysChunk){
+          $response = $this->query('service/' . $this->serviceId . '/purge', [], 'POST', ["Surrogate-Key" => implode(" ", $keysChunk)]);
+          $result = $this->json($response);
+          if (!empty($result)) {
+            $message = $this->t('Successfully purged following key(s) *@keys* on @base_url. Purge Method: @purge_method', [
+              '@keys' => implode(" ", $keysChunk),
+              '@base_url' => $this->baseUrl,
+              '@purge_method' => $this->purgeMethod,
+            ]);
+            $this->webhook->sendWebHook($message, 'purge_keys');
+            if ($this->purgeLogging) {
+              $this->logger->info('Successfully purged following key(s) %key. Purge Method: %purge_method.', [
+                '%key' => implode(" ", $keysChunk),
+                '%purge_method' => $this->purgeMethod,
+              ]);
+            }
+            return TRUE;
+          }
+          else {
+            $message = $this->t('Unable to purge following key(s) * @keys. Purge Method: @purge_method', [
+              '@keys' => implode(" ", $keysChunk),
+              '@purge_method' => $this->purgeMethod,
+            ]);
+            $this->webhook->sendWebHook($message, 'purge_keys');
+            $this->logger->critical('Unable to purge following key(s) %key from Fastly. Purge Method: %purge_method.', [
+              '%key' => implode(" ", $keysChunk),
               '%purge_method' => $this->purgeMethod,
             ]);
           }
-          return TRUE;
-        }
-        else {
-
-          $message = $this->t('Unable to purge following key(s) * @keys. Purge Method: @purge_method', [
-            '@keys' => implode(" ", $keys),
-            '@purge_method' => $this->purgeMethod,
-          ]);
-          $this->webhook->sendWebHook($message, 'purge_keys');
-
-          $this->logger->critical('Unable to purge following key(s) %key from Fastly. Purge Method: %purge_method.', [
-            '%key' => implode(" ", $keys),
-            '%purge_method' => $this->purgeMethod,
-          ]);
         }
       }
       catch (RequestException $e) {
