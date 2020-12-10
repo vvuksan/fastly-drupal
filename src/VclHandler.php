@@ -3,6 +3,7 @@
 namespace Drupal\fastly;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\fastly\Services\Webhook;
@@ -160,6 +161,13 @@ class VclHandler {
   protected $messenger;
 
   /**
+   * Module Handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -176,8 +184,10 @@ class VclHandler {
    *   The request stack object.
    * @param \Drupal\Core\Messenger\Messenger $messenger
    *   Messenger.
+   * @param ModuleHandlerInterface $module_handler
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger, ModuleHandlerInterface $module_handler) {
+    $this->moduleHandler = $module_handler;
     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
     $data = [
       'vcl' => [
@@ -214,6 +224,8 @@ class VclHandler {
         ],
       ],
     ];
+    // Give other modules ability to dlter data.
+    $this->moduleHandler->alter('vcl_handler_data', $data);
 
     $this->api = $api;
     $this->webhook = $webhook;
