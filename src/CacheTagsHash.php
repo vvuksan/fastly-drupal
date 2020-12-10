@@ -85,8 +85,9 @@ class CacheTagsHash implements CacheTagsHashInterface {
     if (!$siteId) {
       // Create random 8 character string and save it to config.
       $random = new Random();
-      $siteId = $random->string();
-      if($this->configFactory->get('fastly.settings')){
+      $siteId = $random->name();
+      $siteId = mb_strtolower($siteId);
+      if ($this->configFactory->get('fastly.settings')) {
         $config = $this->configFactory->getEditable('fastly.settings');
         $config->set('site_id', $siteId)
           ->save(TRUE);

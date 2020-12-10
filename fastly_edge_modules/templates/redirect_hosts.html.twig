@@ -1,0 +1,9 @@
+{% for rule in rules %}
+if (req.http.host == "{{ rule.source }}") {
+  set req.http.host = "{{ rule.destination }}";
+  {% if rule.ignore_path %}
+  set req.url = "/";
+  {% endif %}
+  error 801;
+}
+{% endfor %}

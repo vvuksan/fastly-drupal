@@ -1,0 +1,10 @@
+if (req.http.Origin && !resp.http.Access-Control-Allow-Origin && !resp.http.Access-Control-Allow-Methods) {
+{% if origin == "anyone" %}
+  set resp.http.Access-Control-Allow-Origin = "*";
+{% elseif origin == "regex-match" %}
+  if ( req.http.Origin ~ "^https?://{{ cors_allowed_origins_regex }}" ) {
+    set resp.http.Access-Control-Allow-Origin = req.http.origin;
+  }
+{% endif %}
+  set resp.http.Access-Control-Allow-Methods = "{{ cors_allowed_methods }}";
+}

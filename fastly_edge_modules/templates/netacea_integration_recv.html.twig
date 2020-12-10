@@ -1,0 +1,5 @@
+# Change the shielding condition to account for restarts due to bot detection
+set var.fastly_req_do_shield = (req.restarts <= 1);
+
+# Invoke Netacea Bot Detection checking
+call netacea_recv;

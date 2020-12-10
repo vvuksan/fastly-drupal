@@ -1,0 +1,7 @@
+{% for rule in rules %}
+  {% if rule.mode in ['both','fastly']  %}
+    if (req.url ~ "{{ rule.pattern }}") {
+      set req.http.x-pass = "1";
+    }
+  {% endif %}
+{% endfor %}

@@ -1,0 +1,9 @@
+{% for rule in rules %}
+  {% if rule.mode in ['both','browser']  %}
+    if (req.url ~ "{{ rule.pattern }}" && fastly.ff.visits_this_service == 0 ) {
+      set resp.http.Cache-Control = "no-cache, private";
+      unset resp.http.Expires;
+      unset resp.http.Pragma;
+    }
+  {% endif %}
+{% endfor %}
