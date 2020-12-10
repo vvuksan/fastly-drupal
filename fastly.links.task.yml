@@ -1,0 +1,9 @@
+fastly.settings:
+  route_name: fastly.settings
+  base_route: fastly.settings
+  title: 'General'
+fastly.webhook:
+  route_name: fastly.settings.webhook
+  base_route: fastly.settings
+  title: 'Webhook'
+  weight: 500

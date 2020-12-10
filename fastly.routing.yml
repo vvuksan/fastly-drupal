@@ -5,3 +5,10 @@ fastly.settings:
     _title: 'Fastly'
   requirements:
     _permission: 'administer fastly'
+fastly.settings.webhook:
+  path: '/admin/config/services/fastly/webhook'
+  defaults:
+    _form: '\Drupal\fastly\Form\WebhookForm'
+    _title: 'Webhook'
+  requirements:
+    _permission: 'administer fastly'

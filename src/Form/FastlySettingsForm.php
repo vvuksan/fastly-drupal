@@ -505,53 +505,6 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ],
     ];
 
-    $form['integrations'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Integrations'),
-      '#open' => TRUE,
-    ];
-
-    $form['integrations']['webhook'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Webhook'),
-      '#open' => TRUE,
-    ];
-
-    $form['integrations']['webhook']['webhook_enabled'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable Webhook'),
-      '#description' => $this->t("Enables or disabled webhook"),
-      '#default_value' => $config->get('webhook_enabled'),
-    ];
-
-    $webhook_url = count($form_state->getValues()) ? $form_state->getValue('webhook_url') : $config->get('webhook_url');
-
-    $form['integrations']['webhook']['webhook_url'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Webhook URL'),
-      '#default_value' => $webhook_url,
-      '#required' => FALSE,
-      '#description' => $this->t("Incoming WebHook URL"),
-      '#states' => [
-        'visible' => [
-          ':input[name="webhook_enabled"]' => ['checked' => TRUE],
-        ],
-        'required' => [
-          ':input[name="webhook_enabled"]' => ['checked' => TRUE],
-        ],
-      ],
-    ];
-
-    $form['integrations']['webhook']['webhook_notifications'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Send notifications for this events'),
-      '#description' => $this->t('Chose which notification to push to your webhook'),
-      '#options' => $this->getEventsNotificationOptions(),
-      '#default_value' => $config->get('webhook_notifications'),
-      '#multiple' => TRUE,
-      '#size' => 5,
-    ];
-
     return parent::buildForm($form, $form_state);
   }
 
@@ -594,19 +547,6 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
   }
 
   /**
-   * Gets options to be used as webhook config options.
-   */
-  public function getEventsNotificationOptions() {
-    return [
-      'purge_keys'  => " " . $this->t('Purge by keys') . " ",
-      'purge_all'   => " " . $this->t('Purge all') . " ",
-      'vcl_update'  => " " . $this->t('VCL update') . " ",
-      'config_save'  => " " . $this->t('Config save') . " ",
-      'maintenance_page' => " " . $this->t('Maintenance page upload') . " ",
-    ];
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
@@ -617,7 +557,6 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
-      ->set('webhook_url', $form_state->getValue('webhook_url'))
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
       ->set('purge_logging', $form_state->getValue('purge_logging'))
@@ -625,9 +564,7 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
       ->set('stale_if_error', $form_state->getValue('stale_if_error'))
       ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
-      ->set('webhook_enabled', $form_state->getValue('webhook_enabled'))
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
-      ->set('webhook_notifications', $form_state->getValue('webhook_notifications'))
       ->set('site_id', $form_state->getValue('site_id'))
       ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
       ->set('image_optimization', $form_state->getValue('image_optimization'))
