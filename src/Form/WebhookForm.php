@@ -7,6 +7,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Services\Webhook;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class FastlySettingsForm Defines a form to configure module settings.
@@ -14,27 +15,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\fastly\Form
  */
 class WebhookForm extends ConfigFormBase {
-
-  /**
-   * The Fastly API.
-   *
-   * @var \Drupal\fastly\Api
-   */
-  protected $api;
-
-  /**
-   * The Fastly VclHandler.
-   *
-   * @var \Drupal\fastly\VclHandler
-   */
-  protected $vclHandler;
-
-  /**
-   * Tracks validity of credentials associated with Fastly Api.
-   *
-   * @var \Drupal\fastly\State
-   */
-  protected $state;
 
   /**
    * The Fastly webhook service.
@@ -53,9 +33,10 @@ class WebhookForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Webhook $webhook) {
+  public function __construct(ConfigFactoryInterface $config_factory, Webhook $webhook, RequestStack $request_stack) {
     parent::__construct($config_factory);
     $this->webhook = $webhook;
+    $this->baseUrl = $request_stack->getCurrentRequest()->getHost();
   }
 
   /**
@@ -64,7 +45,8 @@ class WebhookForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('fastly.services.webhook')
+      $container->get('fastly.services.webhook'),
+      $container->get('request_stack')
     );
   }
 
