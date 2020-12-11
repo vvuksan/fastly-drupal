@@ -7,6 +7,11 @@ fastly.edge_modules:
   base_route: fastly.settings
   title: 'Edge Modules'
   weight: 100
+fastly.image_optimizer:
+  route_name: fastly.settings.image_optimizer
+  base_route: fastly.settings
+  title: 'Image Optimizer'
+  weight: 400
 fastly.webhook:
   route_name: fastly.settings.webhook
   base_route: fastly.settings
