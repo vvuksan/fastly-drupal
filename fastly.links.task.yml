@@ -7,6 +7,11 @@ fastly.edge_modules:
   base_route: fastly.settings
   title: 'Edge Modules'
   weight: 100
+fastly.stale_content_options:
+  route_name: fastly.settings.stale_content_options
+  base_route: fastly.settings
+  title: 'Stale Content Options'
+  weight: 300
 fastly.webhook:
   route_name: fastly.settings.webhook
   base_route: fastly.settings
