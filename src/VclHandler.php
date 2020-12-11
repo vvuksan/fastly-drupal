@@ -1104,46 +1104,47 @@ class VclHandler {
     try {
       $this->cloneLastActiveVersion();
       //Check if optimization on fastly is turned on and if vcl exists
-      if($this->checkIfVclExists(self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS)){
-        $this->updateImageOptimization($params);
+      $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
+      $data['type'] = 'recv';
+      // Set vcl for image optimizer.
+      if($this->checkIfVclExists(self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS)) {
+        $data['name'] = self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS;
+        $requests = $this->prepareUpdateVcl($data);
       }else{
-        $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
-        $data['type'] = 'recv';
-        // Set vcl for image optimizer.
         $requests = $this->prepareSingleVcl($data, self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS);
-        $request = reset($requests);
-        $response = $this->vclRequestWrapper($request['url'], [], $request['data'], $request['type']);
-        if ($response->getStatusCode() != "200") {
-          $this->messenger->addError($response->getBody());
-          return FALSE;
-        }
-        // Set default settings.
-        $id = $this->serviceId . '-' . $this->lastClonedVersion . '-imageopto';
-        # Set parameters.
-        $imageParams = [
-          'data' => [
-            'id'            => $id,
-            'type'          => 'io_settings',
-            'attributes'    => $params
-          ]
-        ];
-        $params['body'] = json_encode($imageParams);
+      }
+      $request = reset($requests);
+      $response = $this->vclRequestWrapper($request['url'], [], $request['data'], $request['type']);
+      if ($response->getStatusCode() != "200") {
+        $this->messenger->addError($response->getBody());
+        return FALSE;
+      }
+      // Set default settings.
+      $id = $this->serviceId . '-' . $this->lastClonedVersion . '-imageopto';
+      # Set parameters.
+      $imageParams = [
+        'data' => [
+          'id'            => $id,
+          'type'          => 'io_settings',
+          'attributes'    => $params
+        ]
+      ];
+      $params['body'] = json_encode($imageParams);
 
-        $this->configureImageOptimizationDefaultConfigOptions(
-          $params,
-          $this->lastClonedVersion
-        );
+      $this->configureImageOptimizationDefaultConfigOptions(
+        $params,
+        $this->lastClonedVersion
+      );
 
-        unset($responses);
+      unset($responses);
 
-        // Activate Version.
-        $this->prepareActivateVersion();
-        $request = $this->prepareActivateVersion();
-        $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
-        if ($response->getStatusCode() != "200") {
-          $this->messenger->addError($response->getBody());
-          return FALSE;
-        }
+      // Activate Version.
+      $this->prepareActivateVersion();
+      $request = $this->prepareActivateVersion();
+      $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+      if ($response->getStatusCode() != "200") {
+        $this->messenger->addError($response->getBody());
+        return FALSE;
       }
     } catch (\Exception $e) {
       $this->logger->error($e->getMessage());
