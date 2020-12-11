@@ -12,6 +12,11 @@ fastly.stale_content_options:
   base_route: fastly.settings
   title: 'Stale Content Options'
   weight: 300
+fastly.image_optimizer:
+  route_name: fastly.settings.image_optimizer
+  base_route: fastly.settings
+  title: 'Image Optimizer'
+  weight: 400
 fastly.webhook:
   route_name: fastly.settings.webhook
   base_route: fastly.settings

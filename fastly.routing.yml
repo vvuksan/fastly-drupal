@@ -33,3 +33,10 @@ fastly.settings.stale_content_options:
     _title: 'Stale Content Options'
   requirements:
     _permission: 'administer fastly'
+fastly.settings.image_optimizer:
+  path: '/admin/config/services/fastly/image-optimizer'
+  defaults:
+    _form: '\Drupal\fastly\Form\ImageOptimizerForm'
+    _title: 'Image Optimizer'
+  requirements:
+    _permission: 'administer fastly'
