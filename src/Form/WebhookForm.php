@@ -10,7 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Class FastlySettingsForm Defines a form to configure module settings.
+ * Class WebhookForm.
  *
  * @package Drupal\fastly\Form
  */

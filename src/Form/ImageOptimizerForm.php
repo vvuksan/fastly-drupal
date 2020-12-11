@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * Class FastlySettingsForm Defines a form to configure module settings.
+ * Class ImageOptimizerForm.
  *
  * @package Drupal\fastly\Form
  */
@@ -36,13 +36,6 @@ class ImageOptimizerForm extends ConfigFormBase {
   protected $vclHandler;
 
   /**
-   * Tracks validity of credentials associated with Fastly Api.
-   *
-   * @var \Drupal\fastly\State
-   */
-  protected $state;
-
-  /**
    * The Fastly webhook service.
    *
    * @var \Drupal\fastly\Services\Webhook
@@ -57,20 +50,7 @@ class ImageOptimizerForm extends ConfigFormBase {
   protected $baseUrl;
 
   /**
-   * Constructs a FastlySettingsForm object.
-   *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
-   *   The factory for configuration objects.
-   * @param \Drupal\fastly\Api $api
-   *   Fastly API for Drupal.
-   * @param \Drupal\fastly\State $state
-   *   Fastly state service for Drupal.
-   * @param \Drupal\fastly\VclHandler $vclHandler
-   *   Vcl handler.
-   * @param \Drupal\fastly\Services\Webhook $webhook
-   *   The Fastly webhook service.
-   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
-   *   The request stack object.
+   * {@inheritdoc}
    */
   public function __construct(ConfigFactoryInterface $config_factory, Api $api, VclHandler $vclHandler, Webhook $webhook, RequestStack $requestStack) {
     parent::__construct($config_factory);
