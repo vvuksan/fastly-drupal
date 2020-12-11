@@ -26,6 +26,13 @@ fastly.settings.webhook:
     _title: 'Webhook'
   requirements:
     _permission: 'administer fastly'
+fastly.settings.stale_content_options:
+  path: '/admin/config/services/fastly/stale-content-options'
+  defaults:
+    _form: '\Drupal\fastly\Form\StaleContentOptionsForm'
+    _title: 'Stale Content Options'
+  requirements:
+    _permission: 'administer fastly'
 fastly.settings.image_optimizer:
   path: '/admin/config/services/fastly/image-optimizer'
   defaults:

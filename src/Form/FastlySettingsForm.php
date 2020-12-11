@@ -332,55 +332,6 @@ class FastlySettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('purge_logging'),
     ];
 
-    $form['stale_content'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Stale content options'),
-      '#open' => TRUE,
-    ];
-
-    $form['stale_content']['stale_while_revalidate'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Stale while revalidate'),
-      '#description' => $this->t("Activate the stale-while-revalidate tag to improve experience for users attempting to access expired content."),
-      '#default_value' => $config->get('stale_while_revalidate'),
-    ];
-
-    $form['stale_content']['stale_while_revalidate_value'] = [
-      '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
-      '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
-      '#states' => [
-        'visible' => [
-          ':input[name="stale_while_revalidate"]' => ['checked' => TRUE],
-        ],
-        'required' => [
-          ':input[name="stale_while_revalidate"]' => ['checked' => FALSE],
-        ],
-      ],
-    ];
-
-    $form['stale_content']['stale_if_error'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Stale if error'),
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable.'),
-      '#default_value' => $config->get('stale_if_error'),
-    ];
-
-    $form['stale_content']['stale_if_error_value'] = [
-      '#type' => 'number',
-      '#description' => $this->t('Number of seconds to show stale content if the origin server becomes unavailable/returns errors. More details <a
-href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
-      '#default_value' => $config->get('stale_if_error_value') ?: 604800,
-      '#states' => [
-        'visible' => [
-          ':input[name="stale_if_error"]' => ['checked' => TRUE],
-        ],
-        'required' => [
-          ':input[name="stale_if_error"]' => ['checked' => FALSE],
-        ],
-      ],
-    ];
-
     return parent::buildForm($form, $form_state);
   }
 
@@ -424,10 +375,6 @@ href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://
       ->set('service_id', $form_state->getValue('service_id'))
       ->set('purge_method', $form_state->getValue('purge_method'))
       ->set('purge_logging', $form_state->getValue('purge_logging'))
-      ->set('stale_while_revalidate', $form_state->getValue('stale_while_revalidate'))
-      ->set('stale_while_revalidate_value', $form_state->getValue('stale_while_revalidate_value'))
-      ->set('stale_if_error', $form_state->getValue('stale_if_error'))
-      ->set('stale_if_error_value', $form_state->getValue('stale_if_error_value'))
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('site_id', $form_state->getValue('site_id'))
       ->set('cache_tag_hash_length', $form_state->getValue('cache_tag_hash_length'))
