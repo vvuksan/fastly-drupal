@@ -6,7 +6,7 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\fastly\Form\FastlySettingsForm;
+use Drupal\fastly\Form\PurgeOptionsForm;
 use Drupal\fastly\Services\Webhook;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
@@ -126,7 +126,7 @@ class Api {
     $config = $config_factory->get('fastly.settings');
     $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
     $this->serviceId = getenv('FASTLY_API_SERVICE') ?: $config->get('service_id');
-    $this->purgeMethod = $config->get('purge_method');
+    $this->purgeMethod = $config->get('purge_method') ?: PurgeOptionsForm::FASTLY_INSTANT_PURGE;
     $this->purgeLogging = $config->get('purge_logging');
     $this->connectTimeout = $connectTimeout;
     $this->host = $host;
@@ -469,7 +469,7 @@ class Api {
 
         // If the module is configured to use soft purging, we need to add
         // the appropriate header.
-        if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
+        if ($this->purgeMethod == PurgeOptionsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
       }
@@ -524,7 +524,7 @@ class Api {
 
         // If the module is configured to use soft purging, we need to add
         // the appropriate header.
-        if ($this->purgeMethod == FastlySettingsForm::FASTLY_SOFT_PURGE) {
+        if ($this->purgeMethod == PurgeOptionsForm::FASTLY_SOFT_PURGE) {
           $data['headers']['Fastly-Soft-Purge'] = 1;
         }
         $data['headers']['http_errors'] = TRUE;
