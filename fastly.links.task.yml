@@ -17,6 +17,11 @@ fastly.image_optimizer:
   base_route: fastly.settings
   title: 'Image Optimizer'
   weight: 400
+fastly.purge_options:
+  route_name: fastly.settings.purge_options
+  base_route: fastly.settings
+  title: 'Purge Options'
+  weight: 450
 fastly.webhook:
   route_name: fastly.settings.webhook
   base_route: fastly.settings

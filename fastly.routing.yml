@@ -40,3 +40,10 @@ fastly.settings.image_optimizer:
     _title: 'Image Optimizer'
   requirements:
     _permission: 'administer fastly'
+fastly.settings.purge_options:
+  path: '/admin/config/services/fastly/purge-options'
+  defaults:
+    _form: '\Drupal\fastly\Form\PurgeOptionsForm'
+    _title: 'Purge Options'
+  requirements:
+    _permission: 'administer fastly'
