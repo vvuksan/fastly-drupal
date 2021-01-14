@@ -196,7 +196,7 @@ class FastlySettingsForm extends ConfigFormBase {
     $form['vcl']['vcl_snippets'] = [
       '#type' => 'button',
       '#title' => 'Upload latest Fastly VCL snippets',
-      '#value' => $this->t('Upload latest Fastly VCL snippets'),
+      '#value' => $this->t('Upload latest Fastly VCL'),
       '#ajax' => [
         'callback' => [$this, 'uploadVcls'],
         'event' => 'click-custom',
@@ -211,17 +211,17 @@ class FastlySettingsForm extends ConfigFormBase {
 
     $form['vcl']['activate'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Activate version on vcl upload'),
+      '#title' => $this->t('Activate version on VCL upload'),
       '#default_value' => 1,
       '#attributes' => ['checked' => 'checked'],
     ];
 
     $form['vcl']['error_maintenance'] = [
       '#type' => 'textarea',
-      '#title' => $this->t('Error/Maintenance'),
+      '#title' => $this->t('Error/Maintenance Page'),
       '#default_value' => $config->get('error_maintenance'),
       '#required' => FALSE,
-      '#description' => $this->t('Custom error / maintenance page content'),
+      '#description' => $this->t('Custom error / maintenance page content. "Pretty" page presented to the end user on HTTP 500+ errors.'),
       '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];

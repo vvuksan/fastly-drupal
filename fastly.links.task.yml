@@ -7,16 +7,16 @@ fastly.edge_modules:
   base_route: fastly.settings
   title: 'Edge Modules'
   weight: 100
+fastly.image_optimizer:
+  route_name: fastly.settings.image_optimizer
+  base_route: fastly.settings
+  title: 'Image Optimizer'
+  weight: 200
 fastly.stale_content_options:
   route_name: fastly.settings.stale_content_options
   base_route: fastly.settings
   title: 'Stale Content Options'
   weight: 300
-fastly.image_optimizer:
-  route_name: fastly.settings.image_optimizer
-  base_route: fastly.settings
-  title: 'Image Optimizer'
-  weight: 400
 fastly.purge_options:
   route_name: fastly.settings.purge_options
   base_route: fastly.settings
@@ -25,5 +25,5 @@ fastly.purge_options:
 fastly.webhook:
   route_name: fastly.settings.webhook
   base_route: fastly.settings
-  title: 'Webhook'
+  title: 'Webhooks'
   weight: 500

@@ -73,8 +73,8 @@ class WebhookForm extends ConfigFormBase {
 
     $form['webhook']['webhook_enabled'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Enable Webhook'),
-      '#description' => $this->t("Enables or disabled webhook"),
+      '#title' => $this->t('Enable Webhooks'),
+      '#description' => $this->t("Enables or disables webhook"),
       '#default_value' => $config->get('webhook_enabled'),
     ];
 
@@ -97,7 +97,7 @@ class WebhookForm extends ConfigFormBase {
     $form['webhook']['webhook_notifications'] = [
       '#type' => 'select',
       '#title' => $this->t('Send notifications for this events'),
-      '#description' => $this->t('Chose which notification to push to your webhook'),
+      '#description' => $this->t('Choose which notifications to push to your webhook'),
       '#options' => [
         'purge_keys'  => $this->t('Purge by keys'),
         'purge_all'   => $this->t('Purge all'),

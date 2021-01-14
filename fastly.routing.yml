@@ -23,7 +23,7 @@ fastly.settings.webhook:
   path: '/admin/config/services/fastly/webhook'
   defaults:
     _form: '\Drupal\fastly\Form\WebhookForm'
-    _title: 'Webhook'
+    _title: 'Webhooks'
   requirements:
     _permission: 'administer fastly'
 fastly.settings.stale_content_options:
