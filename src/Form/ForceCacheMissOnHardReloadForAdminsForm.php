@@ -64,26 +64,31 @@ class ForceCacheMissOnHardReloadForAdminsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state)
   {
-    $config = $this->config('fastly.edge_modules.force_cache_miss_on_hard_reload_for_admins');
-    $form['acl'] = [
-      '#title' => $this->t('ACL'),
-      '#description' => $this->t('ACL that contains IPs of users allowing to force cache misses'),
-      '#type' => 'select',
-      '#options'=> $this->acls,
-      "#default_value" => $config->get('acl'),
-      '#required' => TRUE,
-    ];
+    if ($this->acls) {
+      $config = $this->config('fastly.edge_modules.force_cache_miss_on_hard_reload_for_admins');
+      $form['acl'] = [
+        '#title' => $this->t('ACL'),
+        '#description' => $this->t('ACL that contains IPs of users allowing to force cache misses'),
+        '#type' => 'select',
+        '#options' => $this->acls,
+        "#default_value" => $config->get('acl'),
+        '#required' => TRUE,
+      ];
 
-    $form['disable'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Disable'),
-    ];
+      $form['disable'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Disable'),
+      ];
 
-    $form['submit'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Upload'),
-    ];
-
+      $form['submit'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Upload'),
+      ];
+    } else {
+      $form['error'] = [
+        '#markup' => $this->t('Please add ACL to the configuration on Fastly to be able to change settings.')
+      ];
+    }
     return $form;
   }
 
