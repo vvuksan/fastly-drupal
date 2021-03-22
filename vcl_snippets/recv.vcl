@@ -38,7 +38,7 @@
     #    cookie string.
     set req.http.Cookie = ";" req.http.Cookie;
     set req.http.Cookie = regsuball(req.http.Cookie, "; +", ";");
-    set req.http.Cookie = regsuball(req.http.Cookie, ";(SimpleSAMLSessionID|SimpleSAMLAuthToken|SESS[a-z0-9]+|SSESS[a-z0-9]+|NO_CACHE)=", "; \1=");
+    set req.http.Cookie = regsuball(req.http.Cookie, ";(SimpleSAMLSessionID|SimpleSAMLAuthToken|S?SESS[a-z0-9]+|NO_CACHE=", "; \1=");
     set req.http.Cookie = regsuball(req.http.Cookie, ";[^ ][^;]*", "");
     set req.http.Cookie = regsuball(req.http.Cookie, "^[; ]+|[; ]+$", "");
 
