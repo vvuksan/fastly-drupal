@@ -221,7 +221,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Error/Maintenance Page'),
       '#default_value' => $config->get('error_maintenance'),
       '#required' => FALSE,
-      '#description' => $this->t('Custom error / maintenance page content. "Pretty" page presented to the end user on HTTP 500+ errors.'),
+      '#description' => $this->t('Custom error / maintenance HTML page content. "Pretty" page presented to the end user on HTTP 500+ errors. Max size 128kB'),
       '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];
