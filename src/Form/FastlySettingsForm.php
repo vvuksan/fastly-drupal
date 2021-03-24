@@ -322,6 +322,13 @@ class FastlySettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
+    $formApiKey = $form_state->getValue('api_key');
+    $configApiKey = $this->config('fastly.settings')->get('api_key');
+    $formServiceId = $form_state->getValue('service_id');
+    $configServiceId = $this->config('fastly.settings')->get('service_id');
+    if($formApiKey && $formServiceId  && (($formApiKey != $configApiKey) || ($formServiceId != $configServiceId))){
+      $this->messenger()->addStatus('Note: Click on the "Upload latest Fastly VCL" button to upload Fastly VCL snippets that improve cacheability of the site.');
+    }
 
     $this->config('fastly.settings')
       ->set('api_key', $form_state->getValue('api_key'))
