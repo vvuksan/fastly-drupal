@@ -1,0 +1,6 @@
+services:
+  fastlypurger.config_import_validator:
+    class: Drupal\fastlypurger\EventSubscriber\ConfigImportValidator
+    arguments: [ '@logger.channel.fastly', '@config.factory', '@config.import_transformer', '@config.storage.sync', '@fastly.api', '@config.manager', '@fastly.state' ]
+    tags:
+      - { name: event_subscriber }
