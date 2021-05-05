@@ -74,11 +74,13 @@ if (!empty($_SERVER['HTTP_FASTLY_SSL'])) {
 FASTLY API TOKEN
 ________________
 You can change it in settings form or you can use environment variable FASTLY_API_TOKEN to set it also.
+If you set this key via environment variable you will hide this entry on the config form.
 
 FASTLY SERVICE ID
 _________________
 A Service represents the configuration for your website to be served through Fastly. You can override this with
-FASTLY_API_SERVICE environment variable
+FASTLY_API_SERVICE environment variable. If you set this key via environment variable you will hide this entry on the
+config form.
 
 FASTLY SITE ID
 ______________
