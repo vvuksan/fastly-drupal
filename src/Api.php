@@ -49,6 +49,20 @@ class Api {
   protected $baseUrl;
 
   /**
+   * Host.
+   *
+   * @var string
+   */
+  protected $host;
+
+  /**
+   * Guzzle Http Client.
+   *
+   * @var |GuzzleHttp\ClientInterface
+   */
+  protected $httpClient;
+
+  /**
    * The Fastly logger channel.
    *
    * @var \Psr\Log\LoggerInterface
@@ -96,6 +110,13 @@ class Api {
    * @var \Drupal\Core\Messenger\Messenger
    */
   protected $messenger;
+
+  /**
+   * Purge logging.
+   *
+   * @var bool
+   */
+  protected $purgeLogging;
 
   /**
    * Constructs a \Drupal\fastly\Api object.
