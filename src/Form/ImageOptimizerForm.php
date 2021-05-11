@@ -92,16 +92,17 @@ class ImageOptimizerForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('fastly.settings');
-
-    if(!$this->vclHandler->checkImageOptimizerStatus()){
+    if (!$this->api->validatePurgeCredentials()) {
+      $this->messenger()->addError($this->t('You need to have valid credentials before changing this configuration.'));
+      return $form;
+    }
+    if (!$this->vclHandler->checkImageOptimizerStatus()) {
       $this->messenger()->addWarning($this->t('Please contact your sales rep or send an email to support@fastly.com to request image optimization activation for your fastly service!'));
       return $form;
     }
 
-    if ($config->get('image_optimization') == 1){
-      if(!$this->api->ioEnabled($config->get('service_id'))){
-        $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
-      }
+    if ($config->get('image_optimization') == 1 && !$this->api->ioEnabled()){
+      $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
     }
 
     $form['io'] = [
