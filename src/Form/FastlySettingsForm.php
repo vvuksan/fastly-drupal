@@ -91,7 +91,7 @@ class FastlySettingsForm extends ConfigFormBase {
       $container->get('fastly.state'),
       $container->get('fastly.vclhandler'),
       $container->get('fastly.services.webhook'),
-      $container->get('request_stack'),
+      $container->get('request_stack')
     );
   }
 
