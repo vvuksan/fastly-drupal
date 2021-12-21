@@ -200,7 +200,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
-      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
+      '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: <b>Snippets WILL NOT upload until button "Upload latest Fastly VCL" is clicked</b>. VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
     ];
     $form['vcl']['cookie_cache_bypass'] = [
       '#type' => 'textarea',
@@ -340,6 +340,12 @@ class FastlySettingsForm extends ConfigFormBase {
     $this->state->setPurgeCredentialsState(TRUE);
     $apiKey = $form_state->getValue('api_key');
     $serviceId = $form_state->getValue('service_id');
+    $configApiKey = $this->config('fastly.settings')->get('api_key');
+    $configServiceId = $this->config('fastly.settings')->get('service_id');
+
+    if($apiKey && $serviceId  && (($apiKey != $configApiKey) || ($serviceId != $configServiceId))){
+      $this->messenger()->addStatus('Note: Click on the "Upload latest Fastly VCL" button to upload Fastly VCL snippets that improve cacheability of the site.');
+    }
     $this->config('fastly.settings')
       ->set('api_key', $apiKey)
       ->set('service_id', $serviceId)
