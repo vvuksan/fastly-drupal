@@ -3,6 +3,7 @@
 namespace Drupal\fastlypurger\Plugin\Purge\DiagnosticCheck;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\fastly\Api;
 use Drupal\fastly\State;
 use Drupal\purge\Plugin\Purge\DiagnosticCheck\DiagnosticCheckBase;
 use Drupal\purge\Plugin\Purge\DiagnosticCheck\DiagnosticCheckInterface;
@@ -35,6 +36,13 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
   protected $state;
 
   /**
+   * Fastly API.
+   *
+   * @var \Drupal\fastly\Api
+   */
+  protected $api;
+
+  /**
    * Constructs a CredentialCheck object.
    *
    * @param array $configuration
@@ -47,11 +55,14 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
    *   The factory for configuration objects.
    * @param \Drupal\fastly\State $state
    *   Fastly state service for Drupal.
+   * @param \Drupal\fastly\Api $api
+   *   Fastly api service for Drupal.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $config, State $state) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $config, State $state, Api $api) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->config = $config->get('fastly.settings');
     $this->state = $state;
+    $this->api = $api;
   }
 
   /**
@@ -63,7 +74,8 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
       $plugin_id,
       $plugin_definition,
       $container->get('config.factory'),
-      $container->get('fastly.state')
+      $container->get('fastly.state'),
+      $container->get('fastly.api')
     );
   }
 
@@ -72,14 +84,20 @@ class CredentialCheck extends DiagnosticCheckBase implements DiagnosticCheckInte
    */
   public function run() {
 
-    // This runs on every page - probably want to avoid a web service call here.
-    //
-    // $valid_purge_credentials = (!empty($this->config->get('api_key')))
-    // ? $this->state->validatePurgeCredentials($this->config->get('api_key'))
-    // : FALSE;
-    //
-    // $this->state->setPurgeCredentialsState($valid_purge_credentials);
+    // This runs on every page, so we probably want to avoid a web service call
+    // when possible. Cache the state of the check to avoid rerunning every
+    // time the purger is run.
     $purge_credentials_state = $this->state->getPurgeCredentialsState();
+    // Try to check the purge credentials if they haven't been validated yet.
+    if (!$purge_credentials_state) {
+      $apiKey = getenv('FASTLY_API_TOKEN') ?: $this->config->get('api_key');
+      $serviceId = getenv('FASTLY_API_SERVICE') ?: $this->config->get('service_id');
+      // If both API key and Service are available then try to revalidate.
+      if ($apiKey && $serviceId) {
+        $purge_credentials_state = $this->api->validatePurgeCredentials();
+        $this->state->setPurgeCredentialsState($purge_credentials_state);
+      }
+    }
 
     if (!$purge_credentials_state) {
       $this->recommendation = $this->t("Invalid Api credentials. Make sure the token you are trying has at least global:read, purge_select, and purge_all scopes.");

@@ -8,7 +8,6 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\fastly\Api;
-use Drupal\fastly\CacheTagsHashInterface;
 use Drupal\fastly\State;
 use Drupal\fastly\VclHandler;
 use Drupal\fastly\Services\Webhook;
@@ -123,7 +122,6 @@ class FastlySettingsForm extends ConfigFormBase {
 
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
-
     if(getenv('FASTLY_API_TOKEN')) {
       $api_key = getenv('FASTLY_API_TOKEN');
     }
@@ -147,45 +145,47 @@ class FastlySettingsForm extends ConfigFormBase {
       ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.")
       : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
-    $form['service_settings'] = [
-      '#type' => 'details',
-      '#title' => $this->t('Service settings'),
-      '#open' => TRUE,
-    ];
-    $form['account_settings']['api_key'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API key'),
-      '#default_value' => $api_key,
-      '#required' => !$purge_credentials_are_valid,
-      '#description' => $purge_credentials_status_message,
-      // Update the listed services whenever the API key is modified.
-      '#ajax' => [
-        'callback' => '::updateServices',
-        'wrapper' => 'edit-service-wrapper',
-        'event' => 'change',
-      ],
-    ];
-
-    $service_options = $this->getServiceOptions();
-
-    $form['service_settings']['service_id'] = [
-      '#type' => 'select',
-      '#title' => $this->t('Service'),
-      '#options' => $service_options,
-      '#empty_option' => $this->t('- Select -'),
-      '#default_value' => getenv('FASTLY_API_SERVICE') ?: $config->get('service_id'),
-      '#required' => !$purge_credentials_are_valid,
-      '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
-      // Hide while no API key is set.
-      '#states' => [
-        'invisible' => [
-          'input[name="api_key"]' => ['empty' => TRUE],
+    if (!getenv('FASTLY_API_TOKEN') || !$purge_credentials_are_valid) {
+      $form['account_settings']['api_key'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('API key'),
+        '#default_value' => $api_key,
+        '#required' => !$purge_credentials_are_valid,
+        '#description' => $purge_credentials_status_message,
+        // Update the listed services whenever the API key is modified.
+        '#ajax' => [
+          'callback' => '::updateServices',
+          'wrapper' => 'edit-service-wrapper',
+          'event' => 'change',
         ],
-      ],
-      '#prefix' => '<div id="edit-service-wrapper">',
-      '#suffix' => '</div>',
-    ];
+      ];
+    }
 
+    if (!getenv('FASTLY_API_SERVICE') || !$purge_credentials_are_valid) {
+      $form['service_settings'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Service settings'),
+        '#open' => TRUE,
+      ];
+      $service_options = $this->getServiceOptions();
+      $form['service_settings']['service_id'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Service'),
+        '#options' => $service_options,
+        '#empty_option' => $this->t('- Select -'),
+        '#default_value' => getenv('FASTLY_API_SERVICE') ?: $config->get('service_id'),
+        '#required' => !$purge_credentials_are_valid,
+        '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
+        // Hide while no API key is set.
+        '#states' => [
+          'invisible' => [
+            'input[name="api_key"]' => ['empty' => TRUE],
+          ],
+        ],
+        '#prefix' => '<div id="edit-service-wrapper">',
+        '#suffix' => '</div>',
+      ];
+    }
     $form['vcl'] = [
       '#type' => 'details',
       '#title' => $this->t('VCL update options'),
@@ -221,7 +221,7 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('Error/Maintenance Page'),
       '#default_value' => $config->get('error_maintenance'),
       '#required' => FALSE,
-      '#description' => $this->t('Custom error / maintenance page content. "Pretty" page presented to the end user on HTTP 500+ errors.'),
+      '#description' => $this->t('Custom error / maintenance HTML page content. "Pretty" page presented to the end user on HTTP 500+ errors. Max size 128kB'),
       '#prefix' => '<div id="edit-maintenance-wrapper">',
       '#suffix' => '</div>',
     ];
@@ -300,7 +300,7 @@ class FastlySettingsForm extends ConfigFormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Get and use the API token value from this form for validation.
-    $apiKey = $form_state->getValue('api_key');
+    $apiKey = getenv('FASTLY_API_TOKEN') ?: $form_state->getValue('api_key');
     if (empty($apiKey) && !$this->api->validatePurgeCredentials()) {
       $form_state->setErrorByName('api_key', $this->t('Please enter an API token.'));
     }
@@ -322,6 +322,9 @@ class FastlySettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
+    $apiKey = getenv('FASTLY_API_TOKEN') ?: $form_state->getValue('api_key');
+    $serviceId = getenv('FASTLY_API_SERVICE') ?: $form_state->getValue('service_id');
+
     $formApiKey = $form_state->getValue('api_key');
     $configApiKey = $this->config('fastly.settings')->get('api_key');
     $formServiceId = $form_state->getValue('service_id');
@@ -329,10 +332,9 @@ class FastlySettingsForm extends ConfigFormBase {
     if($formApiKey && $formServiceId  && (($formApiKey != $configApiKey) || ($formServiceId != $configServiceId))){
       $this->messenger()->addStatus('Note: Click on the "Upload latest Fastly VCL" button to upload Fastly VCL snippets that improve cacheability of the site.');
     }
-
     $this->config('fastly.settings')
-      ->set('api_key', $form_state->getValue('api_key'))
-      ->set('service_id', $form_state->getValue('service_id'))
+      ->set('api_key', $apiKey)
+      ->set('service_id', $serviceId)
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('site_id', $form_state->getValue('site_id'))
       ->save();

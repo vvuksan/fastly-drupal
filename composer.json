@@ -8,6 +8,9 @@
     "issues": "http://drupal.org/project/issues/fastly",
     "source": "http://cgit.drupalcode.org/fastly"
   },
+  "require": {
+    "php": ">=7.3"
+  },
   "extra": {
     "drush": {
       "services": {

@@ -6,7 +6,9 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\File\FileSystem;
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Url;
+use Drupal\fastly\Api;
 use Drupal\fastly\Utility\FastlyEdgeModulesHelper;
 use Drupal\fastly\VclHandler;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -20,6 +22,11 @@ class FastlyEdgeModulesController extends ControllerBase
 {
 
   /**
+   * @var \Drupal\fastly\Api
+   */
+  protected $api;
+
+  /**
    * @var VclHandler
    */
   protected $vclHandler;
@@ -30,15 +37,24 @@ class FastlyEdgeModulesController extends ControllerBase
   protected $fileSystem;
 
   /**
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  protected $messenger;
+
+  /**
    * FastlyEdgeModulesController constructor.
    *
+   * @param Api $api
    * @param VclHandler $vcl_handler
    * @param FileSystem $file_system
+   * @param Messenger $messenger
    */
-  public function __construct(VclHandler $vcl_handler, FileSystem $file_system)
+  public function __construct(Api $api, VclHandler $vcl_handler, FileSystem $file_system, Messenger $messenger)
   {
+    $this->api = $api;
     $this->vclHandler = $vcl_handler;
     $this->fileSystem = $file_system;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -47,8 +63,10 @@ class FastlyEdgeModulesController extends ControllerBase
   public static function create(ContainerInterface $container)
   {
     return new static(
+      $container->get('fastly.api'),
       $container->get('fastly.vclhandler'),
       $container->get('file_system'),
+      $container->get('messenger')
     );
   }
 
@@ -57,6 +75,12 @@ class FastlyEdgeModulesController extends ControllerBase
    */
   public function getEdgeModules()
   {
+    $apiCheck = $this->api->testFastlyApiConnection();
+    if (!$apiCheck['status']) {
+      $this->messenger->addError($apiCheck['message']);
+      return [];
+    }
+
     $snippets = $this->vclHandler->getAllSnippets();
 
     $data['title'] = [
