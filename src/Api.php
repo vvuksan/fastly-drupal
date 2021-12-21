@@ -704,7 +704,10 @@ class Api {
    * @param $serviceId
    * @return bool
    */
-  public function ioEnabled($serviceId){
+  public function ioEnabled($serviceId = FALSE){
+    if (!$serviceId) {
+      $serviceId = $this->serviceId;
+    }
     $response = $this->getDetails($serviceId);
     if ($response instanceof \stdClass) {
       if (property_exists($response, 'active_version') && property_exists($response->active_version, 'io_settings')) {
