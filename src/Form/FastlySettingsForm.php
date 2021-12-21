@@ -151,7 +151,7 @@ class FastlySettingsForm extends ConfigFormBase {
       : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
     $apiKeyWithOverrides = $this->configFactory()->get('fastly.settings')->get('api_key');
-    if (getenv('FASTLY_API_TOKEN') || $apiKeyWithOverrides != $api_key) {
+    if (!empty($apiKeyWithOverrides) && (getenv('FASTLY_API_TOKEN') || $apiKeyWithOverrides != $api_key)) {
       $apiKeyOverridden = TRUE;
       $this->messenger()->addWarning($this->t('API key is overridden in settings.php or with environment variable so it\'s not shown in the config form.'));
     }
