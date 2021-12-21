@@ -8,6 +8,9 @@ fastly.settings:
     cache_tag_hash_length:
       type: integer
       label: 'Cache tag hash length'
+    cookie_cache_bypass:
+      type: string
+      label: 'List of cookies bypassing the cache'
     image_optimization:
       type: boolean
       label: 'Enable image optimization'

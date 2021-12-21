@@ -192,6 +192,12 @@ class FastlySettingsForm extends ConfigFormBase {
       '#open' => TRUE,
       '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
     ];
+    $form['vcl']['cookie_cache_bypass'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('List of cookies bypassing the cache'),
+      '#description' => $this->t('Provide here a comma-separated list of cookie names that will be bypassing the cache. Note: You have to save the form first when you enter cookies before clicking on Upload latest Fastly VCL below to update cookie values for upload vcls.'),
+      '#default_value' => $config->get('cookie_cache_bypass'),
+    ];
 
     $form['vcl']['vcl_snippets'] = [
       '#type' => 'button',
@@ -329,6 +335,7 @@ class FastlySettingsForm extends ConfigFormBase {
       ->set('service_id', $serviceId)
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('site_id', $form_state->getValue('site_id'))
+      ->set('cookie_cache_bypass', $form_state->getValue('cookie_cache_bypass'))
       ->save();
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");

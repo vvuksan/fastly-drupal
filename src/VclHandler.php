@@ -170,6 +170,13 @@ class VclHandler {
   protected $moduleHandler;
 
   /**
+   * Config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -189,6 +196,7 @@ class VclHandler {
    * @param ModuleHandlerInterface $module_handler
    */
   public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger, ModuleHandlerInterface $module_handler) {
+    $this->configFactory = $config_factory;
     $this->moduleHandler = $module_handler;
     $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
     $data = [
@@ -231,7 +239,7 @@ class VclHandler {
 
     $this->api = $api;
     $this->webhook = $webhook;
-    $config = $config_factory->get('fastly.settings');
+    $config = $this->configFactory->get('fastly.settings');
     $this->vclData = !empty($data['vcl']) ? $data['vcl'] : FALSE;
     $this->conditionData = !empty($data['condition']) ? $data['condition'] : FALSE;
     $this->settingData = !empty($data['setting']) ? $data['setting'] : FALSE;
@@ -602,7 +610,19 @@ class VclHandler {
         $single_vcl_data['priority'] = 50;
         if (file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
           $single_vcl_data['content'] = file_get_contents($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl');
-          unset($single_vcl_data['vcl_dir']);
+          $replacement = '';
+          if ($single_vcl_data['name'] === 'drupalmodule_recv') {
+            $config = $this->configFactory->get('fastly.settings');
+            $cookieCacheBypass = $config->get('cookie_cache_bypass');
+            if ($cookieCacheBypass) {
+              $cookies = explode(',',$cookieCacheBypass);
+              foreach($cookies as $key => $value) {
+                $cookies[$key] = trim($value);
+              }
+              $replacement = implode('|', $cookies) . '|';
+            }
+            $single_vcl_data['content'] = str_replace('@COOKIE_NO_CACHE@', $replacement, $single_vcl_data['content']);
+          }
         }
         else {
           $message = $this->t('VCL file does not exist.');
