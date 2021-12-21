@@ -87,7 +87,7 @@ class StaleContentOptionsForm extends ConfigFormBase {
     $form['stale_while_revalidate_value'] = [
       '#type' => 'number',
       '#description' => $this->t('Number of seconds to show stale content while revalidating cache. More details <a href=":serving_stale_content">here</a>.', [':serving_stale_content' => 'https://docs.fastly.com/guides/performance-tuning/serving-stale-content']),
-      '#default_value' => $config->get('stale_while_revalidate_value') ?: 604800,
+      '#default_value' => $config->get('stale_while_revalidate_value') ?: 60,
       '#states' => [
         'visible' => [
           ':input[name="stale_while_revalidate"]' => ['checked' => TRUE],

@@ -113,12 +113,10 @@ class FastlySettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $apiKeyOverridden = FALSE;
+    $serviceIdOverridden = FALSE;
+
     $config = $this->config('fastly.settings');
-    if ($config->get('image_optimization') == 1){
-      if(!$this->api->ioEnabled($config->get('service_id'))){
-        $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
-      }
-    }
 
     // Validate API credentials set directly in settings files.
     $purge_credentials_are_valid = $this->api->validatePurgeCredentials();
@@ -127,6 +125,13 @@ class FastlySettingsForm extends ConfigFormBase {
     }
     else {
       $api_key = count($form_state->getValues()) ? $form_state->getValue('api_key') : $config->get('api_key');
+    }
+
+    $serviceIdWithOverrides = $this->configFactory()->get('fastly.settings')->get('service_id');
+    $serviceId = getenv('FASTLY_API_SERVICE') ?: $serviceIdWithOverrides;
+
+    if ($purge_credentials_are_valid && $config->get('image_optimization') == 1 && !$this->api->ioEnabled($serviceId)){
+      $this->messenger()->addError($this->t('You have Fastly image optimization enabled in configuration but you don\'t have it available on service!'));
     }
 
     $form['account_settings'] = [
@@ -145,7 +150,13 @@ class FastlySettingsForm extends ConfigFormBase {
       ? $this->t("An <em>API key</em> and <em>Service Id</em> pair are set that can perform purge operations. These credentials may not be adequate to performs all operations on this form. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.")
       : $this->t("You can find your personal API tokens on your Fastly Account Settings page. See <a href=':using_api_tokens'>using API tokens</a> for more information. If you don't have an account yet, please visit <a href=':signup'>https://www.fastly.com/signup</a> on Fastly. Can be overridden by <code>FASTLY_API_TOKEN</code> environment variable.", [':using_api_tokens' => 'https://docs.fastly.com/guides/account-management-and-security/using-api-tokens', ':signup' => 'https://www.fastly.com/signup']);
 
-    if (!getenv('FASTLY_API_TOKEN') || !$purge_credentials_are_valid) {
+    $apiKeyWithOverrides = $this->configFactory()->get('fastly.settings')->get('api_key');
+    if (getenv('FASTLY_API_TOKEN') || $apiKeyWithOverrides != $api_key) {
+      $apiKeyOverridden = TRUE;
+      $this->messenger()->addWarning($this->t('API key is overridden in settings.php or with environment variable so it\'s not shown in the config form.'));
+    }
+    // We show this only if key is not overridden by settings or by token.
+    if (!$apiKeyOverridden) {
       $form['account_settings']['api_key'] = [
         '#type' => 'textfield',
         '#title' => $this->t('API key'),
@@ -161,7 +172,12 @@ class FastlySettingsForm extends ConfigFormBase {
       ];
     }
 
-    if (!getenv('FASTLY_API_SERVICE') || !$purge_credentials_are_valid) {
+    if (getenv('FASTLY_API_SERVICE') || $serviceIdWithOverrides != $config->get('service_id')) {
+      $serviceIdOverridden = TRUE;
+      $this->messenger()->addWarning($this->t('Service id is overridden in settings.php or with environment variable so it\'s not shown in the config form.'));
+    }
+    // We show this only if key is not overridden by settings or by environment variable.
+    if (!$serviceIdOverridden) {
       $form['service_settings'] = [
         '#type' => 'details',
         '#title' => $this->t('Service settings'),
@@ -173,15 +189,9 @@ class FastlySettingsForm extends ConfigFormBase {
         '#title' => $this->t('Service'),
         '#options' => $service_options,
         '#empty_option' => $this->t('- Select -'),
-        '#default_value' => getenv('FASTLY_API_SERVICE') ?: $config->get('service_id'),
+        '#default_value' => $config->get('service_id'),
         '#required' => !$purge_credentials_are_valid,
         '#description' => $this->t('A Service represents the configuration for your website to be served through Fastly. You can override this with FASTLY_API_SERVICE environment variable'),
-        // Hide while no API key is set.
-        '#states' => [
-          'invisible' => [
-            'input[name="api_key"]' => ['empty' => TRUE],
-          ],
-        ],
         '#prefix' => '<div id="edit-service-wrapper">',
         '#suffix' => '</div>',
       ];
@@ -191,6 +201,12 @@ class FastlySettingsForm extends ConfigFormBase {
       '#title' => $this->t('VCL update options'),
       '#open' => TRUE,
       '#description' => $this->t('Upload Fastly VCL snippets that improve cacheability of the site. Note: <b>Snippets WILL NOT upload until button "Upload latest Fastly VCL" is clicked</b>. VCL assumes Drupal is the only app running. Please test in staging before applying in production.'),
+    ];
+    $form['vcl']['cookie_cache_bypass'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('List of cookies bypassing the cache'),
+      '#description' => $this->t('Provide here a comma-separated list of cookie names that will be bypassing the cache. Note: You have to save the form first when you enter cookies before clicking on Upload latest Fastly VCL below to update cookie values for upload vcls.'),
+      '#default_value' => $config->get('cookie_cache_bypass'),
     ];
 
     $form['vcl']['vcl_snippets'] = [
@@ -322,14 +338,12 @@ class FastlySettingsForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Set purge credentials state to TRUE if we have made it this far.
     $this->state->setPurgeCredentialsState(TRUE);
-    $apiKey = getenv('FASTLY_API_TOKEN') ?: $form_state->getValue('api_key');
-    $serviceId = getenv('FASTLY_API_SERVICE') ?: $form_state->getValue('service_id');
-
-    $formApiKey = $form_state->getValue('api_key');
+    $apiKey = $form_state->getValue('api_key');
+    $serviceId = $form_state->getValue('service_id');
     $configApiKey = $this->config('fastly.settings')->get('api_key');
-    $formServiceId = $form_state->getValue('service_id');
     $configServiceId = $this->config('fastly.settings')->get('service_id');
-    if($formApiKey && $formServiceId  && (($formApiKey != $configApiKey) || ($formServiceId != $configServiceId))){
+
+    if($apiKey && $serviceId  && (($apiKey != $configApiKey) || ($serviceId != $configServiceId))){
       $this->messenger()->addStatus('Note: Click on the "Upload latest Fastly VCL" button to upload Fastly VCL snippets that improve cacheability of the site.');
     }
     $this->config('fastly.settings')
@@ -337,6 +351,7 @@ class FastlySettingsForm extends ConfigFormBase {
       ->set('service_id', $serviceId)
       ->set('error_maintenance', $form_state->getValue('error_maintenance'))
       ->set('site_id', $form_state->getValue('site_id'))
+      ->set('cookie_cache_bypass', $form_state->getValue('cookie_cache_bypass'))
       ->save();
 
     $this->webhook->sendWebHook($this->t("Fastly module configuration changed on %base_url", ['%base_url' => $this->baseUrl]), "config_save");
