@@ -1,12 +1,3 @@
-  /* handle 5XX (or any other unwanted status code) */
-  if (beresp.status >= 500 && beresp.status < 600) {
-    /* deliver stale if the object is available */
-    if (stale.exists) {
-      return(deliver_stale);
-    }
-
-  }
-
   # Don't allow static files to set cookies.
   # (?i) denotes case insensitive in PCRE (perl compatible regular expressions).
   # This list of extensions appears twice, once here and again in vcl_recv so

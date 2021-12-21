@@ -1,10 +1,3 @@
-    if (resp.status >= 500 && resp.status < 600) {
-        /* restart if the stale object is available */
-        if (stale.exists) {
-            restart;
-        }
-    }
-
     # If object is the Fastly Drupal HTML mark the object as uncacheable before sending to the user
     if ( fastly.ff.visits_this_service == 0 && resp.http.Fastly-Drupal-HTML ) {
         set resp.http.Cache-Control = "no-store, no-cache, must-revalidate, max-age=0";
@@ -31,7 +24,7 @@
 
     # Add an easy way to see whether custom Fastly VCL has been uploaded
     if ( req.http.Fastly-Debug ) {
-        set resp.http.Fastly-Drupal-VCL-Uploaded = "8-1.0.3";
+        set resp.http.Fastly-Drupal-VCL-Uploaded = "8-1.0.4";
     } else {
         remove resp.http.Fastly-Drupal-VCL-Uploaded;
     }
