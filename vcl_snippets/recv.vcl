@@ -4,9 +4,6 @@
     set req.http.X-Pass = "0";
   }
 
-  # Allow the backend to serve up stale content if it is responding slowly.
-  set req.grace = 6h;
-
    # Do not cache these paths.
    # Picked from https://github.com/NITEMAN/varnish-bites/blob/master/varnish3/drupal-base.vcl
   if (req.url.path ~ "^/(status|update)\.php$" ||
