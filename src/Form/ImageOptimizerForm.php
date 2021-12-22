@@ -234,7 +234,7 @@ class ImageOptimizerForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $config = $this->config('fastly.settings');
+    $config = $this->configFactory()->get('fastly.settings');
 
     if(empty($config->get('api_key'))) {
       $element = [];
