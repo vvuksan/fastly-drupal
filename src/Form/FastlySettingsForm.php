@@ -317,10 +317,13 @@ class FastlySettingsForm extends ConfigFormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // Get and use the API token value from this form for validation.
     $apiKey = getenv('FASTLY_API_TOKEN') ?: $form_state->getValue('api_key');
+    // Check override.
+    if (empty($apiKey)) {
+      $apiKey = $this->configFactory()->get('fastly.settings')->get('api_key');
+    }
     if (empty($apiKey) && !$this->api->validatePurgeCredentials()) {
       $form_state->setErrorByName('api_key', $this->t('Please enter an API token.'));
     }
-
     if(!empty($apiKey)) {
       $this->api->setApiKey($apiKey);
     }
