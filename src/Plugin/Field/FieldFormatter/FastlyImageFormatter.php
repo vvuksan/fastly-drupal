@@ -5,6 +5,7 @@ namespace Drupal\fastly\Plugin\Field\FieldFormatter;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
@@ -44,6 +45,13 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
   protected $imageStyleStorage;
 
   /**
+   * Url Generator.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  protected $fileUrlGenerator;
+
+  /**
    * Constructs an ImageFormatter object.
    *
    * @param string $plugin_id
@@ -59,16 +67,19 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
    * @param string $view_mode
    *   The view mode.
    * @param array $third_party_settings
-   *   Any third party settings settings.
+   *   Any third party settings.
    * @param \Drupal\Core\Session\AccountInterface $current_user
    *   The current user.
    * @param \Drupal\Core\Entity\EntityStorageInterface $image_style_storage
    *   The image style storage.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   Url Generator.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage) {
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, AccountInterface $current_user, EntityStorageInterface $image_style_storage, FileUrlGeneratorInterface $file_url_generator) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings);
     $this->currentUser = $current_user;
     $this->imageStyleStorage = $image_style_storage;
+    $this->fileUrlGenerator = $file_url_generator;
   }
 
   /**
@@ -84,7 +95,8 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
       $configuration['view_mode'],
       $configuration['third_party_settings'],
       $container->get('current_user'),
-      $container->get('entity_type.manager')->getStorage('image_style')
+      $container->get('entity_type.manager')->getStorage('image_style'),
+      $container->get('file_url_generator')
     );
   }
 
@@ -355,7 +367,7 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
         // context to ensure different file URLs are generated for different
         // sites in a multisite setup, including HTTP and HTTPS versions of the
         // same site. Fix in https://www.drupal.org/node/2646744.
-        $url = Url::fromUri(file_create_url($image_uri));
+        $url = Url::fromUri($this->fileUrlGenerator->generateAbsoluteString($image_uri));
         $cache_contexts[] = 'url.site';
       }
       $cache_tags = Cache::mergeTags($base_cache_tags, $file->getCacheTags());
@@ -378,7 +390,7 @@ class FastlyImageFormatter extends ImageFormatterBase implements ContainerFactor
       }
       if($query){
         $uri = $file->getFileUri();
-        $image_url = Url::fromUri(file_create_url($uri));
+        $image_url = Url::fromUri($this->fileUrlGenerator->generateAbsoluteString($uri));
         $image_url->setOption('query', $query);
         $file->setFileUri($image_url->toUriString());
       }

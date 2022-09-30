@@ -31,7 +31,7 @@ class State {
   /**
    * Get the state of the Fastly credentials related to Purge functionality.
    *
-   * Get the Drupal state representing whether or not the configured Fastly Api
+   * Get the Drupal state representing whether the configured Fastly Api
    * credentials are sufficient to perform all supported purge operations.
    *
    * @return mixed
