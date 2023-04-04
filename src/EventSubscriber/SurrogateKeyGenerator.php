@@ -4,7 +4,7 @@ namespace Drupal\fastly\EventSubscriber;
 
 use Drupal\fastly\CacheTagsHash;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -46,10 +46,10 @@ class SurrogateKeyGenerator implements EventSubscriberInterface {
   /**
    * Logs an emergency event when the X-Drupal-Cache-Tags header exceeds 16 KB.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The event to process.
    */
-  public function onRespond(FilterResponseEvent $event) {
+  public function onRespond(ResponseEvent $event) {
     if (!$event->isMasterRequest()) {
       return;
     }

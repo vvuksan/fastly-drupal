@@ -4,6 +4,7 @@ namespace Drupal\fastly;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -177,6 +178,12 @@ class VclHandler {
   protected $configFactory;
 
   /**
+   * Path Resolver.
+   * @var \Drupal\Core\Extension\ExtensionPathResolver
+   */
+  protected $pathResolver;
+
+  /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -194,11 +201,15 @@ class VclHandler {
    * @param \Drupal\Core\Messenger\Messenger $messenger
    *   Messenger.
    * @param ModuleHandlerInterface $module_handler
+   *   Module Handler.
+   * @param \Drupal\Core\Extension\ExtensionPathResolver $path_resolver
+   *   Path Resolver.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger, ModuleHandlerInterface $module_handler) {
+  public function __construct(ConfigFactoryInterface $config_factory, $host, Api $api, LoggerInterface $logger, Webhook $webhook, RequestStack $requestStack, Messenger $messenger, ModuleHandlerInterface $module_handler, ExtensionPathResolver $path_resolver) {
     $this->configFactory = $config_factory;
     $this->moduleHandler = $module_handler;
-    $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets';
+    $this->pathResolver = $path_resolver;
+    $vcl_dir = $this->pathResolver->getPath('module', 'fastly') . '/vcl_snippets';
     $data = [
       'vcl' => [
         [
@@ -421,7 +432,7 @@ class VclHandler {
         return FALSE;
       }
 
-      $vcl_dir = drupal_get_path('module', 'fastly') . '/vcl_snippets/errors';
+      $vcl_dir = $this->pathResolver->getPath('module', 'fastly') . '/vcl_snippets/errors';
       $singleVclData['vcl_dir'] = $vcl_dir;
       $singleVclData['type'] = 'deliver';
       $requests = [];
@@ -1124,7 +1135,7 @@ class VclHandler {
     try {
       $this->cloneLastActiveVersion();
       //Check if optimization on fastly is turned on and if vcl exists
-      $data['vcl_dir'] = drupal_get_path('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
+      $data['vcl_dir'] = $this->pathResolver->getPath('module', 'fastly') . '/vcl_snippets_image_optimizations/' . $params['optimize'];
       $data['type'] = 'recv';
       // Set vcl for image optimizer.
       if($this->checkIfVclExists(self::IMAGE_OPTIMIZER_BASIC_IMAGE_SETTINGS)) {
@@ -1309,7 +1320,7 @@ class VclHandler {
           $data['name'] = FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $name . '_' . $vcl['type'];
 
           // load vcl template and render it
-          $path = drupal_get_path('module','fastly') . '/fastly_edge_modules/templates/';
+          $path = $this->pathResolver->getPath('module','fastly') . '/fastly_edge_modules/templates/';
           $loader = new \Twig\Loader\ArrayLoader([
             'template' => file_get_contents($path . $vcl['template'] . '.html.twig',TRUE),
           ]);

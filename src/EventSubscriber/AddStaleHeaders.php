@@ -4,7 +4,7 @@ namespace Drupal\fastly\EventSubscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -45,10 +45,10 @@ class AddStaleHeaders implements EventSubscriberInterface {
   /**
    * Adds Surrogate-Control header.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The event to process.
    */
-  public function onRespond(FilterResponseEvent $event) {
+  public function onRespond(ResponseEvent $event) {
     // Get the fastly settings from configuration.
     $config = $this->config->get('fastly.settings');
 
