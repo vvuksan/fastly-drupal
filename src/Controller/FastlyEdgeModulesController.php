@@ -5,7 +5,7 @@ namespace Drupal\fastly\Controller;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\Core\File\FileSystem;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\Url;
 use Drupal\fastly\Api;
@@ -22,34 +22,46 @@ class FastlyEdgeModulesController extends ControllerBase
 {
 
   /**
+   * The Fastly API.
+   *
    * @var \Drupal\fastly\Api
    */
   protected $api;
 
   /**
-   * @var VclHandler
+   * The Fastly VCL handler.
+   *
+   * @var \Drupal\fastly\VclHandler
    */
   protected $vclHandler;
 
   /**
-   * @var FileSystem
+   * The file system service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
    */
   protected $fileSystem;
 
   /**
+   * The messenger.
+   *
    * @var \Drupal\Core\Messenger\Messenger
    */
   protected $messenger;
 
   /**
-   * FastlyEdgeModulesController constructor.
+   * Constructs a new FastlyEdgeModulesController object.
    *
-   * @param Api $api
-   * @param VclHandler $vcl_handler
-   * @param FileSystem $file_system
-   * @param Messenger $messenger
+   * @param \Drupal\fastly\Api $api
+   *   The Fastly API.
+   * @param \Drupal\fastly\VclHandler $vcl_handler
+   *   The Fastly VCL handler.
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file system service.
+   * @param \Drupal\Core\Messenger\Messenger $messenger
+   *   The messenger.
    */
-  public function __construct(Api $api, VclHandler $vcl_handler, FileSystem $file_system, Messenger $messenger)
+  public function __construct(Api $api, VclHandler $vcl_handler, FileSystemInterface $file_system, Messenger $messenger)
   {
     $this->api = $api;
     $this->vclHandler = $vcl_handler;
