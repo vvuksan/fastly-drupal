@@ -53,7 +53,7 @@ class AddStaleHeaders implements EventSubscriberInterface {
     $config = $this->config->get('fastly.settings');
 
     // Only modify the master request.
-    if ((!$event->isMasterRequest())) {
+    if ((!$event->isMainRequest())) {
       return;
     }
 
