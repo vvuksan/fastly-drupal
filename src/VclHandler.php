@@ -352,7 +352,7 @@ class VclHandler {
    */
   public function prepareSingleVcl(array $single_vcl_data, $prefix = "drupalmodule") {
     if (!empty($single_vcl_data['type'])) {
-      $single_vcl_data['name'] = $single_vcl_data['name'] ? $single_vcl_data['name'] : $prefix . '_' . $single_vcl_data['type'];
+      $single_vcl_data['name'] = isset($single_vcl_data['name']) ? $single_vcl_data['name'] : $prefix . '_' . $single_vcl_data['type'];
       $single_vcl_data['dynamic'] = 0;
       $single_vcl_data['priority'] = isset($single_vcl_data['priority']) ? $single_vcl_data['priority'] : 50;
       if (isset($single_vcl_data['vcl_dir']) && file_exists($single_vcl_data['vcl_dir'] . '/' . $single_vcl_data['type'] . '.vcl')) {
@@ -432,7 +432,7 @@ class VclHandler {
         return FALSE;
       }
 
-      $vcl_dir = $this->pathResolver->getPath('module', 'fastly') . '/vcl_snippets/errors';
+      $vcl_dir = $this->pathResolver->getPath('module', 'fastly') . '/vcl_snippets/error_page';
       $singleVclData['vcl_dir'] = $vcl_dir;
       $singleVclData['type'] = 'deliver';
       $requests = [];
@@ -583,7 +583,7 @@ class VclHandler {
           $this->logger->critical('Activation of new version failed : @body', ['@body' => $response->getBody()]);
         }
         else {
-          $this->logger->info('VCL updated, version activated : ', ['@last_cloned_version' => $this->lastClonedVersion]);
+          $this->logger->info('VCL updated, version activated : @last_cloned_version', ['@last_cloned_version' => $this->lastClonedVersion]);
         }
       }
       elseif ($pass && !$activate) {
@@ -826,7 +826,7 @@ class VclHandler {
         else {
           // Do insert here because condition is needed before setting
           // (requests are not sent in order).
-          return $this->insertCondition($single_condition_data);
+          $this->insertCondition($single_condition_data);
         }
       }
     }
