@@ -583,7 +583,7 @@ class VclHandler {
           $this->logger->critical('Activation of new version failed : @body', ['@body' => $response->getBody()]);
         }
         else {
-          $this->logger->info('VCL updated, version activated : ', ['@last_cloned_version' => $this->lastClonedVersion]);
+          $this->logger->info('VCL updated, version activated : @last_cloned_version', ['@last_cloned_version' => $this->lastClonedVersion]);
         }
       }
       elseif ($pass && !$activate) {
