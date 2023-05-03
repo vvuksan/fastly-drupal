@@ -908,7 +908,7 @@ class VclHandler {
     ];
 
     $response = $this->vclRequestWrapper($request['url'], $this->headersPost, $request['data'], $request['type']);
-    $responseData = json_decode($response->getBody(), TRUE);
+    $responseData = json_decode($response->getBody());
 
     if ($responseData) {
       return $responseData;
