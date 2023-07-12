@@ -1,6 +1,6 @@
 name: Fastly
 description: 'Integration with the Fastly service.'
 package: Reports
-core_version_requirement: ^9 || ^10
+core_version_requirement: ^9.3 || ^10
 configure: fastly.settings
 type: module
