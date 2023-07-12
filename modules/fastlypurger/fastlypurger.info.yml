@@ -1,7 +1,6 @@
 name: Fastly Purger
 type: module
 description: Integration with the Fastly service and the Purge module.
-core: 8.x
 core_version_requirement: ^9 || ^10
 package: Purge - reverse proxies & CDNs
 configure: fastly.admin_settings_form
