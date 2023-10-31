@@ -47,3 +47,10 @@ fastly.settings.purge_options:
     _title: 'Purge Options'
   requirements:
     _permission: 'administer fastly'
+fastly.settings.optimization:
+  path: '/admin/config/services/fastly/optimization'
+  defaults:
+    _form: '\Drupal\fastly\Form\OptimizationForm'
+    _title: 'Optimization'
+  requirements:
+    _permission: 'administer fastly'
