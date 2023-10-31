@@ -60,7 +60,7 @@ class OptimizationForm extends FormBase {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function getFormId()
   {
@@ -68,7 +68,7 @@ class OptimizationForm extends FormBase {
   }
 
   /**
-   * {@inheritDoc}
+   * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state)
   {
