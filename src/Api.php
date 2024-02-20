@@ -155,7 +155,13 @@ class Api {
     $this->logger = $logger;
     $this->state = $state;
     $this->webhook = $webhook;
-    $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
+    if ($requestStack->getCurrentRequest()) {
+      $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
+    }
+    else {
+      global $base_url;
+      $this->baseUrl = $base_url;
+    }
     $this->cacheTagsHash = $cache_tags_hash;
     $this->messenger = $messenger;
   }
