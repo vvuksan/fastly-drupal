@@ -30,7 +30,7 @@ backend datadome {
   .host = "api-fastly.datadome.co";
   .port = "8443";
   .connect_timeout = {{ datadome_connect_timeout }}ms;
-  .first_byte_timeout = {{ datadome_between_bytes_timeout }}ms;
+  .first_byte_timeout = {{ datadome_first_byte_timeout }}ms;
   .between_bytes_timeout = {{ datadome_between_bytes_timeout }}ms;
   .max_connections = 200;
   .ssl = true;
