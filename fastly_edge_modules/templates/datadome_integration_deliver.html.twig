@@ -1,48 +1,51 @@
+# Start of `deliver.vcl` for DataDome-2.15
 # copy datadome headers if it isn't datadome request
-if (req.backend != datadome) {
-declare local var.x-datadome-headers STRING;
-set var.x-datadome-headers = urldecode(req.http.x-datadome-headers-pairs:x-datadome-headers);
-if (var.x-datadome-headers ~ "(?i)(^| )+x-set-cookie( |$)+") {
-set resp.http.x-set-cookie = urldecode(req.http.x-datadome-headers-pairs:x-set-cookie);
+if (fastly.ff.visits_this_service == 0 && req.backend != datadome) {
+  declare local var.x-datadome-headers STRING;
+  set var.x-datadome-headers = urldecode(req.http.x-datadome-headers-pairs:x-datadome-headers);
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-set-cookie( |$)+") {
+    set resp.http.x-set-cookie = urldecode(req.http.x-datadome-headers-pairs:x-set-cookie);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome-server( |$)+") {
+    set resp.http.x-datadome-server = urldecode(req.http.x-datadome-headers-pairs:x-datadome-server);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome( |$)+") {
+    set resp.http.x-datadome = urldecode(req.http.x-datadome-headers-pairs:x-datadome);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+content-type( |$)+") {
+    set resp.http.content-type = urldecode(req.http.x-datadome-headers-pairs:content-type);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+charset( |$)+") {
+    set resp.http.charset = urldecode(req.http.x-datadome-headers-pairs:charset);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+cache-control( |$)+") {
+    set resp.http.cache-control = urldecode(req.http.x-datadome-headers-pairs:cache-control);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+pragma( |$)+") {
+    set resp.http.pragma = urldecode(req.http.x-datadome-headers-pairs:pragma);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+access-control-allow-credentials( |$)+") {
+    set resp.http.access-control-allow-credentials = urldecode(req.http.x-datadome-headers-pairs:access-control-allow-credentials);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+access-control-expose-headers( |$)+") {
+    set resp.http.access-control-expose-headers = urldecode(req.http.x-datadome-headers-pairs:access-control-expose-headers);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+access-control-allow-origin( |$)+") {
+    set resp.http.access-control-allow-origin = urldecode(req.http.x-datadome-headers-pairs:access-control-allow-origin);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome-cid( |$)+") {
+    set resp.http.x-datadome-cid = urldecode(req.http.x-datadome-headers-pairs:x-datadome-cid);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-dd-b( |$)+") {
+    set resp.http.x-dd-b = urldecode(req.http.x-datadome-headers-pairs:x-dd-b);
+  }
+  if (var.x-datadome-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
+    set resp.http.x-dd-type = urldecode(req.http.x-datadome-headers-pairs:x-dd-type);
+  }
+  # don't forget about ApiServer's cookies
+  if (var.x-datadome-headers ~ "(?i)(^| )+set-cookie( |$)+") {
+    add resp.http.set-cookie = urldecode(req.http.x-datadome-headers-pairs:set-cookie);
+  }
 }
-if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome-server( |$)+") {
-set resp.http.x-datadome-server = urldecode(req.http.x-datadome-headers-pairs:x-datadome-server);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome( |$)+") {
-set resp.http.x-datadome = urldecode(req.http.x-datadome-headers-pairs:x-datadome);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+content-type( |$)+") {
-set resp.http.content-type = urldecode(req.http.x-datadome-headers-pairs:content-type);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+charset( |$)+") {
-set resp.http.charset = urldecode(req.http.x-datadome-headers-pairs:charset);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+cache-control( |$)+") {
-set resp.http.cache-control = urldecode(req.http.x-datadome-headers-pairs:cache-control);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+pragma( |$)+") {
-set resp.http.pragma = urldecode(req.http.x-datadome-headers-pairs:pragma);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+access-control-allow-credentials( |$)+") {
-set resp.http.access-control-allow-credentials = urldecode(req.http.x-datadome-headers-pairs:access-control-allow-credentials);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+access-control-expose-headers( |$)+") {
-set resp.http.access-control-expose-headers = urldecode(req.http.x-datadome-headers-pairs:access-control-expose-headers);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+access-control-allow-origin( |$)+") {
-set resp.http.access-control-allow-origin = urldecode(req.http.x-datadome-headers-pairs:access-control-allow-origin);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+x-datadome-cid( |$)+") {
-set resp.http.x-datadome-cid = urldecode(req.http.x-datadome-headers-pairs:x-datadome-cid);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+x-dd-b( |$)+") {
-set resp.http.x-dd-b = urldecode(req.http.x-datadome-headers-pairs:x-dd-b);
-}
-if (var.x-datadome-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
-set resp.http.x-dd-type = urldecode(req.http.x-datadome-headers-pairs:x-dd-type);
-}
-# don't forget about ApiServer's cookies
-if (var.x-datadome-headers ~ "(?i)(^| )+set-cookie( |$)+") {
-add resp.http.set-cookie = urldecode(req.http.x-datadome-headers-pairs:set-cookie);
-}
-}
+
+# End of `deliver.vcl` for DataDome-2.15
