@@ -65,11 +65,11 @@ class DisableCacheForm extends ConfigFormBase {
     ];
 
     $rules = $config->get('rules') ?: [];
-    if (!$form_state->get('rules')) {
-      $form_state->set('rules', count($rules));
+    if ($form_state->getValue('rules')) {
+      $rules = $form_state->getValue('rules');
     }
 
-    for ($i = 0; $i < $form_state->get('rules'); $i++) {
+    for ($i = 0; $i < count($rules); $i++) {
 
       $form['rules'][$i] = [
         '#type' => 'fieldset',
@@ -105,7 +105,7 @@ class DisableCacheForm extends ConfigFormBase {
         'wrapper' => 'rules-wrapper',
       ],
     ];
-    if ($form_state->get('rules') > 1) {
+    if (count($rules) > 1) {
       $form['rules']['actions']['remove'] = [
         '#type' => 'submit',
         '#value' => t('Remove'),
@@ -173,9 +173,8 @@ class DisableCacheForm extends ConfigFormBase {
    * Callback to add rule.
    */
   public function addRule(array &$form, FormStateInterface $form_state) {
-    $rules = $form_state->get('rules');
+    $rules = $form_state->getValue('rules');
     unset($rules['actions']);
-    $form_state->set('rules', ++$rules);
     $form_state->setRebuild();
   }
 
@@ -190,10 +189,11 @@ class DisableCacheForm extends ConfigFormBase {
    * Callback for remove rule.
    */
   public function removeRule(array &$form, FormStateInterface $form_state) {
-    $rules = $form_state->get('rules');
-    if ($rules > 1) {
-      unset($rules['actions']);
-      $form_state->set('rules', --$rules);
+    $rules = $form_state->getValue('rules');
+    unset($rules['actions']);
+    if (count($rules) > 1) {
+      array_pop($rules);
+      $form_state->setValue('rules', $rules);
     }
     $form_state->setRebuild();
   }
