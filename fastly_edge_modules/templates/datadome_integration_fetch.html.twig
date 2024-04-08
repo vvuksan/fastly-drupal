@@ -1,106 +1,133 @@
+# Start of `fetch.vcl` for DataDome-2.15
 if (req.backend == datadome) {
-declare local var.status STRING;
-set var.status = beresp.status;
-# check that it is real ApiServer response
-if (var.status != beresp.http.x-datadomeresponse) {
-restart;
-}
-unset beresp.http.x-datadomeresponse;
-# copy datadome headers
-set req.http.x-datadome-headers-pairs:x-datadome-headers = urlencode(beresp.http.x-datadome-headers);
+  declare local var.status STRING;
+  set var.status = beresp.status;
+  # check that it is real ApiServer response
+  if (var.status != beresp.http.x-datadomeresponse) {
+    restart;
+  }
+  unset beresp.http.x-datadomeresponse;
+  # copy datadome headers
+  set req.http.x-datadome-headers-pairs:x-datadome-headers = urlencode(beresp.http.x-datadome-headers);
 
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-set-cookie( |$)+") {
-set req.http.x-datadome-headers-pairs:x-set-cookie = urlencode(beresp.http.x-set-cookie);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome-server( |$)+") {
-set req.http.x-datadome-headers-pairs:x-datadome-server = urlencode(beresp.http.x-datadome-server);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome( |$)+") {
-set req.http.x-datadome-headers-pairs:x-datadome = urlencode(beresp.http.x-datadome);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+content-type( |$)+") {
-set req.http.x-datadome-headers-pairs:content-type = urlencode(beresp.http.content-type);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+charset( |$)+") {
-set req.http.x-datadome-headers-pairs:charset = urlencode(beresp.http.charset);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+cache-control( |$)+") {
-set req.http.x-datadome-headers-pairs:cache-control = urlencode(beresp.http.cache-control);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+pragma( |$)+") {
-set req.http.x-datadome-headers-pairs:pragma = urlencode(beresp.http.pragma);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-allow-credentials( |$)+") {
-set req.http.x-datadome-headers-pairs:access-control-allow-credentials = urlencode(beresp.http.access-control-allow-credentials);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-expose-headers( |$)+") {
-set req.http.x-datadome-headers-pairs:access-control-expose-headers = urlencode(beresp.http.access-control-expose-headers);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-allow-origin( |$)+") {
-set req.http.x-datadome-headers-pairs:access-control-allow-origin = urlencode(beresp.http.access-control-allow-origin);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome-cid( |$)+") {
-set req.http.x-datadome-headers-pairs:x-datadome-cid = urlencode(beresp.http.x-datadome-cid);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-dd-b( |$)+") {
-set req.http.x-datadome-headers-pairs:x-dd-b = urlencode(beresp.http.x-dd-b);
-}
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
-set req.http.x-datadome-headers-pairs:x-dd-type = urlencode(beresp.http.x-dd-type);
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
-set req.http.x-dd-type = beresp.http.x-dd-type;
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botname( |$)+") {
-set req.http.x-datadome-botname = beresp.http.x-datadome-botname;
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
-set req.http.x-datadome-botfamily = beresp.http.x-datadome-botfamily;
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-isbot( |$)+") {
-set req.http.x-datadome-isbot = beresp.http.x-datadome-isbot;
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
-set req.http.x-datadome-captchapassed = beresp.http.x-datadome-captchapassed;
-}
-# don't forget about ApiServer's cookies
-if (beresp.http.x-datadome-headers ~ "(?i)(^| )+set-cookie( |$)+") {
-set req.http.x-datadome-headers-pairs:set-cookie = urlencode(beresp.http.set-cookie);
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-set-cookie( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-set-cookie = urlencode(beresp.http.x-set-cookie);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome-server( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-datadome-server = urlencode(beresp.http.x-datadome-server);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-datadome = urlencode(beresp.http.x-datadome);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+content-type( |$)+") {
+    set req.http.x-datadome-headers-pairs:content-type = urlencode(beresp.http.content-type);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+charset( |$)+") {
+    set req.http.x-datadome-headers-pairs:charset = urlencode(beresp.http.charset);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+cache-control( |$)+") {
+    set req.http.x-datadome-headers-pairs:cache-control = urlencode(beresp.http.cache-control);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+pragma( |$)+") {
+    set req.http.x-datadome-headers-pairs:pragma = urlencode(beresp.http.pragma);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-allow-credentials( |$)+") {
+    set req.http.x-datadome-headers-pairs:access-control-allow-credentials = urlencode(beresp.http.access-control-allow-credentials);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-expose-headers( |$)+") {
+    set req.http.x-datadome-headers-pairs:access-control-expose-headers = urlencode(beresp.http.access-control-expose-headers);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+access-control-allow-origin( |$)+") {
+    set req.http.x-datadome-headers-pairs:access-control-allow-origin = urlencode(beresp.http.access-control-allow-origin);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-datadome-cid( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-datadome-cid = urlencode(beresp.http.x-datadome-cid);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-dd-b( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-dd-b = urlencode(beresp.http.x-dd-b);
+  }
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
+    set req.http.x-datadome-headers-pairs:x-dd-type = urlencode(beresp.http.x-dd-type);
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
+    set req.http.x-dd-type = beresp.http.x-dd-type;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botname( |$)+") {
+    set req.http.x-datadome-botname = beresp.http.x-datadome-botname;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
+    set req.http.x-datadome-botfamily = beresp.http.x-datadome-botfamily;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-isbot( |$)+") {
+    set req.http.x-datadome-isbot = beresp.http.x-datadome-isbot;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
+    set req.http.x-datadome-captchapassed = beresp.http.x-datadome-captchapassed;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-requestid( |$)+") {
+    set req.http.x-datadome-requestid = beresp.http.x-datadome-requestid;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-score( |$)+") {
+    set req.http.x-datadome-score = beresp.http.x-datadome-score;
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-ruletype( |$)+") {
+    set req.http.x-datadome-ruletype = beresp.http.x-datadome-ruletype;
+  }
+  # don't forget about ApiServer's cookies
+  if (beresp.http.x-datadome-headers ~ "(?i)(^| )+set-cookie( |$)+") {
+    set req.http.x-datadome-headers-pairs:set-cookie = urlencode(beresp.http.set-cookie);
+  }
+
+  # Continue only if ApiServer returns expected blocked status
+  if (beresp.status != 403 && beresp.status != 401 && beresp.status != 301 && beresp.status != 302) {
+    unset beresp.http.x-datadome-headers;
+    unset beresp.http.x-datadome-request-headers;
+    restart;
+  }
+
+  # ok, it is banned request, cleanup it a bit
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-dd-type( |$)+") {
+      unset beresp.http.x-dd-type;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botname( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-botname( |$)+") {
+      unset beresp.http.x-datadome-botname;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
+      unset beresp.http.x-datadome-botfamily;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-isbot( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-isbot( |$)+") {
+      unset beresp.http.x-datadome-isbot;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
+      unset beresp.http.x-datadome-captchapassed;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-requestid( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-requestid( |$)+") {
+      unset beresp.http.x-datadome-requestid;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-score( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-score( |$)+") {
+      unset beresp.http.x-datadome-score;
+    }
+  }
+  if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-ruletype( |$)+") {
+    if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-ruletype( |$)+") {
+      unset beresp.http.x-datadome-ruletype;
+    }
+  }
+  unset beresp.http.x-datadome-headers;
+  unset beresp.http.x-datadome-request-headers;
 }
 
-# Continue only if ApiServer returns expected blocked status
-if (beresp.status != 403 && beresp.status != 401 && beresp.status != 301 && beresp.status != 302) {
-unset beresp.http.x-datadome-headers;
-unset beresp.http.x-datadome-request-headers;
-restart;
-}
-
-# ok, it is banned request, cleanup it a bit
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-dd-type( |$)+") {
-if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-dd-type( |$)+") {
-unset beresp.http.x-dd-type;
-}
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botname( |$)+") {
-if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-botname( |$)+") {
-unset beresp.http.x-datadome-botname;
-}
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
-if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-botfamily( |$)+") {
-unset beresp.http.x-datadome-botfamily;
-}
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-isbot( |$)+") {
-if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-isbot( |$)+") {
-unset beresp.http.x-datadome-isbot;
-}
-}
-if (beresp.http.x-datadome-request-headers ~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
-if (beresp.http.x-datadome-headers !~ "(?i)(^| )+x-datadome-captchapassed( |$)+") {
-unset beresp.http.x-datadome-captchapassed;
-}
-}
-unset beresp.http.x-datadome-headers;
-unset beresp.http.x-datadome-request-headers;
-}
+# End of `fetch.vcl` for DataDome-2.15
