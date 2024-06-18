@@ -1,0 +1,20 @@
+<tr>
+  <th rowspan="2">
+    <label>
+      {{ label }}
+    </label>
+  </th>
+  <td>
+    <a href="#" title="{{ 'Add group'|t }}" class="button" onclick="return EdgeModules.addGroup('{{ suffix }}', '{{ name }}')">{{ 'Add group'|t }}</a>
+  </td>
+</tr>
+<tr>
+  <td>
+    {% for rendered_group_property in rendered_group_properties %}
+      {{ rendered_group_property|raw }}
+    {% endfor %}
+    <template id="{{ suffix ~ '-template'}}">
+      {{ rendered_template|raw }}
+    </template>
+  </td>
+</tr>

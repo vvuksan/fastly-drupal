@@ -1,0 +1,31 @@
+<form action="{{ path('fastly.edge_modules_submit_form') }}" onsubmit="return EdgeModules.submit(this)" method="post">
+  <input type="hidden" id="{{ id ~ '-key' }}" value='{{ id }}'>
+  <input type="hidden" id="{{ id ~ '-vcl' }}" value='{{ vcl }}'>
+  <input type="hidden" id="{{ id ~ '-snippet' }}" name="{{ id ~ '[snippet]' }}">
+  <table class="form-table">
+    <tbody>
+    {% for module_property in module_properties %}
+      {{ module_property|raw }}
+    {% endfor %}
+    </tbody>
+    <tfoot>
+    <tr>
+      <td>
+        <span class="submitbox">
+            <a class="submitdelete" href="#" onclick="return EdgeModules.disableModule('{{ id }}')">{{ 'Disable'|t }}</a>
+        </span>
+      </td>
+      <td>
+        <input type="submit" value="{{ 'Upload'|t }}" class="button button-primary" style="float: right">
+      </td>
+    </tr>
+    </tfoot>
+  </table>
+</form>
+<form action="{{ path('fastly.edge_modules_disable_form') }}" id="{{ id ~ '-disable-form' }}" method="post" style="display: none;">
+  <input type="hidden" name="action" value="fastly_module_disable_form">
+  <input type="hidden" name="module_name" value='{{ id }}'>
+  {% for key, type in vcl_types %}
+    <input type="hidden" name="types[{{ key }}]" value='{{ type }}'>
+  {% endfor %}
+</form>

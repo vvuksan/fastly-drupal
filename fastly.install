@@ -47,3 +47,91 @@ function fastly_update_8001(&$sandbox) {
     '@link' =>  $link->toString()
   ]);
 }
+
+function fastly_update_8002(&$sandbox) {
+  $keys = [
+    'fastly.edge_modules.blackfire_integration',
+    'fastly.edge_modules.cors_headers',
+    'fastly.edge_modules.countryblock',
+    'fastly.edge_modules.datadome_integration',
+    "fastly.edge_modules.force_cache_miss_on_hard_reload_for_admins",
+    'fastly.edge_modules.increase_timeouts_long_jobs',
+    "fastly.edge_modules.mobile_device_detection",
+    "fastly.edge_modules.netacea_integration",
+    "fastly.edge_modules.other_cms_integration",
+    "fastly.edge_modules.redirect_hosts",
+    "fastly.edge_modules.url_rewrites"
+  ];
+  foreach($keys as $key){
+    $data = \Drupal::config($key)->getRawData();
+    if(!is_null($data)){
+      switch($key){
+        case 'fastly.edge_modules.blackfire_integration':
+        case "fastly.edge_modules.force_cache_miss_on_hard_reload_for_admins":
+          $data['Acl'] = $data['acl'];
+          unset($data['acl']);
+          break;
+        case 'fastly.edge_modules.countryblock':
+          $data['countryList'] = $data['countries'];
+          unset($data['countries']);
+          break;
+        case 'fastly.edge_modules.increase_timeouts_long_jobs':
+          if(isset($data['rules']) && is_array($data['rules'])){
+            foreach($data['rules'] as $i =>$rule){
+              $rule['pathpattern'] = $rule['pattern'];
+              unset($rule['pattern']);
+              $data['rules'][$i] = $rule;
+            }
+          }
+          break;
+        case "fastly.edge_modules.mobile_device_detection":
+          $data = [];
+          break;
+        case "fastly.edge_modules.netacea_integration":
+          $data['netacea_api_key'] = $data['api_key'];
+          $data['netacea_secret'] = $data['secret'];
+          unset($data['api_key'], $data['secret']);
+          break;
+        case "fastly.edge_modules.redirect_hosts":
+          if(isset($data['rules']) && is_array($data['rules'])){
+            foreach($data['rules'] as $i =>$rule){
+              $rule['incomingHost'] = $rule['source'];
+              $rule['destinationHost'] = $rule['destination'];
+              if($rule['ignore_path']){
+                $rule['ignorePath'] = '1';
+              }
+              else{
+                $rule['ignorePath'] = '';
+              }
+              unset($rule['source'],$rule['destination'] , $rule['ignore_path']);
+              $data['rules'][$i] = $rule;
+            }
+          }
+          break;
+        case "fastly.edge_modules.url_rewrites":
+          if(isset($data['rules']) && is_array($data['rules'])){
+            foreach($data['rules'] as $i =>$rule){
+              $rule['dest'] = $rule['destination'];
+              unset($rule['destination']);
+              $data['rules'][$i] = $rule;
+            }
+          }
+          break;
+      }
+      $config = \Drupal::service('config.factory')->getEditable($key);
+      $config->set('values',json_encode($data))->save();
+    }
+  }
+  $data = \Drupal::config('fastly.edge_modules.disable_cache')->getRawData();
+  if(!is_null($data)){
+    if(isset($data['rules']) && is_array($data['rules'])){
+      foreach($data['rules'] as $i =>$rule){
+        $rule['pathpattern'] = $rule['pattern'];
+        unset($rule['pattern']);
+        $data['rules'][$i] = $rule;
+      }
+    }
+    $config = \Drupal::service('config.factory')->getEditable("fastly.edge_modules.disablecache");
+    $config->set('values',json_encode($data))->save();
+  }
+}

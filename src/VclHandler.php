@@ -183,6 +183,8 @@ class VclHandler {
    */
   protected $pathResolver;
 
+  protected $request;
+
   /**
    * Sets data to be processed, sets Credentials Vcl_Handler constructor.
    *
@@ -259,7 +261,7 @@ class VclHandler {
     $this->apiKey = getenv('FASTLY_API_TOKEN') ?: $config->get('api_key');
     $this->logger = $logger;
     $this->baseUrl = $requestStack->getCurrentRequest()->getHost();
-
+    $this->request = $requestStack->getCurrentRequest();
     $connection = $this->api->testFastlyApiConnection();
 
     if (!$connection['status']) {
@@ -1254,7 +1256,8 @@ class VclHandler {
     $url =  $this->versionBaseUrl . "/" . $v . "/snippet";
     $response = $this->vclGetWrapper($url, $this->headersGet);
     $responseBody = (string) $response->getBody();
-    return json_decode($responseBody);
+    $this->snippetData = json_decode($responseBody);
+    return $this->snippetData;
   }
 
   /**
@@ -1269,84 +1272,6 @@ class VclHandler {
         $this->removeSnippet($version, $snippet->name);
       }
     }
-    $request = $this->prepareActivateVersion();
-    $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
-    if ($response->getStatusCode() != "200") {
-      $this->messenger->addError($response->getBody());
-      return FALSE;
-    }
-    return TRUE;
-  }
-
-  /**
-   * Uploads Edge module to fastly.
-   *
-   * @param $name
-   *   Name of the module.
-   * @param $values
-   *   Values array for vcl template.
-   * @return bool
-   *   Successfull or not.
-   *
-   * @throws \Twig\Error\LoaderError
-   * @throws \Twig\Error\RuntimeError
-   * @throws \Twig\Error\SyntaxError
-   */
-  public function uploadEdgeModule($name, $values){
-    $this->cloneLastActiveVersion();
-
-    switch($name) {
-      case 'blackfire_integration':
-      case 'cors_headers':
-      case 'countryblock':
-      case 'datadome_integration':
-      case 'force_cache_miss_on_hard_reload_for_admins':
-      case 'increase_timeouts_long_jobs':
-      case 'mobile_device_detection':
-      case 'netacea_integration':
-      case 'disable_cache':
-      case 'other_cms_integration':
-      case 'redirect_hosts':
-      case 'url_rewrites':
-        // Load module config.
-        $moduleConfig = FastlyEdgeModulesHelper::getModules();
-        $moduleConfig = $moduleConfig[$name];
-        // Go through each vcl config upload it to fastly.
-        foreach($moduleConfig['vcl'] as $vcl) {
-          if(isset($vcl['priority'])){
-            $data['priority'] = $vcl['priority'];
-          }
-
-          $data['name'] = FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $name . '_' . $vcl['type'];
-
-          // load vcl template and render it
-          $path = $this->pathResolver->getPath('module','fastly') . '/fastly_edge_modules/templates/';
-          $loader = new \Twig\Loader\ArrayLoader([
-            'template' => file_get_contents($path . $vcl['template'] . '.html.twig',TRUE),
-          ]);
-
-          $twig = new \Twig\Environment($loader);
-          $data['content'] = $twig->render('template', $values);
-
-          // Skip if template is empty.
-          if(empty($data['content'])){
-            continue;
-          }
-          $data['type'] = $vcl['type'];
-
-          $requests = $this->prepareSingleVcl($data,FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX);
-          foreach($requests as $request){
-            $request['headers'] = is_null($request['headers']) ? [] : $request['headers'];
-            $response = $this->vclRequestWrapper($request['url'], $request['headers'], $request['data'] , $request['type']);
-            if ($response->getStatusCode() != "200") {
-              return FALSE;
-            }
-          }
-        }
-        break;
-    }
-
-    // Activation of version.
     $request = $this->prepareActivateVersion();
     $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
     if ($response->getStatusCode() != "200") {
@@ -1377,5 +1302,60 @@ class VclHandler {
     $url = '/service/' . $this->serviceId . '/version/'. $this->getLastVersion()->number . '/dictionary';
     $response = $this->vclRequestWrapper($url, [], [], 'GET');
     return Json::decode($response->getBody());
+  }
+
+  public function upload_snippet(){
+    $this->cloneLastActiveVersion();
+    $formData = $this->request->request->all();
+    foreach ($formData as $key => $datum) {
+      $snippets = json_decode(rawurldecode($datum['snippet']));
+      unset($datum['snippet']);
+      if(count(array_keys($datum))){
+        $jsonData = FastlyEdgeModulesHelper::getModulesJson(TRUE)[$key];
+        foreach($datum as $k => $value){
+          foreach ($jsonData['properties'] as $property){
+            if($property['name'] == $k && $property['type'] == 'group'){
+              $datum[$k] = array_values($datum[$k]);
+            }
+          }
+        }
+        $config = $this->configFactory->getEditable('fastly.edge_modules.'.$key);
+        $config->set('values',json_encode($datum))->save();
+      }
+
+      foreach ($snippets as $snippet) {
+        $data = [
+          'name' => FastlyEdgeModulesHelper::FASTLY_EDGE_MODULE_PREFIX . $key . "_" . $snippet->type,
+          'type' => $snippet->type,
+          'dynamic' => "0",
+          'priority' => $snippet->priority,
+          'content' => $snippet->snippet
+        ];
+
+        $requests = [];
+        if ($this->checkIfVclExists($data['name'])) {
+          $requests[] = $this->prepareUpdateVcl($data);
+        }
+        else {
+          $requests[] = $this->prepareInsertVcl($data);
+        }
+
+        foreach ($requests as $request) {
+          $request['headers'] = empty($request['headers']) ? [] : $request['headers'];
+          $response = $this->vclRequestWrapper($request['url'], $request['headers'], $request['data'], $request['type']);
+          if ($response->getStatusCode() != "200") {
+            $this->messenger->addError($this->t("Error happened on uploading snippet to fastly :@error" , ['@error' => $response->getBody()]));
+          }
+        }
+      }
+    }
+    $request = $this->prepareActivateVersion();
+    $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
+    if ($response->getStatusCode() != "200") {
+      $this->messenger->addError($response->getBody());
+      return FALSE;
+    }
+    $this->messenger->addStatus($this->t("Successfully uploaded snippet to fastly"));
+    return TRUE;
   }
 }

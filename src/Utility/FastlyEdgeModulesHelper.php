@@ -233,4 +233,28 @@ class FastlyEdgeModulesHelper {
       ]
     ];
   }
+
+  public static function getModulesJson($assoc = TRUE){
+    $moduleDirectory = \Drupal::service('extension.list.module')->getPath('fastly');
+    $jsonDir = $moduleDirectory . '/fastly_edge_modules/json';
+    $contents = scandir($jsonDir);
+    $files = [];
+    foreach($contents as $dirContent){
+      $file = $jsonDir . '/' . $dirContent;
+      if(is_file($file)){
+        $ext = pathinfo($file, PATHINFO_EXTENSION);
+        if($ext == 'json'){
+          $fileContent = file_get_contents($file);
+          $fileContent = json_decode($fileContent,$assoc);
+          if($assoc){
+            $files[$fileContent['id']] = $fileContent;
+          }
+          else{
+            $files[$fileContent->id] = $fileContent;
+          }
+        }
+      }
+    }
+    return $files;
+  }
 }

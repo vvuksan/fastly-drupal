@@ -38,3 +38,6 @@ services:
   fastly.services.webhook:
     class: Drupal\fastly\Services\Webhook
     arguments: ['@config.factory', '@http_client', '@logger.channel.fastly', '%fastly.webhook_connect_timeout%','@request_stack']
+  fastly.edge_modules:
+    class: Drupal\fastly\EdgeModules
+    arguments: ['@fastly.vclhandler','@config.factory','@twig' ,'@extension.list.module']

@@ -165,7 +165,7 @@ class FastlySettingsForm extends ConfigFormBase {
         '#description' => $purge_credentials_status_message,
         // Update the listed services whenever the API key is modified.
         '#ajax' => [
-          'callback' => '::updateServices',
+          'callback' => [$this,'updateServices'],
           'wrapper' => 'edit-service-wrapper',
           'event' => 'change',
         ],
