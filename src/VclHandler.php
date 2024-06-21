@@ -1352,7 +1352,7 @@ class VclHandler {
     $request = $this->prepareActivateVersion();
     $response = $this->vclRequestWrapper($request['url'], $request['headers'], [], $request['type']);
     if ($response->getStatusCode() != "200") {
-      $this->messenger->addError($response->getBody());
+      $this->messenger->addError($this->t("Error happened on uploading snippet to fastly :@error" , ['@error' => $response->getBody()]));
       return FALSE;
     }
     $this->messenger->addStatus($this->t("Successfully uploaded snippet to fastly"));

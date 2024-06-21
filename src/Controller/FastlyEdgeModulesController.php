@@ -111,7 +111,7 @@ class FastlyEdgeModulesController extends ControllerBase
         '#plain_text' => $module['name']
       ];
       $data['modules'][$id]['description'] = [
-        '#plain_text' => $module['description']
+        '#markup' => $module['description']
       ];
       $data['modules'][$id]['status'] = [
         '#plain_text' => t('Disabled')

@@ -24,7 +24,7 @@
     {
       "priority": 70,
       "type": "recv",
-      "template": "  # Make sure X-ExternalCMS is not set before proceeding\n  if ( req.restarts == 0 ) {\n     remove req.http.X-ExternalCMS;\n  }\n\n  # Extract first part of the path from a URL\n  if ( req.url.path ~ \"^/?([^:/\\s]+).*$\" ) {\n     # check if first part of the url is in the wordpress urls table\n     if ( table.lookup({{urls_dict}}, re.group.1, \"NOTFOUND\") != \"NOTFOUND\" ) {\n       set req.http.X-ExternalCMS = \"1\";\n       # There is an issue with load-scripts.php in Wordpress where the ordering of query arguments matter\n       # in compressing the JS. By default Magento sorts query arguments. Here we undo the sorting for wp-admin URLs\n       if ( req.url.path ~ \"/wp-admin\" ) {\n         set req.url = req.http.Magento-Original-URL;\n       }\n     }\n  }\n"
+      "template": "  # Make sure X-ExternalCMS is not set before proceeding\n  if ( req.restarts == 0 ) {\n     remove req.http.X-ExternalCMS;\n  }\n\n  # Extract first part of the path from a URL\n  if ( req.url.path ~ \"^/?([^:/\\s]+).*$\" ) {\n     # check if first part of the url is in the wordpress urls table\n     if ( table.lookup({{urls_dict}}, re.group.1, \"NOTFOUND\") != \"NOTFOUND\" ) {\n       set req.http.X-ExternalCMS = \"1\";\n       # There is an issue with load-scripts.php in Wordpress where the ordering of query arguments matter\n if ( req.url.path ~ \"/wp-admin\" ) {\n         set req.url = req.http.Drupal-Original-URL;\n       }\n     }\n  }\n"
     },
     {
       "type": "miss",
