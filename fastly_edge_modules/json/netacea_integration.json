@@ -1,5 +1,5 @@
 {
-  "description": "Set of VCLs required to integrate Netacea services. Please note for full functionality Fastly support needs to enable proper handling of POST requests. Additionally, an edge dictionary named netacea_edge_config must be created. Use of this dictionary is optional and requires advanced configuration. A Netacea Engineer can assist you with this setup. Do not enable this module unless the prerequisite steps have been completed.",
+  "description": "Set of VCLs required to integrate Netacea services. Please note for full functionality Fastly support needs to enable proper handling of POST requests. <b>Additionally, an edge dictionary named netacea_edge_config must be created.</b> Use of this dictionary is optional and requires advanced configuration. A Netacea Engineer can assist you with this setup. Do not enable this module unless the prerequisite steps have been completed.",
   "id": "netacea_integration",
   "name": "Netacea Bot Detection integration",
   "properties": [
