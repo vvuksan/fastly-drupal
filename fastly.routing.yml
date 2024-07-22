@@ -8,17 +8,32 @@ fastly.settings:
 fastly.edge_modules:
   path: '/admin/config/services/fastly/edge-modules'
   defaults:
-    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::getEdgeModules'
+    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::getEdgeModulesJson'
     _title: 'Fastly Edge Modules'
   requirements:
     _permission: 'administer fastly'
-fastly.get_module_form:
-  path: '/admin/config/services/fastly/get-module-form/{module}'
+fastly.edge_modules_submit_form:
+  path: '/admin/config/services/fastly/submit-edge-module'
   defaults:
-    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::getModuleForm'
+    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::processEdgeModuleFormSubmission'
+    _title: 'Fastly Edge Modules'
+  requirements:
+    _permission: 'administer fastly'
+fastly.edge_modules_disable_form:
+  path: '/admin/config/services/fastly/disable-edge-module'
+  defaults:
+    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::disableEdgeModuleFormSubmission'
+    _title: 'Fastly Edge Modules'
+  requirements:
+    _permission: 'administer fastly'
+fastly.get_module_form_json:
+  path: '/admin/config/services/fastly/edge-module-form/{module}'
+  defaults:
+    _controller: '\Drupal\fastly\Controller\FastlyEdgeModulesController::edgeModuleForm'
     _title_callback: '\Drupal\fastly\Controller\FastlyEdgeModulesController::titleCallback'
   requirements:
     _permission: 'administer fastly'
+
 fastly.settings.webhook:
   path: '/admin/config/services/fastly/webhook'
   defaults:

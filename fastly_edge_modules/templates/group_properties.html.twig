@@ -1,0 +1,13 @@
+<div id="{{ id }}">
+  <table class="form-table">
+    <tbody>
+      {% for property in properties %}
+        {{ property|raw }}
+      {% endfor %}
+    </tbody>
+  </table>
+  <span class="submitbox">
+    <a class="submitdelete" href="#" onclick="return EdgeModules.removeGroup(this)">{{ 'Remove group'|t }}</a>
+  </span>
+  <hr/>
+</div>

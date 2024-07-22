@@ -1,3 +1,0 @@
-if (fastly.ff.visits_this_service == 0 && client.geo.country_code ~ "(?i)^({{ countries | join('|') }})$") {
-  error 921 "[modly:countryblock]";
-}

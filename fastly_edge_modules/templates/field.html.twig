@@ -1,0 +1,21 @@
+{% if element == 'select' %}
+  <select style='width: 100%;' id='{{ id }}' name='{{ name }}' {{ required }} class='form-select form-element form-element--type-select {{ required }}'>
+    {% for key ,option in options %}
+      {% if value == key %}
+        {% set selected = 'selected' %}
+      {% else %}
+        {% set selected = '' %}
+      {% endif %}
+      <option value='{{ key }}' {{ selected }}>{{ option }}</option>
+    {% endfor %}
+  </select>
+{% elseif element == 'number' %}
+  {% if type == 'integer' %}
+    {% set step = 1 %}
+  {% else %}
+    {% set step = 0.01 %}
+  {% endif %}
+  <input style='width: 100%;' type='{{ element }}' id='{{ id }}' name='{{ name }}' value='{{ value }}' step='{{ step }}' {{ required }} class='form-number form-element form-element--type-number form-element--api-number {{ required }}'/>
+{% else %}
+  <input style='width: 100%;' type='text' id='{{ id }}' name='{{ name }}' value='{{ value }}' {{ required }} class='form-text {{ required }} form-element form-element--type-text form-element--api-textfield'/>
+{% endif %}
