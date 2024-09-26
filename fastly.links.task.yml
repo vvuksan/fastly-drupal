@@ -27,3 +27,8 @@ fastly.webhook:
   base_route: fastly.settings
   title: 'Webhooks'
   weight: 500
+fastly.optimization:
+  route_name: fastly.settings.optimization
+  base_route: fastly.settings
+  title: 'Optimization'
+  weight: 501
